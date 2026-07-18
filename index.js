@@ -205,7 +205,30 @@ export class SuperType {
         }
 
         switch (token.name) {
-            
+
+            case "custom": {
+                let name = token.args[0];
+                let delay = token.args[1];
+
+                if(name === undefined) throw new Error("Missing custom tag name");
+                if(delay === undefined) throw new Error("Missing custom tag delay");
+
+                name.check("string");
+                delay.check("number");
+
+                this.header.customDelays[name.value] = delay.value;
+            } break;
+
+            case "customremove": {
+                let name = token.args[0];
+                if(name === undefined) throw new Error("Missing custom tag name");
+                name.check("string");
+
+                if(this.header.customDelays[name.value] === undefined) throw new Error(`Custom tag not found: ${name.value}`);
+
+                delete this.header.customDelays[name.value];
+            } break;
+
             case "function": {
                 const funcName = token.args[0];
                 if(funcName === undefined) throw new Error("Missing function name");
