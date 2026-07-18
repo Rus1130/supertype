@@ -76,7 +76,11 @@ Tags:
 [gopage String String keep] - create a button that goes to the page with the first String, and displays the second String as the button text. Does not reset displayed text
 
 [glitch Number] - funny glitch text thats Number characters long
+[glitch Number separate] - funny glitch text thats Number characters long, but each character is separate
+
 [tab Number] - is Number spaces
+
+[function String] - calls the function with the given name. Functions are defined in JavaScript
 ```
 
 markdown guide:

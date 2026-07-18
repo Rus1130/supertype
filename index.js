@@ -89,7 +89,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate"];
 
     glitchLoop = () => {
         for (const span of this.state.glitches) {
@@ -110,7 +110,22 @@ export class SuperType {
         this.pages = {
             root: []
         };
-        this.target = target;
+        this.functions = new Map();
+
+        for (const [name, func] of Object.entries(functions)) {
+            if (typeof func !== "function") {
+                throw new Error(`Invalid function for ${name}: Expected function, got ${typeof func}`);
+            }
+
+            this.functions.set(name, func);
+        }
+
+        const div = document.createElement("div");
+        div.classList.add("supertype");
+        target.appendChild(div);
+
+        this.target = div;
+
         this.state = {
             token: 0,
             pausedAt: 0,
@@ -190,6 +205,18 @@ export class SuperType {
         }
 
         switch (token.name) {
+
+            case "function": {
+                const funcName = token.args[0];
+                if(funcName === undefined) throw new Error("Missing function name");
+                funcName.check("string");
+
+                const func = this.functions.get(funcName.value);
+
+                if(!func) throw new Error(`Function not found: ${funcName.value}`);
+
+                func(this);
+            } break;
 
             case "tab": {
                 let value = token.args[0];
@@ -302,8 +329,34 @@ export class SuperType {
 
             case "glitch": {
                 let value = token.args[0];
+                let separate = token.args[1];
 
                 if(value === undefined) throw new Error("Missing glitch value");
+
+                if(separate !== undefined) separate.checkSpecific("separate");
+
+                separate = (separate === undefined) ? false : true;
+
+                if (separate) {
+                    const tokens = [];
+
+                    for (let i = 0; i < value.value; i++) {
+                        tokens.push({
+                            type: "tag",
+                            name: "glitch",
+                            args: [new TagArgument("number", 1)],
+                            style: token.style
+                        });
+                    }
+
+                    this.pages[this.state.page].splice(
+                        this.state.token,
+                        0,
+                        ...tokens
+                    );
+
+                    return;
+                }
 
                 value.check("number");
                 const glitchCount = value;
@@ -323,13 +376,6 @@ export class SuperType {
                 console.error(`Unknown tag type: ${token.name}`);
             }
         }
-    }
-
-    insertNewline() {
-        this.renderRaw("<br>");
-
-        this.state.wordCount = 0;
-        this.state.lineChars = [];
     }
 
     renderToken(token) {

@@ -42,7 +42,19 @@
 <script type="module">
     import { SuperType } from "./index.js";
 
-    const tw = new SuperType(document.body)
+    const tw = new SuperType(document.body, {
+        "end": function() {
+            // <div class="button" id="return" onclick="location.href = 'https://rus1130.github.io/space2313/'" style="display: none;">▌< Return</div>
+            const returnButton = document.createElement("div");
+            returnButton.classList.add("button");
+            returnButton.id = "return";
+            returnButton.textContent = "▌< Return";
+            returnButton.onclick = () => {
+                location.href = 'https://rus1130.github.io/space2313/';
+            };
+            tw.target.appendChild(returnButton);
+        }
+    })
 
     await tw.load("example.tw").then(() => {
         // tw.header.instant = true;

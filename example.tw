@@ -11,11 +11,6 @@ typewriter: {
         "?": 600
     }
 }
-{{#[glitch 1][newline]
-[speed 1]wow /[color 0,255,0]:hi [sleep 1000]test wow[color reset]/ hi *test* test
-wowhi
-[bg #ff0000]wow wow wow wow wwow wow wow[bg reset]#}}
-
 [sleep 1000]
 [tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
 [tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 18:40:25 SST[newline]
@@ -94,5 +89,5 @@ Be happy.[sleep 1000][newline]
 Happy.[sleep 1500][newline]
 Goodbye.[sleep 2000][linebreak]
 
-[sleep 700][function]
+[sleep 700][function "end"]
 [page end]
