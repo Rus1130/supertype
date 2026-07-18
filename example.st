@@ -1,6 +1,6 @@
 typewriter: {
     charDelay: 50
-    newlineDelay: 500
+    newlineDelay: 800
     textColor: #ffffff
     backgroundColor: #000000
     wordWrap: 80

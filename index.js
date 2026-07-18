@@ -331,7 +331,7 @@ export class SuperType {
                 if(instant !== undefined) instant.checkSpecific("instant");
                 if(instant === undefined) instant = false;
 
-                if(instant == true) this.addRenderTime(this.state.defaultNewlineDelay);
+                if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br>");
             } break;
 
@@ -340,7 +340,7 @@ export class SuperType {
                 if(instant !== undefined) instant.checkSpecific("instant");
                 if(instant === undefined) instant = false;
 
-                if(instant == true) this.addRenderTime(this.state.defaultNewlineDelay);
+                if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br><br>");
             } break;
 
