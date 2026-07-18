@@ -206,6 +206,8 @@ export class SuperType {
 
         switch (token.name) {
 
+            // case "start"
+
             case "custom": {
                 let name = token.args[0];
                 let delay = token.args[1];
