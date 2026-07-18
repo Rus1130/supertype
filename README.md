@@ -24,8 +24,6 @@ Specific : override
          | end
          | instant
 ```
-`word<Number>` means that `word` is just a label assigned to what would be put in the `Number` type, to limit confusion.
-
 
 ## Header
 `|` is used to show value defaults. For example, `Number | 1000` means that if you do not include a value for that specific `Number`, it will default to `1000`.
@@ -45,6 +43,7 @@ typewriter: {
 ```
 
 ## Tags
+`label<Type>` is used to show the type of the value that is expected for that specific label. For example, `speed delay<Number>` means that the `delay` value must be a `Number`.
 | Tag                                        | Description                                                                                                         |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `[newline]`                                | Creates a new line.                                                                                                 |

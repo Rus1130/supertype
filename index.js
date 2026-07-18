@@ -205,7 +205,7 @@ export class SuperType {
         }
 
         switch (token.name) {
-
+            
             case "function": {
                 const funcName = token.args[0];
                 if(funcName === undefined) throw new Error("Missing function name");
