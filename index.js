@@ -271,7 +271,10 @@ export class SuperType {
                 button.textContent = "▌" + text.value;
 
                 button.addEventListener("click", () => {
-                    if(keep === false) this.target.innerHTML = "";
+                    if(keep === false) {
+                        this.target.innerHTML = "";
+                        this.state.glitches = [];
+                    }
                     this.start(pageName.value);
                 });
 
