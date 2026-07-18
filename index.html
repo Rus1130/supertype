@@ -1,0 +1,51 @@
+<style>
+    button:focus, input:focus, select:focus, textarea:focus, [contenteditable]:focus {
+        outline:none;
+    }
+    #out, body {
+        overflow-y: hidden;
+        scrollbar-width: none;
+        background-color: black;
+        color: white;
+        margin-right: 0;
+    }
+    * {
+        font-family: monospace;
+        user-select: none;
+    }
+    .button {
+        margin-bottom: 1px;
+        display: block;
+        cursor: pointer;
+    }
+    .button:hover {
+        background-color: white;
+        color: black;
+    }
+    .hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<head>
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
+    <meta property="og:url" content="">
+    <script src="index.js" type="module"></script>
+</head>
+<body>
+    <!-- <div class="button">▌Next ></div> -->
+</body>
+<script type="module">
+    import { SuperType } from "./index.js";
+
+    const tw = new SuperType(document.body)
+
+    await tw.load("example.tw");
+
+    console.log(tw)
+
+</script>
