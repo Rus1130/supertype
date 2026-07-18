@@ -89,7 +89,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant"];
 
     glitchLoop = () => {
         for (const span of this.state.glitches) {
@@ -120,8 +120,11 @@ export class SuperType {
             glitches: [],
             tagSpeedOverride: false,
             userSpeedOverride: null,
+
             defaultCharDelay: null,
-            defaultNewlineDelay: null
+            defaultNewlineDelay: null,
+            currentColor: null,
+            currentBg: null,
         }
     }
 
@@ -150,6 +153,9 @@ export class SuperType {
         // this.state.glitches = [];
         this.state.defaultCharDelay = new Number(this.header.charDelay);
         this.state.defaultNewlineDelay = new Number(this.header.newlineDelay);
+
+        this.state.currentColor = new String(this.header.textColor);
+        this.state.currentBg = new String(this.header.backgroundColor);
 
         requestAnimationFrame(this.render);
         requestAnimationFrame(this.glitchLoop);
@@ -184,32 +190,123 @@ export class SuperType {
         }
 
         switch (token.name) {
-            case "speed": {
-                if(token.args[0].is("number")){
-                    console.log("meow")
-                } else {
-                    token.args[0].checkSpecific("default");
+
+            case "tab": {
+                let value = token.args[0];
+
+                if(value === undefined) throw new Error("Missing tab value");
+                value.check("number");
+
+                this.renderRaw("&nbsp;".repeat(value.value));
+                this.addRenderTime(this.header.customDelays[" "] ?? this.header.charDelay);
+                
+            } break;
+
+            case "gopage": {
+                const pageName = token.args[0];
+                if(pageName === undefined) throw new Error("Missing page name");
+                pageName.check("string");
+
+                const text = token.args[1];
+                if(text === undefined) throw new Error("Missing button text");
+                text.check("string");
+
+                let keep = token.args[2];
+                if(keep !== undefined) keep.checkSpecific("keep");
+
+                keep = (keep === undefined) ? false : true
+
+                let button = document.createElement("div");
+                button.classList.add("button");
+                button.textContent = "▌" + text.value;
+
+                button.addEventListener("click", () => {
+                    if(keep === false) this.target.innerHTML = "";
+                    this.start(pageName.value);
+                });
+
+                this.target.appendChild(button);
+            } break;
+
+            case "color": {
+                if(token.args.length === 0) throw new Error("Missing color value");
+
+                const value = token.args[0];
+                if(!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid color value: Expected color or reset, got ${value.type}`);
+
+                if(value.is("color")) {
+                    this.state.currentColor = value.value;
+                } else if(value.equalsSpecific("reset")) {
+                    this.state.currentColor = this.header.textColor;
                 }
             } break;
 
+            case "bg": {
+                if(token.args.length === 0) throw new Error("Missing background color value");
+
+                const value = token.args[0];
+                if(!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid background color value: Expected color or reset, got ${value.type}`);
+
+                if(value.is("color")) {
+                    this.state.currentBg = value.value;
+                } else if(value.equalsSpecific("reset")) {
+                    this.state.currentBg = this.header.backgroundColor;
+                }
+            } break;
+
+            case "speed": {
+                const value = token.args[0];
+                const option = token.args[1];
+
+                if(value === undefined) throw new Error("Missing speed value");
+
+                value.check("number");
+                if(option) option.checkSpecific("override");
+
+                this.header.charDelay = value.value;
+                if(option != undefined) this.state.tagSpeedOverride = true;
+            } break;
+
+            case "speeddefault": {
+                this.header.charDelay = this.state.defaultCharDelay;
+                this.state.tagSpeedOverride = false;
+            } break;
+
             case "newline": {
-                this.addRenderTime(this.state.defaultNewlineDelay);
+
+                let instant = token.args[0];
+                if(instant !== undefined) instant.checkSpecific("instant");
+                if(instant === undefined) instant = false;
+
+                if(instant == true) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br>");
             } break;
 
             case "linebreak": {
-                this.addRenderTime(this.state.defaultNewlineDelay);
+                let instant = token.args[0];
+                if(instant !== undefined) instant.checkSpecific("instant");
+                if(instant === undefined) instant = false;
+
+                if(instant == true) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br><br>");
             } break;
 
             case "sleep": {
-                token.args[0].check("number");
-                this.addRenderTime(token.args[0].value);
+                let value = token.args[0];
+
+                if(value === undefined) throw new Error("Missing sleep value");
+
+                value.check("number");
+                this.addRenderTime(value.value);
             } break;
 
             case "glitch": {
-                token.args[0].check("number");
-                const glitchCount = token.args[0].value;
+                let value = token.args[0];
+
+                if(value === undefined) throw new Error("Missing glitch value");
+
+                value.check("number");
+                const glitchCount = value;
 
                 for (let i = 0; i < glitchCount; i++) {
                     let span = document.createElement("span");
@@ -228,6 +325,13 @@ export class SuperType {
         }
     }
 
+    insertNewline() {
+        this.renderRaw("<br>");
+
+        this.state.wordCount = 0;
+        this.state.lineChars = [];
+    }
+
     renderToken(token) {
         if(this.state.userSpeedOverride !== null) {
             this.addRenderTime(this.state.userSpeedOverride);
@@ -238,7 +342,7 @@ export class SuperType {
         let delay = this.header.customDelays[token.value] ?? this.header.charDelay;
 
         if(this.state.tagSpeedOverride === true) {
-            delay = this.state.defaultCharDelay;
+            delay = this.header.charDelay;
         }
 
         this.addRenderTime(delay);
@@ -246,8 +350,8 @@ export class SuperType {
     }
 
     styleElement(element, style) {
-        element.style.color = style.color;
-        element.style.backgroundColor = style.bg;
+        element.style.color = this.state.currentColor;
+        element.style.backgroundColor = this.state.currentBg;
         element.style.fontWeight = style.bold ? "bold" : "normal";
         element.style.fontStyle = style.italic ? "italic" : "normal";
         element.style.textDecoration = style.underline ? "underline" : "none";
@@ -389,6 +493,72 @@ export class SuperType {
                         "underline": styleStack.underline,
                         "strikethrough": styleStack.strikethrough
                     }
+                }
+            }
+            
+            let lineCharacterCount = 0;
+            let lastSpaceIndex = -1;
+
+            for(let i = 0; i < pageTokens.length; i++) {
+                const token = pageTokens[i];
+
+                if(token.type === "tag"){
+                    if(
+                        token.name === "newline" ||
+                        token.name === "linebreak" ||
+                        token.name === "newpage"
+                    ) {
+                        lineCharacterCount = 0;
+                        lastSpaceIndex = -1;
+                    }
+
+                    continue;
+                }
+
+                lineCharacterCount++;
+
+                if(/\s/.test(token.value)) {
+                    lastSpaceIndex = i;
+                }
+
+                if(
+                    this.header.wordWrap !== undefined &&
+                    lineCharacterCount > this.header.wordWrap
+                ) {
+                    const insertIndex = lastSpaceIndex !== -1 ? lastSpaceIndex + 1 : i;
+
+                    pageTokens.splice(insertIndex, 0, {
+                        type: "tag",
+                        name: "newline",
+                        args: [
+                            new TagArgument("specific", "instant")
+                        ],
+                        style: {
+                            "color": this.header.textColor,
+                            "bg": this.header.backgroundColor,
+                            "bold": false,
+                            "italic": false,
+                            "underline": false,
+                            "strikethrough": false
+                        }
+                    });
+
+                    lineCharacterCount = 0;
+                    lastSpaceIndex = -1;
+
+                    for(let k = insertIndex + 1; k <= i + 1; k++) {
+                        const t = pageTokens[k];
+
+                        if(t.type === "character") {
+                            lineCharacterCount++;
+
+                            if(/\s/.test(t.value)) {
+                                lastSpaceIndex = k;
+                            }
+                        }
+                    }
+
+                    i++;
                 }
             }
         }

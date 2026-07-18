@@ -26,6 +26,7 @@ Specific : override
          | default
          | keep
          | end
+         | instant
 ```
 
 Header:
@@ -36,7 +37,8 @@ typewriter: {
     textColor: Color
     backgroundColor: Color
     instant: Boolean | false
-    completionBar: Boolean | false  
+    completionBar: Boolean | false
+    wordWrap: Number | Infinity
     customDelays: {
         String: Number
     }
@@ -46,15 +48,17 @@ typewriter: {
 Tags:
 ```
 [newline] - creates a new line
-[linebreak] - two new lines
+[newline instant] - creates a new line instantly
+
+[linebreak] - two new lines for the timing of 1
+[linebreak instant] - two new lines instantly
 
 [sleep Number] - pauses typewriter for Number milliseconds
 
 [speed Number] - sets charDelay milliseconds
 [speed Number override] - sets charDelay, ignores customDelays milliseconds
 
-[speed default] - resets speed to default charDelay milliseconds
-[speed default Number] - changes default charDelay to Number milliseconds
+[speeddefault] - resets charDelay to default charDelay milliseconds. Also disables override
 
 [custom String Number] - sets customDelays[String] to Number milliseconds
 [customremove String] - removes customDelays[String]
@@ -68,11 +72,8 @@ Tags:
 [page String] - creates a page with the given name
 [page end] - ends the page
 
-[gopage String] - creates a button that, when clicked, switches to the page with the given name
-[gopage String keep] - does not reset the screen when switching pages
-
-[pause] - pauses typewriter
-[play] - resumes typewriter
+[gopage String String] - create a button that goes to the page with the first String, and displays the second String as the button text
+[gopage String String keep] - create a button that goes to the page with the first String, and displays the second String as the button text. Does not reset displayed text
 
 [glitch Number] - funny glitch text thats Number characters long
 [tab Number] - is Number spaces

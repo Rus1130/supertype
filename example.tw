@@ -3,28 +3,25 @@ typewriter: {
     newlineDelay: 500
     textColor: #ffffff
     backgroundColor: #000000
+    wordWrap: 80
     customDelays: {
         ",": 350
         ".": 600
-        ":": 1000
+        ":": 600
         "?": 600
-        "o": 1000
     }
 }
-[glitch 1][newline]
+{{#[glitch 1][newline]
 [speed 1]wow /[color 0,255,0]:hi [sleep 1000]test wow[color reset]/ hi *test* test
 wowhi
-[bg #ff0000]wow wow wow wow wwow wow wow[bg reset]
+[bg #ff0000]wow wow wow wow wwow wow wow[bg reset]#}}
 
-[gopage "1"]
-
-[page "1"]
 [sleep 1000]
-[tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speed default][newline]
-[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 18:40:25 SST[][newline]
-[tab 8]To: [speed 80 override]kdevine@falstaff.ob.orri[speed default][newline]
-[tab 3]Subject: [speed 80 override]Strange Data[speed default][newline]
-Attachment: [speed 80 override]data.fits[speed default][newline]
+[tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
+[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 18:40:25 SST[newline]
+[tab 8]To: [speed 80 override]kdevine@falstaff.ob.orri[speeddefault][newline]
+[tab 3]Subject: [speed 80 override]Strange Data[speeddefault][newline]
+Attachment: [speed 80 override]data.fits[speeddefault][newline]
 [newline]
 Hey Kent,[linebreak]
 [speed 40]
@@ -33,32 +30,31 @@ I recently collected this data, but I ran into an issue trying to read it. It sa
 \-Tom, Lassel Outpost
 [linebreak]
 [sleep 500]
-[gopage "2"]
-[page end]
+[gopage "2" "Next >"]
 
 [page "2"]
 [sleep 1000]
-[tab 6]From: [speed 80 override]kdevine@falstaff.ob.orri[speed default][newline]
-[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 19:26:51 SST[speed default][newline]
-[tab 8]To: [speed 80 override]tgardinier@lassel.um.orri[speed default][newline]
-[tab 3]Subject: [speed 80 override]Re:[sleep 520] Strange Data[speed default][newline]
+[tab 6]From: [speed 80 override]kdevine@falstaff.ob.orri[speeddefault][newline]
+[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 19:26:51 SST[speeddefault][newline]
+[tab 8]To: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
+[tab 3]Subject: [speed 80 override]Re:[sleep 520] Strange Data[speeddefault][newline]
 [newline]
 [speed 40] 
 Thomas,[sleep 800][linebreak]
 I’m a bit backed up with work at the moment, but I’ll see what I can do. I’ll most likely get to it tomorrow or the day after.[newline]
 [newline]
-\-K[speed 40 override].[speed default][speed 40] Devine, Falstaff Station
+\-K[speed 40 override].[speeddefault][speed 40] Devine, Falstaff Station
 [linebreak]
 [sleep 800]
-[gopage "3"]
+[gopage "3" "Next >"]
 [page end]
 
 [page "3"]
 [sleep 1000]
-[tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speed default][newline]
-[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 19:28:05 SST[speed default][newline]
-[tab 8]To: [speed 80 override]kdevine@falstaff.ob.orri[speed default][newline]
-[tab 3]Subject: [speed 80 override]Re:[sleep 520] Re:[sleep 520] Strange Data[speed default][newline]
+[tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
+[tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 19:28:05 SST[speeddefault][newline]
+[tab 8]To: [speed 80 override]kdevine@falstaff.ob.orri[speeddefault][newline]
+[tab 3]Subject: [speed 80 override]Re:[sleep 520] Re:[sleep 520] Strange Data[speeddefault][newline]
 [newline]
 [speed 80]
 Thank you![sleep 900][newline]
@@ -66,26 +62,26 @@ Thank you![sleep 900][newline]
 \-Tom, Lassel Outpost
 [linebreak]
 [sleep 1000]
-[gopage "4"]
+[gopage "4" "Next >"]
 [page end]
 
 [page "4"]
-[tab 6]From: [speed 80 override]kdevine@falstaff.ob.orri[speed default][newline]
-[tab 6]Sent: [speed 80 override]August 15th,[sleep 500] 2313[sleep 500] 12:16:20 SST[speed default][newline]
-[tab 8]To: [speed 80 override]tgardinier@lassel.um.orri[speed default][newline]
-[tab 3]Subject: [speed 200 override]WHAT THE FUCK[speed default][newline]
-[speed 100 1]Attachment: data.txt[newline]
+[tab 6]From: [speed 80 override]kdevine@falstaff.ob.orri[speeddefault][newline]
+[tab 6]Sent: [speed 80 override]August 15th,[sleep 500] 2313[sleep 500] 12:16:20 SST[speeddefault][newline]
+[tab 8]To: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
+[tab 3]Subject: [speed 200 override]WHAT THE FUCK[speeddefault][newline]
+[speed 100 override]Attachment: data.txt[newline]
 [newline]
 [speed 200]
 (no body)
-[speed default]
+[speeddefault]
 [linebreak]
 [sleep 1400]
-[gopage "5"]
+[gopage "5" "Next >"]
 [page end]
 
 [page "5"]
-[speed 125 override]Attachment:[sleep 800] data.[sleep 400]txt[speed default][newline]
+[speed 125 override]Attachment:[sleep 800] data.[sleep 400]txt[speeddefault][newline]
 [newline]
 [speed 180]
 He[sleep 100]llo.[sleep 1000][newline]
