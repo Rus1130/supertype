@@ -37,14 +37,12 @@
     <script src="index.js" type="module"></script>
 </head>
 <body>
-    <!-- <div class="button">▌Next ></div> -->
 </body>
 <script type="module">
     import { SuperType } from "./index.js";
 
     const tw = new SuperType(document.body, {
         "end": function() {
-            // <div class="button" id="return" onclick="location.href = 'https://rus1130.github.io/space2313/'" style="display: none;">▌< Return</div>
             const returnButton = document.createElement("div");
             returnButton.classList.add("button");
             returnButton.id = "return";
@@ -57,7 +55,6 @@
     })
 
     await tw.load("example.tw").then(() => {
-        // tw.header.instant = true;
         tw.start();
     })
 

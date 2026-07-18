@@ -1,12 +1,14 @@
 # supertype
-comment:
+## Examples
+Look at `example.tw` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
+## Comment
 ```
 {{#
 hi
 #}}
 ```
 
-types:
+## Types
 ```
   Number : 1
          | 1000
@@ -29,7 +31,7 @@ Specific : override
          | instant
 ```
 
-Header:
+## Header
 ```
 typewriter: {
     charDelay: Number
@@ -45,7 +47,7 @@ typewriter: {
 }
 ```
 
-Tags:
+## Tags
 ```
 [newline] - creates a new line
 [newline instant] - creates a new line instantly
@@ -83,7 +85,7 @@ Tags:
 [function String] - calls the function with the given name. Functions are defined in JavaScript
 ```
 
-markdown guide:
+## Markdown Guide
 ```
 *bold*
 /italic/
