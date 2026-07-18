@@ -1,12 +1,6 @@
 # supertype
 ## Examples
 Look at `example.tw` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
-## Comment
-```
-{{#
-hi
-#}}
-```
 
 ## Types
 ```
@@ -83,6 +77,12 @@ typewriter: {
 [tab Number] - is Number spaces
 
 [function String] - calls the function with the given name. Functions are defined in JavaScript
+```
+## Comment
+```
+{{#
+hi
+#}}
 ```
 
 ## Markdown Guide
