@@ -45,6 +45,7 @@
     const tw = new SuperType(document.body)
 
     await tw.load("example.tw").then(() => {
+        // tw.header.instant = true;
         tw.start();
     })
 

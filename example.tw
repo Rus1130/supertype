@@ -6,11 +6,13 @@ typewriter: {
     customDelays: {
         ",": 350
         ".": 600
-        ":": 600
+        ":": 1000
         "?": 600
+        "o": 1000
     }
 }
-wow /[color 0,255,0]hi [sleep 5000]test wow[color reset]/ hi *test* test[newline]
+[glitch 1][newline]
+[speed 1]wow /[color 0,255,0]:hi [sleep 1000]test wow[color reset]/ hi *test* test
 wowhi
 [bg #ff0000]wow wow wow wow wwow wow wow[bg reset]
 

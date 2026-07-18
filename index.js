@@ -4,24 +4,38 @@ class TagArgument {
         this.value = value;
     }
 
+    // type check, does not error
     is(type) {
         return this.type === type;
     }
 
+    // value check, does not error
     equals(value) {
         return this.value === value;
+    }
+
+    // specific value check, does not error
+    equalsSpecific(value) {
+        return this.type === "specific" && this.value === value;
+    }
+
+    // type check, throws error if not type
+    check(type){
+        if(this.type !== type) throw new Error(`Invalid argument type: Expected ${type}, got ${this.type}`);
+    }
+
+    // specific value check, throws error if not specific or not equal to value
+    checkSpecific(value){
+        if(this.type !== "specific") throw new Error(`Invalid argument type: Expected specific, got ${this.type}`);
+        if(this.value !== value) throw new Error(`Invalid argument value: Expected ${value}, got ${this.value}`);
     }
 
     toString() {
         return String(this.value);
     }
 
-    check(type){
-        if(this.type !== type) throw new Error(`Invalid argument type: Expected ${type}, got ${this.type}`);
-    }
-
     static parse(value) {
-        if (["reset", "override", "default", "keep", "end"].includes(value)) {
+        if (SuperType.specificTypes.includes(value)) {
             return new TagArgument("specific", value);
         }
 
@@ -68,6 +82,23 @@ class TagArgument {
 }
 
 export class SuperType {
+
+    static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
+
+    static randomCharacter() {
+        return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
+    }
+
+    static specificTypes = ["reset", "override", "default", "keep", "end"];
+
+    glitchLoop = () => {
+        for (const span of this.state.glitches) {
+            span.textContent = SuperType.randomCharacter();
+        }
+
+        requestAnimationFrame(this.glitchLoop);
+    }
+
     /**
      * 
      * @param {HTMLElement} target 
@@ -85,7 +116,12 @@ export class SuperType {
             pausedAt: 0,
             nextTime: performance.now(),
             paused: false,
-            page: "root"
+            page: "root",
+            glitches: [],
+            tagSpeedOverride: false,
+            userSpeedOverride: null,
+            defaultCharDelay: null,
+            defaultNewlineDelay: null
         }
     }
 
@@ -109,8 +145,14 @@ export class SuperType {
         this.state.token = 0;
         this.state.paused = false;
         this.state.nextTime = performance.now();
+        this.state.tagSpeedOverride = false;
+        // if page is reset, then clear glitches
+        // this.state.glitches = [];
+        this.state.defaultCharDelay = new Number(this.header.charDelay);
+        this.state.defaultNewlineDelay = new Number(this.header.newlineDelay);
 
         requestAnimationFrame(this.render);
+        requestAnimationFrame(this.glitchLoop);
     }
     
     render = (now) => {
@@ -130,6 +172,11 @@ export class SuperType {
         requestAnimationFrame(this.render);
     }
 
+    addRenderTime(ms){
+        if(this.header.instant) return;
+        this.state.nextTime += ms;
+    }
+
     process(token) {
         if(token.type === "character") {
             this.renderToken(token);
@@ -137,47 +184,90 @@ export class SuperType {
         }
 
         switch (token.name) {
+            case "speed": {
+                if(token.args[0].is("number")){
+                    console.log("meow")
+                } else {
+                    token.args[0].checkSpecific("default");
+                }
+            } break;
+
             case "newline": {
-                this.state.nextTime += this.header.newlineDelay;
+                this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br>");
             } break;
 
             case "linebreak": {
-                this.state.nextTime += this.header.newlineDelay;
+                this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br><br>");
             } break;
 
             case "sleep": {
                 token.args[0].check("number");
-                this.state.nextTime += token.args[0].value;
+                this.addRenderTime(token.args[0].value);
+            } break;
+
+            case "glitch": {
+                token.args[0].check("number");
+                const glitchCount = token.args[0].value;
+
+                for (let i = 0; i < glitchCount; i++) {
+                    let span = document.createElement("span");
+                    span.textContent = SuperType.randomCharacter();
+                    this.styleElement(span, token.style);
+                    this.target.appendChild(span);
+                    this.state.glitches.push(span);
+                }
+
+                this.addRenderTime(this.state.defaultNewlineDelay);
             } break;
                 
             default: {
-                console.log(`Unknown tag type: ${token.name}`);
+                console.error(`Unknown tag type: ${token.name}`);
             }
         }
     }
 
     renderToken(token) {
-        this.state.nextTime += this.header.customDelays[token.value] ?? this.header.charDelay;
+        if(this.state.userSpeedOverride !== null) {
+            this.addRenderTime(this.state.userSpeedOverride);
+            this.renderCharacter(token.value, token.style);
+            return;
+        }
+
+        let delay = this.header.customDelays[token.value] ?? this.header.charDelay;
+
+        if(this.state.tagSpeedOverride === true) {
+            delay = this.state.defaultCharDelay;
+        }
+
+        this.addRenderTime(delay);
         this.renderCharacter(token.value, token.style);
+    }
+
+    styleElement(element, style) {
+        element.style.color = style.color;
+        element.style.backgroundColor = style.bg;
+        element.style.fontWeight = style.bold ? "bold" : "normal";
+        element.style.fontStyle = style.italic ? "italic" : "normal";
+        element.style.textDecoration = style.underline ? "underline" : "none";
+        element.style.textDecoration += style.strikethrough ? " line-through" : "";
     }
 
     renderCharacter(text, style){
         let span = document.createElement("span");
         span.textContent = text;
-        span.style.color = style.color;
-        span.style.backgroundColor = style.bg;
-        span.style.fontWeight = style.bold ? "bold" : "normal";
-        span.style.fontStyle = style.italic ? "italic" : "normal";
-        span.style.textDecoration = style.underline ? "underline" : "none";
-        span.style.textDecoration += style.strikethrough ? " line-through" : "";
+
+        this.styleElement(span, style);
 
         this.target.appendChild(span);
     }
 
-    renderRaw(html){
-        this.target.innerHTML += html;
+    renderRaw(html) {
+        const template = document.createElement("template");
+        template.innerHTML = html;
+
+        this.target.appendChild(template.content);
     }
 
     async load(path) {
@@ -255,7 +345,7 @@ export class SuperType {
                     else throw new Error(`Invalid page name at token index ${i}: Expected String or end, got ${token.args[0].type}`);
                 } 
             } else {
-                if(token.type == "character") token.style = {
+                token.style = {
                     "color": this.header.textColor,
                     "bg": this.header.backgroundColor,
                     "bold": false,
@@ -443,7 +533,7 @@ class Color {
 }
 
 function parseValue(value){
-    if(["reset", "override", "default", "keep", "end"].includes(value)) return {type: "specific", value}
+    if(SuperType.specificTypes.includes(value)) return {type: "specific", value}
 
     if (/^-?\d+(\.\d+)?$/.test(value)) {
         return {type: "number", value: Number(value)};
