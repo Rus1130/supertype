@@ -26,6 +26,7 @@ Specific : override
 ```
 
 ## Header
+`|` is used to show value defaults. For example, `Number | 1000` means that if you do not include a value for that specific `Number`, it will default to `1000`.
 ```
 typewriter: {
     charDelay: Number
@@ -52,7 +53,7 @@ typewriter: {
 [sleep Number] - pauses typewriter for Number milliseconds
 
 [speed Number] - sets charDelay milliseconds
-[speed Number override] - sets charDelay, ignores customDelays milliseconds
+[speed Number override] - sets charDelay, ignores customDelays
 
 [speeddefault] - resets charDelay to default charDelay milliseconds. Also disables override
 
