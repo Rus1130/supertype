@@ -1,6 +1,6 @@
 # supertype
 ## Examples
-Look at `example.tw` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
+Look at `example.st` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
 
 ## Types
 ```
