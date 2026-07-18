@@ -1,25 +1,31 @@
 # supertype
+comment:
+```
+{{#
+hi
+#}}
+```
+
 types:
 ```
-     Number : 1
-            | 1000
-            | 1,000
+  Number : 1
+         | 1000
 
-     String : "hello"
-            | "multiple words"
+  String : "hello"
+         | "multiple words"
 
-    Boolean : true
-            | false
+ Boolean : true
+         | false
 
-      Color : #ff0000
-            | 255 0 0
+   Color : #ff0000
+         | 255,0,0
 
 
-TagSpecific : override
-            | reset
-            | default
-            | keep
-            | end
+Specific : override
+         | reset
+         | default
+         | keep
+         | end
 ```
 
 Header:
@@ -29,6 +35,7 @@ typewriter: {
     newlineDelay: Number
     textColor: Color
     backgroundColor: Color
+    instant: Boolean | false
     completionBar: Boolean | false  
     customDelays: {
         String: Number
@@ -43,13 +50,13 @@ Tags:
 
 [sleep Number] - pauses typewriter for Number milliseconds
 
-[speed Number] - sets charDelay
-[speed Number override] - sets charDelay, ignores customDelays
+[speed Number] - sets charDelay milliseconds
+[speed Number override] - sets charDelay, ignores customDelays milliseconds
 
-[speed default] - resets speed to default charDelay
-[speed default Number] - changes default charDelay to Number
+[speed default] - resets speed to default charDelay milliseconds
+[speed default Number] - changes default charDelay to Number milliseconds
 
-[custom String Number] - sets customDelays[String] to Number
+[custom String Number] - sets customDelays[String] to Number milliseconds
 [customremove String] - removes customDelays[String]
 
 [color Color] - sets textColor

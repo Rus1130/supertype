@@ -1,15 +1,183 @@
+class TagArgument {
+    constructor(type, value) {
+        this.type = type;
+        this.value = value;
+    }
+
+    is(type) {
+        return this.type === type;
+    }
+
+    equals(value) {
+        return this.value === value;
+    }
+
+    toString() {
+        return String(this.value);
+    }
+
+    check(type){
+        if(this.type !== type) throw new Error(`Invalid argument type: Expected ${type}, got ${this.type}`);
+    }
+
+    static parse(value) {
+        if (["reset", "override", "default", "keep", "end"].includes(value)) {
+            return new TagArgument("specific", value);
+        }
+
+        if (/^-?\d+(\.\d+)?$/.test(value)) {
+            return new TagArgument("number", Number(value));
+        }
+
+        if (value === "true") {
+            return new TagArgument("boolean", true);
+        }
+
+        if (value === "false") {
+            return new TagArgument("boolean", false);
+        }
+
+        if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+            return new TagArgument("color", new Color(value).toString());
+        }
+
+        if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(value)) {
+            const [r, g, b] = value.split(",").map(Number);
+
+            if (
+                r >= 0 && r <= 255 &&
+                g >= 0 && g <= 255 &&
+                b >= 0 && b <= 255
+            ) {
+                return new TagArgument("color", new Color(r, g, b).toString());
+            }
+
+            throw new Error(`Invalid RGB color: ${value}`);
+        }
+
+        if (value.startsWith('"') && value.endsWith('"')) {
+            return new TagArgument("string", value.slice(1, -1));
+        }
+
+        if (typeof value === "string") {
+            return new TagArgument("string", value);
+        }
+
+        throw new Error(`Invalid value: ${value}`);
+    }
+}
+
 export class SuperType {
     /**
      * 
-     * @param {*} target 
+     * @param {HTMLElement} target 
      */
-    constructor(target) {
+    constructor(target, functions = {}) {
         this.data = null;
         this.header = null;
         this.body = null;
         this.pages = {
             root: []
         };
+        this.target = target;
+        this.state = {
+            token: 0,
+            pausedAt: 0,
+            nextTime: performance.now(),
+            paused: false,
+            page: "root"
+        }
+    }
+
+    paused(){
+        return this.state.paused;
+    }
+
+    pause() {
+        this.state.pausedAt = performance.now();
+        this.state.paused = true;
+    }
+
+    resume() {
+        const delta = performance.now() - this.state.pausedAt;
+        this.state.nextTime += delta;   // shift the schedule forward
+        this.state.paused = false;
+    }
+
+    start(page = "root") {
+        this.state.page = page;
+        this.state.token = 0;
+        this.state.paused = false;
+        this.state.nextTime = performance.now();
+
+        requestAnimationFrame(this.render);
+    }
+    
+    render = (now) => {
+        if (this.state.paused) {
+            requestAnimationFrame(this.render);
+            return;
+        }
+
+        while (now >= this.state.nextTime) {
+            const token = this.pages[this.state.page][this.state.token++];
+
+            if (!token) return;
+
+            this.process(token);
+        }
+
+        requestAnimationFrame(this.render);
+    }
+
+    process(token) {
+        if(token.type === "character") {
+            this.renderToken(token);
+            return;
+        }
+
+        switch (token.name) {
+            case "newline": {
+                this.state.nextTime += this.header.newlineDelay;
+                this.renderRaw("<br>");
+            } break;
+
+            case "linebreak": {
+                this.state.nextTime += this.header.newlineDelay;
+                this.renderRaw("<br><br>");
+            } break;
+
+            case "sleep": {
+                token.args[0].check("number");
+                this.state.nextTime += token.args[0].value;
+            } break;
+                
+            default: {
+                console.log(`Unknown tag type: ${token.name}`);
+            }
+        }
+    }
+
+    renderToken(token) {
+        this.state.nextTime += this.header.customDelays[token.value] ?? this.header.charDelay;
+        this.renderCharacter(token.value, token.style);
+    }
+
+    renderCharacter(text, style){
+        let span = document.createElement("span");
+        span.textContent = text;
+        span.style.color = style.color;
+        span.style.backgroundColor = style.bg;
+        span.style.fontWeight = style.bold ? "bold" : "normal";
+        span.style.fontStyle = style.italic ? "italic" : "normal";
+        span.style.textDecoration = style.underline ? "underline" : "none";
+        span.style.textDecoration += style.strikethrough ? " line-through" : "";
+
+        this.target.appendChild(span);
+    }
+
+    renderRaw(html){
+        this.target.innerHTML += html;
     }
 
     async load(path) {
@@ -46,6 +214,15 @@ export class SuperType {
         this.header = header.parsed.typewriter;
         this.body = this.data.slice(i).replaceAll(/\r?\n/g, '');
 
+        if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
+        if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
+        if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
+        if(this.header.backgroundColor === undefined) throw new Error("Missing backgroundColor in header");
+
+        if(this.header.customDelays === undefined) this.header.customDelays = {};
+        if(this.header.instant === undefined) this.header.instant = false;
+        if(this.header.completionBar === undefined) this.header.completionBar = false;
+
         this.tokens = this.tokenize(this.body)
 
         let currentPage = "root";
@@ -78,7 +255,51 @@ export class SuperType {
                     else throw new Error(`Invalid page name at token index ${i}: Expected String or end, got ${token.args[0].type}`);
                 } 
             } else {
+                if(token.type == "character") token.style = {
+                    "color": this.header.textColor,
+                    "bg": this.header.backgroundColor,
+                    "bold": false,
+                    "italic": false,
+                    "underline": false,
+                    "strikethrough": false
+                }
+
                 this.pages[currentPage].push(token);
+            }
+        }
+
+
+        for(let page in this.pages) {
+            let pageTokens = this.pages[page];
+            let styleStack = {
+                "bold": false,
+                "italic": false,
+                "underline": false,
+                "strikethrough": false
+            };
+
+            for(let i = 0; i < pageTokens.length; i++) {
+                const token = pageTokens[i];
+
+                if(token.type === "style") {
+                    if(token.value === "bold") styleStack.bold = !styleStack.bold;
+                    if(token.value === "italic") styleStack.italic = !styleStack.italic;
+                    if(token.value === "underline") styleStack.underline = !styleStack.underline;
+                    if(token.value === "strikethrough") styleStack.strikethrough = !styleStack.strikethrough;
+
+                    // remove this token from the pageTokens array
+                    pageTokens.splice(i, 1);
+                    i--;
+                }
+
+                if(token.type === "character") {
+                    token.style = {
+                        "bold": styleStack.bold,
+                        "italic": styleStack.italic,
+                        "underline": styleStack.underline,
+                        "strikethrough": styleStack.strikethrough
+                    }
+                }
             }
         }
 
@@ -118,11 +339,7 @@ export class SuperType {
                     const name = parts.shift();
 
 
-                    const args = parts.map(arg => {
-                        let value = parseValue(arg);
-                        // if(typeof value === "string") value = {type: "string", value}
-                        return value;
-                    });
+                    const args = parts.map(arg => TagArgument.parse(arg));
 
 
                     queue.push({

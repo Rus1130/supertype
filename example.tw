@@ -3,7 +3,6 @@ typewriter: {
     newlineDelay: 500
     textColor: #ffffff
     backgroundColor: #000000
-    completionBar: false
     customDelays: {
         ",": 350
         ".": 600
@@ -11,8 +10,11 @@ typewriter: {
         "?": 600
     }
 }
-wow hi test wow hi test test[newline]
+wow /[color 0,255,0]hi [sleep 5000]test wow[color reset]/ hi *test* test[newline]
 wowhi
+[bg #ff0000]wow wow wow wow wwow wow wow[bg reset]
+
+[gopage "1"]
 
 [page "1"]
 [sleep 1000]

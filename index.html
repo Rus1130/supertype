@@ -44,8 +44,14 @@
 
     const tw = new SuperType(document.body)
 
-    await tw.load("example.tw");
+    await tw.load("example.tw").then(() => {
+        tw.start();
+    })
 
-    console.log(tw)
+    document.body.addEventListener("keydown", (e) => {
+        if(e.key === " ") {
+            tw.paused() ? tw.resume() : tw.pause();
+        }
+    })
 
 </script>
