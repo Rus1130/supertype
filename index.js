@@ -746,6 +746,11 @@ export class SuperType {
             throw new Error(`Failed to fetch ${path}: ${response.status}`);
         }
 
+        // if its not a .st file, throw error
+        if (!path.endsWith(".st")) {
+            throw new Error(`Invalid file type: ${path}. Expected .st file`);
+        }
+
         return await response.text();
     }
 }
