@@ -240,6 +240,16 @@ export class SuperType {
         this.state.nextTime += ms;
     }
 
+    createGlitch(style) {
+        this.resetSpanTextStyle();
+
+        this.renderCharacter(SuperType.randomCharacter(), style);
+
+        this.state.glitches.push(this.state.currentText);
+
+        this.resetSpanTextStyle();
+    }
+
     process(token) {
         if (this.state.scrollCount > 0) {
             this.state.scrollCount--;
@@ -472,22 +482,30 @@ export class SuperType {
 
             case "glitch": {
                 let value = token.args[0];
-                let separate = token.args[1];
+                let keep = token.args[1];
 
-                if(value === undefined) throw new Error("Missing glitch value");
+                if (value === undefined) {
+                    throw new Error("Missing glitch value");
+                }
 
-                if(separate !== undefined) separate.checkSpecific("separate");
+                value.check("number");
 
-                separate = (separate === undefined) ? false : true;
+                if (keep !== undefined) {
+                    keep.checkSpecific("keep");
+                }
 
-                if (separate) {
+                // expand temporary glitches into keep glitches
+                if (keep === undefined) {
                     const tokens = [];
 
                     for (let i = 0; i < value.value; i++) {
                         tokens.push({
                             type: "tag",
                             name: "glitch",
-                            args: [new TagArgument("number", 1)],
+                            args: [
+                                new TagArgument("number", 1),
+                                new TagArgument("specific", "keep")
+                            ],
                             style: token.style
                         });
                     }
@@ -498,31 +516,20 @@ export class SuperType {
                         ...tokens
                     );
 
-                    return;
+                    break;
                 }
 
-                value.check("number");
-                const glitchCount = value;
-
-                for (let i = 0; i < glitchCount; i++) {
-                    const span = document.createElement("span");
-
-                    const text = document.createTextNode(
-                        SuperType.randomCharacter()
-                    );
-
-                    span.appendChild(text);
-
-                    this.styleElement(span, token.style);
-
-                    this.target.appendChild(span);
-
-                    this.state.glitches.push(text);
+                // actual glitch creation
+                for (let i = 0; i < value.value; i++) {
+                    this.createGlitch(token.style);
                 }
 
                 this.addRenderTime(this.state.defaultNewlineDelay);
+
             } break;
-                
+                        
+
+
             default: {
                 console.error(`Unknown tag type: ${token.name}`);
             }

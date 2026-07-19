@@ -11,8 +11,7 @@ typewriter: {
     }
     wordWrap: 100
 }
-
-THIS REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
+THIS[glitch 10 keep] REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
 This report was written by the Interplanetary Transit Authority[sleep 350] (“ITA”) [sleep 351]to document the events surrounding what has been dubbed [sleep 400]the “Psyche Incident”[sleep 400].[sleep 1000][linebreak]
 
