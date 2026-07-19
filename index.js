@@ -133,6 +133,8 @@ export class SuperType {
             paused: false,
             page: "root",
             glitches: [],
+            needsScroll: false,
+
             tagSpeedOverride: false,
             userSpeedOverride: null,
 
@@ -140,6 +142,7 @@ export class SuperType {
             defaultNewlineDelay: null,
             currentColor: null,
             currentBg: null,
+            fragment: null
         }
     }
 
@@ -166,6 +169,7 @@ export class SuperType {
         this.state.paused = false;
         this.state.nextTime = performance.now();
         this.state.tagSpeedOverride = false;
+        this.state.needsScroll = false;
         // if page is reset, then clear glitches
         // this.state.glitches = [];
         this.state.defaultCharDelay = new Number(this.header.charDelay);
@@ -174,22 +178,40 @@ export class SuperType {
         this.state.currentColor = new String(this.header.textColor);
         this.state.currentBg = new String(this.header.backgroundColor);
 
+        this.fragment = null;
+
         requestAnimationFrame(this.render);
         requestAnimationFrame(this.glitchLoop);
     }
-    
+
+    appendToTarget(element) {
+        this.state.fragment.appendChild(element);
+    }
+
     render = (now) => {
         if (this.state.paused) {
             requestAnimationFrame(this.render);
             return;
         }
 
+        const fragment = document.createDocumentFragment();
+        this.state.fragment = fragment;
+
         while (now >= this.state.nextTime) {
             const token = this.pages[this.state.page][this.state.token++];
 
-            if (!token) return;
+            if (!token) break;
 
             this.process(token);
+        }
+
+        if (fragment.childNodes.length) {
+            this.target.appendChild(fragment);
+        }
+
+        if (this.state.needsScroll) {
+            window.scrollTo(0, this.target.scrollHeight);
+            this.state.needsScroll = false;
         }
 
         requestAnimationFrame(this.render);
@@ -267,6 +289,7 @@ export class SuperType {
 
                 if(!func) throw new Error(`Function not found: ${funcName.value}`);
 
+                this.state.needsScroll = true;
                 func(this);
             } break;
 
@@ -322,7 +345,7 @@ export class SuperType {
                     this.start(pageName.value);
                 });
 
-                this.target.appendChild(button);
+                this.appendToTarget(button);
             } break;
 
             case "color": {
@@ -377,6 +400,7 @@ export class SuperType {
 
                 if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br>");
+                this.state.needsScroll = true;
             } break;
 
             case "linebreak": {
@@ -386,6 +410,7 @@ export class SuperType {
 
                 if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
                 this.renderRaw("<br><br>");
+                this.state.needsScroll = true;
             } break;
 
             case "sleep": {
@@ -468,20 +493,20 @@ export class SuperType {
         element.style.textDecoration += style.strikethrough ? " line-through" : "";
     }
 
-    renderCharacter(text, style){
-        let span = document.createElement("span");
+    renderCharacter(text, style) {
+        const span = document.createElement("span");
         span.textContent = text;
 
         this.styleElement(span, style);
 
-        this.target.appendChild(span);
+        this.state.fragment.appendChild(span);
     }
 
     renderRaw(html) {
         const template = document.createElement("template");
         template.innerHTML = html;
 
-        this.target.appendChild(template.content);
+        this.state.fragment.appendChild(template.content);
     }
 
     async load(path) {
