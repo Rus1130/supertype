@@ -3,6 +3,8 @@
         outline:none;
     }
     body {
+        overflow-y: hidden;
+        scrollbar-width: none;
         background-color: black;
         color: white;
         margin-right: 0;
@@ -20,21 +22,11 @@
         background-color: white;
         color: black;
     }
-    .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
     .hide-scrollbar {
-        overflow-y: scroll;
-        -ms-overflow-style: none;
-    }
-    .supertype {
-        overflow-y: auto;
-
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
-
-    .supertype::-webkit-scrollbar {
+    .hide-scrollbar::-webkit-scrollbar {
         display: none;
     }
 </style>

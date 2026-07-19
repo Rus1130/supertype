@@ -197,12 +197,16 @@ export class SuperType {
         const fragment = document.createDocumentFragment();
         this.state.fragment = fragment;
 
-        while (now >= this.state.nextTime) {
+
+        let processed = 0;
+
+        while (now >= this.state.nextTime && (processed < 200 || this.header.instant)) {
             const token = this.pages[this.state.page][this.state.token++];
 
             if (!token) break;
 
             this.process(token);
+            processed++;
         }
 
         if (fragment.childNodes.length) {
