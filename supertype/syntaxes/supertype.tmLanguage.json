@@ -1,15 +1,107 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "SuperType",
-	"patterns": [
-		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#strings"
-		}
-	],
+    "patterns": [
+        { "include": "#comments" },
+        { "include": "#strings" },
+        { "include": "#markup" },
+        { "include": "#keywords" },
+        { "include": "#escapes" }
+    ],
 	"repository": {
+        "markup": {
+            "patterns": [
+                {
+                    "name": "style.bold.st",
+                    "begin": "(?<!\\\\)\\*",
+                    "beginCaptures": {
+                        "0": {
+                            "name": "comment.block.supertype"
+                        }
+                    },
+                    "end": "(?<!\\\\)\\*",
+                    "endCaptures": {
+                        "0": {
+                            "name": "comment.block.supertype"
+                        }
+                    },
+                    "patterns": [
+                        { "include": "#escapes" }
+                    ]
+                },
+                {
+                    "name": "style.italic.st",
+                    "begin": "(?<!\\\\)/",
+                    "beginCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.italic.begin.supertype"
+                        }
+                    },
+                    "end": "(?<!\\\\)/",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.italic.end.supertype"
+                        }
+                    },
+                    "patterns": [
+                        { "include": "#escapes" }
+                    ]
+                },
+                {
+                    "name": "style.underline.st",
+                    "begin": "(?<!\\\\)_",
+                    "beginCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.underline.begin.supertype"
+                        }
+                    },
+                    "end": "(?<!\\\\)_",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.underline.end.supertype"
+                        }
+                    },
+                    "patterns": [
+                        { "include": "#escapes" }
+                    ]
+                },
+                {
+                    "name": "style.strike.st",
+                    "begin": "(?<!\\\\)-",
+                    "beginCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.strikethrough.begin.supertype"
+                        }
+                    },
+                    "end": "(?<!\\\\)-",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.strikethrough.end.supertype"
+                        }
+                    },
+                    "patterns": [
+                        { "include": "#escapes" }
+                    ]
+                }
+            ]
+        },
+        "escapes": {
+            "patterns": [
+                {
+                    "name": "comment.block.supertype",
+                    "match": "\\\\."
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.block.supertype",
+                    "begin": "(?<!\\\\){{#",
+                    "end": "(?<!\\\\)#}}"
+                }
+            ]
+        },
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.supertype",

@@ -1,25 +1,55 @@
 {
-  "name": "supertype",
-  "displayName": "supertype-syntax-highlighting",
-  "description": "",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.125.0"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "contributes": {
-    "languages": [{
-      "id": "supertype",
-      "aliases": ["SuperType", "supertype"],
-      "extensions": [".st"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "supertype",
-      "scopeName": "source.st",
-      "path": "./syntaxes/supertype.tmLanguage.json"
-    }]
-  }
+    "name": "supertype",
+    "displayName": "supertype-syntax-highlighting",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.125.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "supertype",
+            "aliases": ["SuperType", "supertype"],
+            "extensions": [".st"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "supertype",
+            "scopeName": "source.st",
+            "path": "./syntaxes/supertype.tmLanguage.json"
+        }],
+        "configurationDefaults": {
+            "editor.tokenColorCustomizations": {
+                "textMateRules": [
+                    {
+                        "scope": "style.bold.st",
+                        "settings": {
+                            "fontStyle": "bold"
+                        }
+                    },
+                    {
+                        "scope": "style.italic.st",
+                        "settings": {
+                            "fontStyle": "italic"
+                        }
+                    },
+                    {
+                        "scope": "style.underline.st",
+                        "settings": {
+                            "fontStyle": "underline"
+                        }
+                    },
+                    {
+                        "scope": "style.strike.st",
+                        "settings": {
+                            "fontStyle": "strikethrough"
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }

@@ -11,6 +11,9 @@ typewriter: {
         "?": 600
     }
 }
+
+
+
 [sleep 1000]
 [tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]
 [tab 6]Sent: [speed 80 override]August 14th,[sleep 500] 2313[sleep 500] 18:40:25 SST[newline]
