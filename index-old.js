@@ -94,8 +94,8 @@ export class SuperType {
     static defaultScrollCount = 6;
 
     glitchLoop = () => {
-        for (const text of this.state.glitches) {
-            text.data = SuperType.randomCharacter();
+        for (const span of this.state.glitches) {
+            span.textContent = SuperType.randomCharacter();
         }
 
         requestAnimationFrame(this.glitchLoop);
@@ -144,11 +144,7 @@ export class SuperType {
             defaultNewlineDelay: null,
             currentColor: null,
             currentBg: null,
-            fragment: null,
-
-            currentSpan: null,
-            currentText: null,
-            currentStyle: null,
+            fragment: null
         }
     }
 
@@ -184,9 +180,6 @@ export class SuperType {
         this.state.currentColor = new String(this.header.textColor);
         this.state.currentBg = new String(this.header.backgroundColor);
 
-        this.resetSpanTextStyle();
-
-
         this.fragment = null;
 
         requestAnimationFrame(this.render);
@@ -195,12 +188,6 @@ export class SuperType {
 
     appendToTarget(element) {
         this.state.fragment.appendChild(element);
-    }
-
-    resetSpanTextStyle(){
-        this.state.currentSpan = null;
-        this.state.currentText = null;
-        this.state.currentStyle = null;
     }
 
     render = (now) => {
@@ -264,39 +251,23 @@ export class SuperType {
             case "removelast": {
                 let count = token.args[0];
 
+                if(count === undefined) throw new Error("Missing removelast count");
                 count.check("number");
 
-                while (count.value > 0 && this.target.lastChild) {
+                // remove the last count rendered characters from the target
+                let removed = 0;
 
-                    const span = this.target.lastChild;
-
-                    if (span.nodeType !== Node.ELEMENT_NODE) {
-                        this.target.removeChild(span);
-                        continue;
-                    }
-
-                    const text = span.firstChild;
-
-                    if (!text) {
-                        this.target.removeChild(span);
-                        continue;
-                    }
-
-                    const remove = Math.min(count.value, text.length);
-
-                    text.deleteData(text.length - remove, remove);
-
-                    count.value -= remove;
-
-                    if (text.length === 0) {
-                        this.target.removeChild(span);
+                for (let i = this.target.childNodes.length - 1; i >= 0 && removed < count.value; i--) {
+                    const node = this.target.childNodes[i];
+                    
+                    if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+                        this.target.removeChild(node);
+                        removed++;
                     }
                 }
 
-                this.resetSpanTextStyle();
 
-                break;
-            }
+            } break;
 
             case "custom": {
                 let name = token.args[0];
@@ -381,9 +352,6 @@ export class SuperType {
                 button.addEventListener("click", () => {
                     if(keep === false) {
                         this.target.innerHTML = "";
-
-                        this.resetSpanTextStyle();
-
                         this.state.glitches = [];
                     }
                     this.start(pageName.value);
@@ -403,8 +371,6 @@ export class SuperType {
                 } else if(value.equalsSpecific("reset")) {
                     this.state.currentColor = this.header.textColor;
                 }
-
-                this.resetSpanTextStyle();
             } break;
 
             case "bg": {
@@ -418,8 +384,6 @@ export class SuperType {
                 } else if(value.equalsSpecific("reset")) {
                     this.state.currentBg = this.header.backgroundColor;
                 }
-
-                this.resetSpanTextStyle();
             } break;
 
             case "speed": {
@@ -505,19 +469,11 @@ export class SuperType {
                 const glitchCount = value;
 
                 for (let i = 0; i < glitchCount; i++) {
-                    const span = document.createElement("span");
-
-                    const text = document.createTextNode(
-                        SuperType.randomCharacter()
-                    );
-
-                    span.appendChild(text);
-
+                    let span = document.createElement("span");
+                    span.textContent = SuperType.randomCharacter();
                     this.styleElement(span, token.style);
-
                     this.target.appendChild(span);
-
-                    this.state.glitches.push(text);
+                    this.state.glitches.push(span);
                 }
 
                 this.addRenderTime(this.state.defaultNewlineDelay);
@@ -550,59 +506,18 @@ export class SuperType {
     }
 
     renderCharacter(text, style) {
-        const sameStyle =
-            this.state.currentStyle &&
-            this.state.currentStyle.bold === style.bold &&
-            this.state.currentStyle.italic === style.italic &&
-            this.state.currentStyle.underline === style.underline &&
-            this.state.currentStyle.strikethrough === style.strikethrough &&
-            this.state.currentColor === this.state.currentStyle.color &&
-            this.state.currentBg === this.state.currentStyle.bg;
+        const span = document.createElement("span");
+        span.textContent = text;
 
-        if (!sameStyle) {
-            const span = document.createElement("span");
+        this.styleElement(span, style);
 
-            this.styleElement(span, style);
-
-            const textNode = document.createTextNode("");
-
-            span.appendChild(textNode);
-
-            this.state.fragment.appendChild(span);
-
-            this.state.currentSpan = span;
-            this.state.currentText = textNode;
-
-            this.state.currentStyle = {
-                bold: style.bold,
-                italic: style.italic,
-                underline: style.underline,
-                strikethrough: style.strikethrough,
-                color: this.state.currentColor,
-                bg: this.state.currentBg
-            };
-        }
-
-        this.state.currentText.appendData(text);
+        this.state.fragment.appendChild(span);
     }
 
     renderRaw(html) {
-
-        this.resetSpanTextStyle();
-
-        if (html === "<br>") {
-            this.state.fragment.appendChild(document.createElement("br"));
-            return;
-        }
-
-        if (html === "<br><br>") {
-            this.state.fragment.appendChild(document.createElement("br"));
-            this.state.fragment.appendChild(document.createElement("br"));
-            return;
-        }
-
         const template = document.createElement("template");
         template.innerHTML = html;
+
         this.state.fragment.appendChild(template.content);
     }
 
