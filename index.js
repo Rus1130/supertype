@@ -195,6 +195,10 @@ export class SuperType {
 
     addRenderTime(ms){
         if(this.header.instant) return;
+        if (this.state.userSpeedOverride !== null) {
+            ms = this.state.userSpeedOverride;
+        }
+
         this.state.nextTime += ms;
     }
 
@@ -428,12 +432,6 @@ export class SuperType {
     }
 
     renderToken(token) {
-        if(this.state.userSpeedOverride !== null) {
-            this.addRenderTime(this.state.userSpeedOverride);
-            this.renderCharacter(token.value, token.style);
-            return;
-        }
-
         let delay = this.header.customDelays[token.value] ?? this.header.charDelay;
 
         if(this.state.tagSpeedOverride === true) {
