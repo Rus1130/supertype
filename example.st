@@ -12,7 +12,7 @@ typewriter: {
     }
 }
 
-
+h[speed 5]aaaaaaaaaaaaaaaaaaaa[speeddefault][removelast 19]ppy
 
 [sleep 1000]
 [tab 6]From: [speed 80 override]tgardinier@lassel.um.orri[speeddefault][newline]

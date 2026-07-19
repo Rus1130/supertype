@@ -208,6 +208,27 @@ export class SuperType {
 
             // case "start"
 
+            case "removelast": {
+                let count = token.args[0];
+
+                if(count === undefined) throw new Error("Missing removelast count");
+                count.check("number");
+
+                // remove the last count rendered characters from the target
+                let removed = 0;
+
+                for (let i = this.target.childNodes.length - 1; i >= 0 && removed < count.value; i--) {
+                    const node = this.target.childNodes[i];
+                    
+                    if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+                        this.target.removeChild(node);
+                        removed++;
+                    }
+                }
+
+
+            } break;
+
             case "custom": {
                 let name = token.args[0];
                 let delay = token.args[1];
