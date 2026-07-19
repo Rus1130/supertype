@@ -159,6 +159,8 @@ export class SuperType {
     }
 
     start(page = "root") {
+        if(this.header.previewMode === true) this.header.instant = true;
+
         this.state.page = page;
         this.state.token = 0;
         this.state.paused = false;
@@ -283,6 +285,21 @@ export class SuperType {
                 const pageName = token.args[0];
                 if(pageName === undefined) throw new Error("Missing page name");
                 pageName.check("string");
+
+                if(this.header.previewMode){
+                    let charCount = this.header.wordWrap;
+                    if(charCount === undefined){
+                        // get the amount of characters that would fit on a line in the screen using the target width and the font size
+                        const fontSize = parseFloat(getComputedStyle(this.target).fontSize);
+                        const targetWidth = this.target.clientWidth;
+                        charCount = Math.floor(targetWidth / fontSize);
+                    }
+
+                    this.renderRaw(`<br>${"=".repeat(charCount)}<br>`)
+                    this.start(pageName.value);
+                    return;
+                }
+
 
                 const text = token.args[1];
                 if(text === undefined) throw new Error("Missing button text");
