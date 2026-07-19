@@ -3,8 +3,6 @@
         outline:none;
     }
     body {
-        overflow-y: hidden;
-        scrollbar-width: none;
         background-color: black;
         color: white;
         margin-right: 0;
@@ -22,11 +20,21 @@
         background-color: white;
         color: black;
     }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
     .hide-scrollbar {
+        overflow-y: scroll;
+        -ms-overflow-style: none;
+    }
+    .supertype {
+        overflow-y: auto;
+
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
-    .hide-scrollbar::-webkit-scrollbar {
+
+    .supertype::-webkit-scrollbar {
         display: none;
     }
 </style>
@@ -56,7 +64,7 @@
         }
     })
 
-    await tw.load("example.st").then(() => {
+    await tw.load("example2.st").then(() => {
         tw.start();
     })
 
