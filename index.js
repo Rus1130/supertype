@@ -126,6 +126,7 @@ export class SuperType {
         div.classList.add("supertype");
         target.appendChild(div);
 
+        this.targetParent = target;
         this.target = div;
 
         this.state = {
@@ -149,6 +150,9 @@ export class SuperType {
             currentSpan: null,
             currentText: null,
             currentStyle: null,
+
+            scrollLocked: false,
+            pauseLocked: false
         }
     }
 
@@ -159,12 +163,16 @@ export class SuperType {
     pause() {
         this.state.pausedAt = performance.now();
         this.state.paused = true;
+        this.state.scrollLocked = false;
     }
 
     resume() {
+        if(this.state.pauseLocked === true) return;
         const delta = performance.now() - this.state.pausedAt;
         this.state.nextTime += delta;   // shift the schedule forward
         this.state.paused = false;
+        this.state.scrollLocked = true;
+        this.scrollWindow(this.targetParent.scrollHeight);
     }
 
     start(page = "root") {
@@ -183,6 +191,9 @@ export class SuperType {
 
         this.state.currentColor = new String(this.header.textColor);
         this.state.currentBg = new String(this.header.backgroundColor);
+
+        this.state.scrollLocked = false;
+        this.state.pauseLocked = false;
 
         this.resetSpanTextStyle();
 
@@ -218,7 +229,12 @@ export class SuperType {
         while (now >= this.state.nextTime && (processed < 200 || this.header.instant)) {
             const token = this.pages[this.state.page][this.state.token++];
 
-            if (!token) break;
+            if (!token) {
+                this.state.scrollLocked = false;
+                this.state.pauseLocked = true;
+                this.pause();
+                break;
+            }
 
             this.process(token);
             processed++;
@@ -250,15 +266,26 @@ export class SuperType {
         this.resetSpanTextStyle();
     }
 
+    scrollWindow(to){
+        window.scrollTo({
+            top: to,
+            behavior: "instant"
+        });
+    }
+
+    scrollTargetParent(to){
+        this.targetParent.scrollTo({
+            top: to,
+            behavior: "instant"
+        });
+    }
+
     process(token) {
         if (this.state.scrollCount > 0) {
             this.state.scrollCount--;
 
             requestAnimationFrame(() => {
-                window.scrollTo({
-                    top: document.documentElement.scrollHeight,
-                    behavior: "instant"
-                });
+                this.scrollWindow(this.targetParent.scrollHeight);
             });
         }
 
@@ -527,8 +554,6 @@ export class SuperType {
                 this.addRenderTime(this.state.defaultNewlineDelay);
 
             } break;
-                        
-
 
             default: {
                 console.error(`Unknown tag type: ${token.name}`);
@@ -627,6 +652,18 @@ export class SuperType {
             else if (this.data[i] === "}") depth--;
             i++;
         }
+
+        this.targetParent.addEventListener("wheel", (e) => {
+            // allow the user to scroll
+            if(this.state.scrollLocked == true) return;
+
+            //this.scrollTargetParent(this.targetParent.scrollTop + (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY));
+
+            this.targetParent.scrollBy({
+                top: (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY),
+                behavior: "instant"
+            });
+        });
 
         // throw error if it doesnt have typewriter { ... }
         if (depth !== 0) {
