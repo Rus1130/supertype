@@ -90,6 +90,7 @@ export class SuperType {
     }
 
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate"];
+    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch"];
 
     static defaultScrollCount = 6;
 
@@ -295,8 +296,6 @@ export class SuperType {
         }
 
         switch (token.name) {
-
-            // case "start"
 
             case "removelast": {
                 let count = token.args[0];

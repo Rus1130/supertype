@@ -3,12 +3,107 @@
 	"name": "SuperType",
     "patterns": [
         { "include": "#comments" },
-        { "include": "#strings" },
         { "include": "#markup" },
-        { "include": "#keywords" },
-        { "include": "#escapes" }
+        { "include": "#header" },
+        { "include": "#escapes" },
+        { "include": "#tags" }
     ],
 	"repository": {
+        "colors": {
+            "patterns": [
+                {
+                    "name": "color.st",
+                    "match": "#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\\b"
+                },
+                {
+                    "name": "color.st",
+                    "match": "\\b(?:25[0-5]|2[0-4]\\d|1?\\d?\\d),(?:25[0-5]|2[0-4]\\d|1?\\d?\\d),(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\b"
+                }
+            ]
+        },
+        "tags": {
+            "patterns": [
+                {
+                    "name": "tag.st",
+                    "begin": "(?<!\\\\)\\[",
+                    "end": "(?<!\\\\)\\]",
+                    "patterns": [
+                        {
+                            "name": "entity.name.tag.st",
+                            "match": "^(removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch)\\b"
+                        },
+                        {
+                            "include": "#strings"
+                        },
+                        { "include": "#colors" },
+                        {
+                            "name": "constant.numeric.integer.st",
+                            "match": "\\b\\d+\\b"
+                        },
+                        {
+                            "name": "constant.language.boolean.st",
+                            "match": "\\b(true|false)\\b"
+                        },
+                        {
+                            "name": "specific.st",
+                            "match": "\\b(reset|override|default|keep|end|instant|separate)\\b"
+                        },
+                        {
+                            "include": "#escapes"
+                        }
+                    ]
+                }
+            ]
+        },
+        "header": {
+            "patterns": [
+                {
+                    "name": "meta.header.st",
+                    "begin": "\\btypewriter\\s*:\\s*\\{",
+                    "beginCaptures": {
+                        "0": { "name": "keyword.control.header.st" }
+                    },
+                    "end": "\\}",
+                    "endCaptures": {
+                        "0": { "name": "keyword.control.header.st" }
+                    },
+                    "patterns": [
+                        { "include": "#headerObject" }
+                    ]
+                }
+            ]
+        },
+        "headerObject": {
+            "patterns": [
+                {
+                    "begin": "\\{",
+                    "end": "\\}",
+                    "beginCaptures": {
+                        "0": { "name": "keyword.control.header.st" }
+                    },
+                    "endCaptures": {
+                        "0": { "name": "keyword.control.header.st" }
+                    },
+                    "patterns": [
+                        { "include": "#headerObject" }
+                    ]
+                },
+                {
+                    "name": "support.type.property.st",
+                    "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b(?=\\s*:)"
+                },
+                { "include": "#strings" },
+                { "include": "#colors" },
+                {
+                    "name": "constant.numeric.integer.st",
+                    "match": "\\b\\d+\\b"
+                },
+                {
+                    "name": "constant.language.boolean.st",
+                    "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
         "markup": {
             "patterns": [
                 {
@@ -89,7 +184,7 @@
             "patterns": [
                 {
                     "name": "comment.block.supertype",
-                    "match": "\\\\."
+                    "match": "\\\\(?=.)"
                 }
             ]
         },
@@ -102,12 +197,6 @@
                 }
             ]
         },
-		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.supertype",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
-		},
 		"strings": {
 			"name": "string.quoted.double.supertype",
 			"begin": "\"",
@@ -115,7 +204,7 @@
 			"patterns": [
 				{
 					"name": "constant.character.escape.supertype",
-					"match": "\\\\."
+					"match": "\\\\(?=.)"
 				}
 			]
 		}
