@@ -25,16 +25,21 @@
             "patterns": [
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[",
+                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant))\\b",
+                    "beginCaptures": {
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "tag.st" }
+                    },
                     "end": "(?<!\\\\)\\]",
+                    "endCaptures": {
+                        "0": { "name": "tag.st" }
+                    },
                     "patterns": [
                         {
-                            "name": "entity.name.tag.st",
-                            "match": "^(removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch)\\b"
+                            "name": "specific.st",
+                            "match": "\\b(reset|override|default|keep|end|instant|separate)\\b"
                         },
-                        {
-                            "include": "#strings"
-                        },
+                        { "include": "#strings" },
                         { "include": "#colors" },
                         {
                             "name": "constant.numeric.integer.st",
@@ -43,10 +48,6 @@
                         {
                             "name": "constant.language.boolean.st",
                             "match": "\\b(true|false)\\b"
-                        },
-                        {
-                            "name": "specific.st",
-                            "match": "\\b(reset|override|default|keep|end|instant|separate)\\b"
                         },
                         {
                             "include": "#escapes"

@@ -90,7 +90,8 @@ export class SuperType {
     }
 
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate"];
-    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch"];
+
+    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant"];
 
     static defaultScrollCount = 6;
 
@@ -296,6 +297,10 @@ export class SuperType {
         }
 
         switch (token.name) {
+
+            case "instant": {
+                this.header.instant = !this.header.instant;
+            } break;
 
             case "removelast": {
                 let count = token.args[0];

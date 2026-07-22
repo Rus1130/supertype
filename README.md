@@ -70,6 +70,7 @@ typewriter: {
 | `[tab count<Number>]`                      | Inserts `count` spaces.                                                                                             |
 | `[function name<String>]`                  | Calls the JavaScript function with the specified name.                                                              |
 | `[removelast count<Number>]`               | Removes the last `count` rendered characters from the typewriter.                                                   |
+| `[instant]`                                | Toggles `instant` mode.                                                                                             |
 
 ## Comment
 ```
