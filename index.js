@@ -91,7 +91,7 @@ export class SuperType {
 
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate"];
 
-    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant"];
+    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant", "page"];
 
     static defaultScrollCount = 6;
 

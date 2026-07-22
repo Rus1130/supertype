@@ -25,7 +25,7 @@
             "patterns": [
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant))\\b",
+                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant|page))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "tag.st" }
