@@ -37,6 +37,7 @@ typewriter: {
     completionBar: Boolean | false
     wordWrap: Number | Infinity
     previewMode: Boolean | false
+    backToTop: Boolean | false
     customDelays: {
         String: Number
     }

@@ -235,6 +235,9 @@ export class SuperType {
                 this.state.scrollLocked = false;
                 this.state.pauseLocked = true;
                 this.pause();
+                if(this.header.backToTop === true) requestAnimationFrame(() => {
+                    this.scrollWindow(0);
+                });
                 break;
             }
 

@@ -10,8 +10,10 @@ typewriter: {
         ";": 650
     }
     wordWrap: 100
+    instant: true
+    backToTop: true
 }
-THIS[glitch 10 keep] REPORT HA[instant]S BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
+THIS[glitch 10 keep] REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
 This report was written by the Interplanetary Transit Authority[sleep 350] (“ITA”) [sleep 351]to document the events surrounding what has been dubbed [sleep 400]the “Psyche Incident”[sleep 400].[sleep 1000][linebreak]
 
@@ -21,7 +23,7 @@ Project ATLAS was a large\-scale interplanetary logistics initiative consisting 
 
 Project ATLAS was conceived by Dr[speed 28 override].[speeddefault] ████████ ███████ as a long\-term solution to humanity’s continued depletion of economically viable metal reserves on Earth. Following an evaluation of numerous candidate asteroids, Psyche was selected due to its high abundance of iron, nickel, and platinum metals, as well as its already established mining infrastructure. Subsequent studies concluded that the relocation of the asteroid to Earth would be substantially more economical than transporting millions of individual shipments from the asteroid belt over the lifetime of the project.[sleep 550][linebreak]
 
-After multiple independent site\-selection studies, the region of space above Australia was selected as the final destination for Psyche. The decision was based on a combination of engineering, economic, and logistical considerations. At the time of project approval, nearly half of Earth’s shipbuilding industry was located within Australia, which allowed for extracted materials to be transported directly to major manufacturing centers with minimal transit time, as well as reducing the need for additional infrastructure to be constructed. Australia’s vast sparsely populated interior also insured that in the event of a failure, casualties could be kept to a minimum. Additionally, [instant]the continent’s relatively low volcanic and seismic activity made it a favorable location for the long\-term operation of critical ground infrastructure. Ultimately, the Martian\-Australian Mining Company endorsed Australia as the preferred site after determining that no other candidate location provided an equivalent combination of industrial capacity, logistical efficiency, operational safety, and political support.[sleep 550][linebreak]
+After multiple independent site\-selection studies, the region of space above Australia was selected as the final destination for Psyche. The decision was based on a combination of engineering, economic, and logistical considerations. At the time of project approval, nearly half of Earth’s shipbuilding industry was located within Australia, which allowed for extracted materials to be transported directly to major manufacturing centers with minimal transit time, as well as reducing the need for additional infrastructure to be constructed. Australia’s vast sparsely populated interior also insured that in the event of a failure, casualties could be kept to a minimum. Additionally, the continent’s relatively low volcanic and seismic activity made it a favorable location for the long\-term operation of critical ground infrastructure. Ultimately, the Martian\-Australian Mining Company endorsed Australia as the preferred site after determining that no other candidate location provided an equivalent combination of industrial capacity, logistical efficiency, operational safety, and political support.[sleep 550][linebreak]
 
 An Oganesson Inertial Sink[sleep 350] (“OIS”) [sleep 351]is a device that utilize the anomalous properties of oganesson to continuously remove inertia from a targeted object, preventing said object from exceeding predetermined inertial limits.[sleep 550][linebreak]
 
