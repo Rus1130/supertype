@@ -4,30 +4,53 @@ class TagArgument {
         this.value = value;
     }
 
-    // type check, does not error
-    is(type) {
-        return this.type === type;
+    /**
+     * type check, does not error
+     */
+    is(...types) {
+        return types.includes(this.type);
     }
 
-    // value check, does not error
-    equals(value) {
-        return this.value === value;
+    /**
+     * value check, does not error
+     * @param  {...any} values 
+     * @returns 
+     */
+    equals(...values) {
+        return values.includes(this.value);
     }
 
-    // specific value check, does not error
-    equalsSpecific(value) {
-        return this.type === "specific" && this.value === value;
+    /**
+     * specific value check, does not error
+     */
+    equalsSpecific(...values) {
+        return this.type === "specific" && values.includes(this.value);
     }
 
-    // type check, throws error if not type
-    check(type){
-        if(this.type !== type) throw new Error(`Invalid argument type: Expected ${type}, got ${this.type}`);
+    /**
+     * type check, throws error if not one of the types
+     */
+    check(...types) {
+        if (!types.includes(this.type)) {
+            throw new Error(
+                `Invalid argument type: Expected one of ${types.join(", ")}, got ${this.type}`
+            );
+        }
     }
 
-    // specific value check, throws error if not specific or not equal to value
-    checkSpecific(value){
-        if(this.type !== "specific") throw new Error(`Invalid argument type: Expected specific, got ${this.type}`);
-        if(this.value !== value) throw new Error(`Invalid argument value: Expected ${value}, got ${this.value}`);
+    /**
+     * specific value check, throws error if not specific or not one of the values
+     */
+    checkSpecific(...values) {
+        if (this.type !== "specific") {
+            throw new Error(`Invalid argument type: Expected specific, got ${this.type}`);
+        }
+
+        if (!values.includes(this.value)) {
+            throw new Error(
+                `Invalid argument value: Expected one of ${values.join(", ")}, got ${this.value}`
+            );
+        }
     }
 
     toString() {
@@ -89,9 +112,9 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate", "on", "off"];
 
-    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant", "page"];
+    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant", "page", "ignore"];
 
     static defaultScrollCount = 6;
 
@@ -154,7 +177,9 @@ export class SuperType {
             currentStyle: null,
 
             scrollLocked: false,
-            pauseLocked: false
+            pauseLocked: false,
+
+            ignoreCustomDelays: false
         }
     }
 
@@ -301,8 +326,22 @@ export class SuperType {
 
         switch (token.name) {
 
+            case "ignore": {
+                let value = token.args[0];
+                if(value === undefined) return this.state.ignoreCustomDelays = !this.state.ignoreCustomDelays;
+                
+                value.checkSpecific("on", "off");
+                
+                this.state.ignoreCustomDelays = value.value === "on";
+            } break;
+
             case "instant": {
-                this.header.instant = !this.header.instant;
+                let instant = token.args[0];
+                if(instant === undefined) return this.header.instant = !this.header.instant;
+
+                instant.checkSpecific("on", "off");
+
+                this.header.instant = instant.value === "on";
             } break;
 
             case "removelast": {
@@ -385,7 +424,7 @@ export class SuperType {
                 value.check("number");
 
                 this.renderRaw("&nbsp;".repeat(value.value));
-                this.addRenderTime(this.header.customDelays[" "] ?? this.header.charDelay);
+                this.addRenderTime(this.fetchDelay(" "));
                 
             } break;
 
@@ -568,12 +607,14 @@ export class SuperType {
         }
     }
 
-    renderToken(token) {
-        let delay = this.header.customDelays[token.value] ?? this.header.charDelay;
+    fetchDelay(tokenValue){
+        if(this.state.ignoreCustomDelays === true) return this.header.charDelay;
+        if(this.state.tagSpeedOverride === true) return this.header.charDelay;
+        return this.header.customDelays[tokenValue] ?? this.header.charDelay;
+    }
 
-        if(this.state.tagSpeedOverride === true) {
-            delay = this.header.charDelay;
-        }
+    renderToken(token) {
+        let delay = this.fetchDelay(token.value);
 
         this.addRenderTime(delay);
         this.renderCharacter(token.value, token.style);
