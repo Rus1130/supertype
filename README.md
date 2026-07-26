@@ -73,8 +73,8 @@ typewriter: {
 | `[tab count<Number>]`                      | Inserts `count` spaces.                                                                                               |
 | `[function name<String>]`                  | Calls the JavaScript function with the specified name.                                                                |
 | `[removelast count<Number>]`               | Removes the last `count` rendered characters from the typewriter.                                                     |
-| `[instant on\|off]`                         | Toggles `instant`. `on` and `off` can be used to explicitly set the value of `instant`.                               |
-| `[ignore on\|off]`                          | Toggles whether or not custom delays are ignored. `on` and `off` can be used to explicitly set the value of `ignore`. |
+| `[instant on\|off]`                        | Toggles `instant`. `on` and `off` can be used to explicitly set the value of `instant`.                               |
+| `[ignore on\|off]`                         | Toggles whether or not custom delays are ignored. `on` and `off` can be used to explicitly set the value of `ignore`. |
 
 ## Comment
 ```
