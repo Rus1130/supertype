@@ -7,7 +7,7 @@ typewriter: {
         ",": 500
     }
 }
-{{# WOW! this is normal text![linebreak]
+WOW! this is normal text![linebreak]
 Normal text, but different, because delay, see? cool[linebreak]
 
 i just used a linebreak there. smirk[newline]
@@ -48,7 +48,7 @@ back to normal
 
 [page "hi"]
 wow look! its a page! cool![sleep 10000] yeah ur stuck here bud. gotta reload
-[page end] #}}
+[page end]
 
 [linebreak][gopage "hi" "click me if u want idk"][linebreak]
 /italic/[newline]
