@@ -181,7 +181,9 @@ export class SuperType {
             scrollLocked: false,
             pauseLocked: false,
 
-            ignoreCustomDelays: false
+            ignoreCustomDelays: false,
+
+            rawMode: false
         }
     }
 
@@ -231,6 +233,210 @@ export class SuperType {
 
         requestAnimationFrame(this.render);
         requestAnimationFrame(this.glitchLoop);
+    }
+
+    async load(path) {
+        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
+
+        const start = this.data.indexOf("typewriter");
+        const open = this.data.indexOf("{", start);
+
+        let depth = 1;
+        let i = open + 1;
+
+        while (i < this.data.length && depth > 0) {
+            if (this.data[i] === "{") depth++;
+            else if (this.data[i] === "}") depth--;
+            i++;
+        }
+
+        this.targetParent.addEventListener("wheel", (e) => {
+            // allow the user to scroll
+            if(this.state.scrollLocked == true) return;
+
+            this.targetParent.scrollBy({
+                top: (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY),
+                behavior: "instant"
+            });
+        });
+
+        // throw error if it doesnt have typewriter { ... }
+        if (depth !== 0) {
+            throw new Error("Invalid header");
+        }
+        
+        let header = parseHeader(this.data.slice(start, i));
+
+        if(header.parsed.typewriter === undefined){
+            throw new Error("Header parsing failed: Missing 'typewriter' block");
+        }
+
+        if(header.errors.length > 0) {
+            console.error("Header parsing errors:", header.errors);
+            throw new Error(`Header parsing failed:\n${header.errors.map(e => e.message).join("\n")}`);
+        }
+
+        this.header = header.parsed.typewriter;
+        this.body = this.data.slice(i).replace(/\{\{#raw[\s\S]*?#\}\}|\r?\n/g,
+            (match) => match.startsWith("{{#raw") ? match : ""
+        )
+
+        if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
+        if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
+        if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
+        if(this.header.backgroundColor === undefined) throw new Error("Missing backgroundColor in header");
+
+        if(this.header.customDelays === undefined) this.header.customDelays = {};
+        if(this.header.instant === undefined) this.header.instant = false;
+        if(this.header.completionBar === undefined) this.header.completionBar = false;
+
+        this.tokens = this.tokenize(this.body)
+
+        let currentPage = "root";
+
+        for(let i = 0; i < this.tokens.length; i++) {
+            const token = this.tokens[i];
+
+            if(token.type === "tag" && token.name === "page") {
+                if(token.args.length === 0) throw new Error(`Missing page name at token index ${i}`);
+                
+                // if(token.args[0].type !== "string") throw new Error(`Invalid page name at token index ${i}: Expected string, got ${token.args[0].type}`);
+
+                if(token.args[0].type === "string"){
+                    let pageName = token.args[0].value;
+
+                    if(this.pages[pageName] !== undefined) throw new Error(`Duplicate page name at token index ${i}: ${pageName}`);
+
+
+                    if(pageName === "root") throw new Error(`Invalid page name at token index ${i}: 'root' is reserved`);
+
+                    if(this.pages[pageName] === undefined) {
+                        this.pages[pageName] = [];
+                    }
+
+                    currentPage = pageName;
+                }
+
+                if(token.args[0].type === "specific"){
+                    if(token.args[0].value === "end") currentPage = "root";
+                    else throw new Error(`Invalid page name at token index ${i}: Expected String or end, got ${token.args[0].type}`);
+                } 
+            } else {
+                token.style = {
+                    "color": this.header.textColor,
+                    "bg": this.header.backgroundColor,
+                    "bold": false,
+                    "italic": false,
+                    "underline": false,
+                    "strikethrough": false
+                }
+
+                this.pages[currentPage].push(token);
+            }
+        }
+
+
+        for(let page in this.pages) {
+            let pageTokens = this.pages[page];
+            let styleStack = {
+                "bold": false,
+                "italic": false,
+                "underline": false,
+                "strikethrough": false
+            };
+
+            for(let i = 0; i < pageTokens.length; i++) {
+                const token = pageTokens[i];
+
+                if(token.type === "style") {
+                    if(token.value === "bold") styleStack.bold = !styleStack.bold;
+                    if(token.value === "italic") styleStack.italic = !styleStack.italic;
+                    if(token.value === "underline") styleStack.underline = !styleStack.underline;
+                    if(token.value === "strikethrough") styleStack.strikethrough = !styleStack.strikethrough;
+
+                    // remove this token from the pageTokens array
+                    pageTokens.splice(i, 1);
+                    i--;
+                }
+
+                if(token.type === "character") {
+                    token.style = {
+                        "bold": styleStack.bold,
+                        "italic": styleStack.italic,
+                        "underline": styleStack.underline,
+                        "strikethrough": styleStack.strikethrough
+                    }
+                }
+            }
+            
+            let lineCharacterCount = 0;
+            let lastSpaceIndex = -1;
+
+            for(let i = 0; i < pageTokens.length; i++) {
+                const token = pageTokens[i];
+
+                if(token.type === "tag"){
+                    if(
+                        token.name === "newline" ||
+                        token.name === "linebreak" ||
+                        token.name === "newpage"
+                    ) {
+                        lineCharacterCount = 0;
+                        lastSpaceIndex = -1;
+                    }
+
+                    continue;
+                }
+
+                lineCharacterCount++;
+
+                if(/\s/.test(token.value)) {
+                    lastSpaceIndex = i;
+                }
+
+                if(
+                    this.header.wordWrap !== undefined &&
+                    lineCharacterCount > this.header.wordWrap
+                ) {
+                    const insertIndex = lastSpaceIndex !== -1 ? lastSpaceIndex + 1 : i;
+
+                    pageTokens.splice(insertIndex, 0, {
+                        type: "tag",
+                        name: "newline",
+                        args: [
+                            new TagArgument("specific", "instant")
+                        ],
+                        style: {
+                            "color": this.header.textColor,
+                            "bg": this.header.backgroundColor,
+                            "bold": false,
+                            "italic": false,
+                            "underline": false,
+                            "strikethrough": false
+                        }
+                    });
+
+                    lineCharacterCount = 0;
+                    lastSpaceIndex = -1;
+
+                    for(let k = insertIndex + 1; k <= i + 1; k++) {
+                        const t = pageTokens[k];
+
+                        if(t.type === "character") {
+                            lineCharacterCount++;
+
+                            if(/\s/.test(t.value)) {
+                                lastSpaceIndex = k;
+                            }
+                        }
+                    }
+
+                    i++;
+                }
+            }
+        }
+
+        return this;
     }
 
     appendToTarget(element) {
@@ -327,6 +533,19 @@ export class SuperType {
         }
 
         switch (token.name) {
+
+            case "raw": {
+                let value = token.args[0];
+
+                if(value != undefined) value.checkSpecific("end");
+
+                if(value === undefined){
+                    console.log("Start raw")
+                } else if(value.equalsSpecific("end")){
+                    console.log("End raw")
+                }
+
+            } break;
 
             case "ignore": {
                 let value = token.args[0];
@@ -688,216 +907,37 @@ export class SuperType {
         this.state.fragment.appendChild(template.content);
     }
 
-    async load(path) {
-        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
-
-        const start = this.data.indexOf("typewriter");
-        const open = this.data.indexOf("{", start);
-
-        let depth = 1;
-        let i = open + 1;
-
-        while (i < this.data.length && depth > 0) {
-            if (this.data[i] === "{") depth++;
-            else if (this.data[i] === "}") depth--;
-            i++;
-        }
-
-        this.targetParent.addEventListener("wheel", (e) => {
-            // allow the user to scroll
-            if(this.state.scrollLocked == true) return;
-
-            //this.scrollTargetParent(this.targetParent.scrollTop + (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY));
-
-            this.targetParent.scrollBy({
-                top: (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY),
-                behavior: "instant"
-            });
-        });
-
-        // throw error if it doesnt have typewriter { ... }
-        if (depth !== 0) {
-            throw new Error("Invalid header");
-        }
-        
-        let header = parseHeader(this.data.slice(start, i));
-
-        if(header.parsed.typewriter === undefined){
-            throw new Error("Header parsing failed: Missing 'typewriter' block");
-        }
-
-        if(header.errors.length > 0) {
-            console.error("Header parsing errors:", header.errors);
-            throw new Error(`Header parsing failed:\n${header.errors.map(e => e.message).join("\n")}`);
-        }
-
-        this.header = header.parsed.typewriter;
-        this.body = this.data.slice(i).replaceAll(/\r?\n/g, '');
-
-        if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
-        if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
-        if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
-        if(this.header.backgroundColor === undefined) throw new Error("Missing backgroundColor in header");
-
-        if(this.header.customDelays === undefined) this.header.customDelays = {};
-        if(this.header.instant === undefined) this.header.instant = false;
-        if(this.header.completionBar === undefined) this.header.completionBar = false;
-
-        this.tokens = this.tokenize(this.body)
-
-        let currentPage = "root";
-
-        for(let i = 0; i < this.tokens.length; i++) {
-            const token = this.tokens[i];
-
-            if(token.type === "tag" && token.name === "page") {
-                if(token.args.length === 0) throw new Error(`Missing page name at token index ${i}`);
-                
-                // if(token.args[0].type !== "string") throw new Error(`Invalid page name at token index ${i}: Expected string, got ${token.args[0].type}`);
-
-                if(token.args[0].type === "string"){
-                    let pageName = token.args[0].value;
-
-                    if(this.pages[pageName] !== undefined) throw new Error(`Duplicate page name at token index ${i}: ${pageName}`);
-
-
-                    if(pageName === "root") throw new Error(`Invalid page name at token index ${i}: 'root' is reserved`);
-
-                    if(this.pages[pageName] === undefined) {
-                        this.pages[pageName] = [];
-                    }
-
-                    currentPage = pageName;
-                }
-
-                if(token.args[0].type === "specific"){
-                    if(token.args[0].value === "end") currentPage = "root";
-                    else throw new Error(`Invalid page name at token index ${i}: Expected String or end, got ${token.args[0].type}`);
-                } 
-            } else {
-                token.style = {
-                    "color": this.header.textColor,
-                    "bg": this.header.backgroundColor,
-                    "bold": false,
-                    "italic": false,
-                    "underline": false,
-                    "strikethrough": false
-                }
-
-                this.pages[currentPage].push(token);
-            }
-        }
-
-
-        for(let page in this.pages) {
-            let pageTokens = this.pages[page];
-            let styleStack = {
-                "bold": false,
-                "italic": false,
-                "underline": false,
-                "strikethrough": false
-            };
-
-            for(let i = 0; i < pageTokens.length; i++) {
-                const token = pageTokens[i];
-
-                if(token.type === "style") {
-                    if(token.value === "bold") styleStack.bold = !styleStack.bold;
-                    if(token.value === "italic") styleStack.italic = !styleStack.italic;
-                    if(token.value === "underline") styleStack.underline = !styleStack.underline;
-                    if(token.value === "strikethrough") styleStack.strikethrough = !styleStack.strikethrough;
-
-                    // remove this token from the pageTokens array
-                    pageTokens.splice(i, 1);
-                    i--;
-                }
-
-                if(token.type === "character") {
-                    token.style = {
-                        "bold": styleStack.bold,
-                        "italic": styleStack.italic,
-                        "underline": styleStack.underline,
-                        "strikethrough": styleStack.strikethrough
-                    }
-                }
-            }
-            
-            let lineCharacterCount = 0;
-            let lastSpaceIndex = -1;
-
-            for(let i = 0; i < pageTokens.length; i++) {
-                const token = pageTokens[i];
-
-                if(token.type === "tag"){
-                    if(
-                        token.name === "newline" ||
-                        token.name === "linebreak" ||
-                        token.name === "newpage"
-                    ) {
-                        lineCharacterCount = 0;
-                        lastSpaceIndex = -1;
-                    }
-
-                    continue;
-                }
-
-                lineCharacterCount++;
-
-                if(/\s/.test(token.value)) {
-                    lastSpaceIndex = i;
-                }
-
-                if(
-                    this.header.wordWrap !== undefined &&
-                    lineCharacterCount > this.header.wordWrap
-                ) {
-                    const insertIndex = lastSpaceIndex !== -1 ? lastSpaceIndex + 1 : i;
-
-                    pageTokens.splice(insertIndex, 0, {
-                        type: "tag",
-                        name: "newline",
-                        args: [
-                            new TagArgument("specific", "instant")
-                        ],
-                        style: {
-                            "color": this.header.textColor,
-                            "bg": this.header.backgroundColor,
-                            "bold": false,
-                            "italic": false,
-                            "underline": false,
-                            "strikethrough": false
-                        }
-                    });
-
-                    lineCharacterCount = 0;
-                    lastSpaceIndex = -1;
-
-                    for(let k = insertIndex + 1; k <= i + 1; k++) {
-                        const t = pageTokens[k];
-
-                        if(t.type === "character") {
-                            lineCharacterCount++;
-
-                            if(/\s/.test(t.value)) {
-                                lastSpaceIndex = k;
-                            }
-                        }
-                    }
-
-                    i++;
-                }
-            }
-        }
-
-        return this;
-    }
-
     tokenize(body) {
         const queue = [];
 
         let i = 0;
 
         while (i < body.length) {
+
+        if (body.startsWith("{{#raw", i)) {
+            const start = body.indexOf("\n", i);
+
+            // Find the closing #}}
+            const end = body.indexOf("#}}", i);
+
+            if (end !== -1) {
+                // Skip the {{#raw line
+                const contentStart = start === -1 ? i + "{{#raw".length : start + 1;
+                const raw = body.slice(contentStart, end);
+
+                // Emit every character literally
+                for (const ch of raw) {
+                    console.log(ch == "\n")
+                    queue.push({
+                        type: "character",
+                        value: ch
+                    });
+                }
+
+                i = end + 3; // skip "#}}"
+                continue;
+            }
+        }
 
             // escaped characters
             if (body[i] === "\\") {
