@@ -12,4 +12,4 @@ typewriter: {
     [jitter "<String>" 10]
 [mixin end]
 
-[@ "ok" "jitt!"]
+[@use "ok" "jitt!"]
