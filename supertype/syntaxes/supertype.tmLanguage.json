@@ -55,7 +55,7 @@
                     "patterns": [
                         {
                             "name": "specific.st",
-                            "match": "\\b(reset|override|default|keep|end|instant|separate|off)\\b"
+                            "match": "\\b(reset|override|default|keep|end|instant|off|shared)\\b"
                         },
                         { "include": "#strings" },
                         { "include": "#colors" },

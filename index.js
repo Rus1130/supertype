@@ -553,7 +553,7 @@ class JitterTag extends Tag {
     static onUse(engine, token) {
         const value = token.args[0];
         const strength = token.args[1];
-        const keep = token.args[2];
+        let third = token.args[2];
 
         if (value === undefined) throw new Error("Missing jitter value");
         if (strength === undefined) throw new Error("Missing jitter strength");
@@ -561,12 +561,11 @@ class JitterTag extends Tag {
         value.check("string");
         strength.check("number");
 
-        if (keep !== undefined) {
-            keep.checkSpecific("keep");
-        }
+        if (third !== undefined) third.checkSpecific("keep", "shared");
+        
 
         // Expand into one-character keep tags.
-        if (keep === undefined) {
+        if (third === undefined) {
             const tokens = [];
 
             for (const ch of value.value) {
@@ -578,7 +577,32 @@ class JitterTag extends Tag {
                         new TagArgument("number", strength.value),
                         new TagArgument("specific", "keep")
                     ],
-                    style: token.style
+                    style: token.style,
+                });
+            }
+
+            engine.pages[engine.state.page].splice(
+                engine.state.token,
+                0,
+                ...tokens
+            );
+
+            return false;
+        } else if (third.equalsSpecific("shared")) {
+            const sharedID = `jitter-${Math.random().toString(36).substr(2, 9)}`;
+            const tokens = [];
+
+            for (const ch of value.value) {
+                tokens.push({
+                    type: "tag",
+                    name: "jitter",
+                    sharedID,
+                    args: [
+                        new TagArgument("string", ch),
+                        new TagArgument("number", strength.value),
+                        new TagArgument("specific", "keep")
+                    ],
+                    style: token.style,
                 });
             }
 
@@ -602,7 +626,8 @@ class JitterTag extends Tag {
         engine.createJitter(
             value.value,
             strength.value,
-            token.style
+            token.style,
+            token?.sharedID
         );
     }
 }
@@ -625,13 +650,15 @@ class MixinTag extends Tag {
 
 export class SuperType {
 
+    static SharedMemory = {};
+
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
 
     static randomCharacter() {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate", "off"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared"];
 
     static defaultScrollCount = 6;
 
@@ -677,7 +704,16 @@ export class SuperType {
     jitterLoop = () => {
         for(const jitter of this.state.jitters) {
             jitter.textNode.parentElement.style.transform = `translate(${(Math.random() * 2 - 1) * (jitter.strength / 10)}px, ${(Math.random() * 2 - 1) * (jitter.strength / 10)}px)`;
+        }
 
+        // get shared jitters
+
+        for(const jitters of Object.values(SuperType.SharedMemory)) {
+            const transform = `translate(${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px, ${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px)`;
+            jitters.forEach(jitter => {
+                jitter.textNode.parentElement.style.transform = transform;
+            })
+            //jitter.textNode.parentElement.style.transform = `translate(${(Math.random() * 2 - 1) * (jitter.strength / 10)}px, ${(Math.random() * 2 - 1) * (jitter.strength / 10)}px)`;
         }
 
         requestAnimationFrame(this.jitterLoop);
@@ -1046,7 +1082,7 @@ export class SuperType {
         this.resetSpanTextStyle();
     }
 
-    createJitter(character, strength, style) {
+    createJitter(character, strength, style, sharedID = undefined) {
         this.resetSpanTextStyle();
 
         this.renderCharacter(character, style);
@@ -1055,10 +1091,19 @@ export class SuperType {
             textNode: this.state.currentText,
             strength
         }
-        
+
         jitter.textNode.parentElement.style.display = "inline-block";
 
-        this.state.jitters.push(jitter);
+        if(sharedID !== undefined){
+            if(SuperType.SharedMemory[sharedID] === undefined){
+                SuperType.SharedMemory[sharedID] = [jitter];
+            } else {
+                SuperType.SharedMemory[sharedID].push(jitter);
+            }
+
+        } else {
+            this.state.jitters.push(jitter);
+        }
 
         this.resetSpanTextStyle();
     }

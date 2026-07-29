@@ -103,6 +103,7 @@ Other tags.
 | `[glitch count<Number> keep]`                 | Inserts `count` glitching characters as a single group.                                                               |
 | `[jitter text<String> strength<Number>]`      | Inserts `text` with a jittering effect of `strength`. Intended values are 0-100.                                      |
 | `[jitter text<String> strength<Number> keep]` | Inserts `text` with a jittering effect of `strength` as a single group. Intended values are 0-100.                    |
+| `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. Intended values are 0-100. |
 | `[function name<String>]`                     | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
 
 ## Comment
