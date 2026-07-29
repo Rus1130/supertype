@@ -120,14 +120,29 @@ export class Tag {
 
     /**
      * Called while tokenize() encounters this tag, with the raw (unparsed)
-     * string arguments between the brackets. Must return the args array to
-     * store on the token (normally an array of TagArgument). Can also perform
-     * immediate side effects on `ctx.engine` if the tag needs to influence how
-     * the tokenizer itself behaves afterward (see RawTag).
+     * string arguments between the brackets.
+     *
+     * Default behavior: return the parsed args array (TagArgument[]) and
+     * tokenize() will automatically push the standard
+     * { type: "tag", name, args } token for you.
+     *
+     * For full control, return `false` instead - tokenize() will then push
+     * nothing on your behalf, and you're expected to have already done
+     * whatever you needed via `ctx.queue` (the live token array being built).
+     * This lets a tag:
+     *   - push multiple tokens (e.g. expand a macro into several tags/characters)
+     *   - push zero tokens (pure side effect, nothing rendered)
+     *   - inspect or edit tokens already pushed (ctx.queue[ctx.queue.length - 1], splice, etc.)
+     *
+     * `ctx.engine` is also available for immediate side effects on the engine
+     * itself, e.g. toggling tokenizer state that affects how subsequent
+     * characters get scanned (see RawTag - this must happen here rather than
+     * in onUse, since tokenize() runs once, eagerly, over the whole body
+     * before any animation/process() calls happen).
      *
      * @param {string[]} rawArgs
-     * @param {{engine: SuperType}} ctx
-     * @returns {TagArgument[]}
+     * @param {{engine: SuperType, queue: object[], body: string, index: number}} ctx
+     * @returns {TagArgument[] | false}
      */
     static onTokenization(rawArgs, ctx) {
         return rawArgs.map(arg => TagArgument.parse(arg));
@@ -167,12 +182,6 @@ class RawTag extends Tag {
         if (value !== undefined) value.checkSpecific("end");
 
         ctx.engine.state.rawMode = value === undefined;
-
-        if (value !== undefined) ctx.queue.push({
-            type: "tag",
-            name: "newline",
-            args: [new TagArgument("specific", "instant")],
-        });
 
         return args;
     }
@@ -338,7 +347,7 @@ class GopageTag extends Tag {
         if (engine.header.previewMode) {
             let charCount = engine.header.wordWrap;
             if (charCount === undefined) {
-                // get the amount of characters that would fit on a line in the screen using the target width and the font size
+
                 const fontSize = parseFloat(getComputedStyle(engine.target).fontSize);
                 const targetWidth = engine.target.clientWidth;
                 charCount = Math.floor(targetWidth / fontSize);
@@ -556,8 +565,18 @@ export class SuperType {
 
     static defaultScrollCount = 6;
 
+    /**
+     * Registry of tag name -> Tag class. Populated via SuperType.registerTag().
+     */
     static tags = new Map();
 
+    /**
+     * Register a class-based tag. The class must define a static `tagName`.
+     * Any of `onTokenization`, `onUse`, `onRender` may be overridden; unimplemented
+     * hooks fall back to the defaults defined on the base Tag class.
+     *
+     * @param {typeof Tag} TagClass
+     */
     static registerTag(TagClass) {
         if (!TagClass.tagName) {
             throw new Error(`Tag class "${TagClass.name}" must define a static tagName`);
@@ -570,6 +589,9 @@ export class SuperType {
         SuperType.tags.set(TagClass.tagName, TagClass);
     }
 
+    /**
+     * Names of every currently registered tag.
+     */
     static get AllTags() {
         return [...SuperType.tags.keys()];
     }
@@ -639,9 +661,6 @@ export class SuperType {
 
             ignoreCustomDelays: false,
 
-            // tokenizer-time only: whether we're currently inside a [raw] ... [raw end] block.
-            // this must be toggled during tokenize(), NOT during process()/animation, since
-            // tokenize() runs once, eagerly, over the entire body before any animation starts.
             rawMode: false
         }
     }
@@ -695,7 +714,7 @@ export class SuperType {
     }
 
     async load(path) {
-        this.data = (await this.fetch(path)).replaceAll(/\{\{#(?!raw)[\s\S]*?#\}\}/g, "");
+        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
 
         const start = this.data.indexOf("typewriter");
         const open = this.data.indexOf("{", start);
@@ -737,8 +756,7 @@ export class SuperType {
 
         this.header = header.parsed.typewriter;
 
-
-        this.body = this.data.slice(i).replaceAll(/\r?\n/g, "\n");
+        this.body = this.data.slice(i).replace(/\r?\n/g, "\n");
 
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
@@ -806,8 +824,6 @@ export class SuperType {
 
             for(let i = 0; i < pageTokens.length; i++) {
                 const token = pageTokens[i];
-
-                console.log(token.type, token.character, this.state.rawMode)
 
                 if(token.type === "style") {
                     if(token.value === "bold") styleStack.bold = !styleStack.bold;
@@ -994,6 +1010,7 @@ export class SuperType {
         }
 
         const TagClass = SuperType.tags.get(token.name) ?? Tag;
+
         const result = TagClass.onUse(this, token);
 
         if (result === false) return;
@@ -1080,16 +1097,6 @@ export class SuperType {
         this.state.fragment.appendChild(template.content);
     }
 
-    /**
-     * Tokenizes the raw body string into a flat token queue.
-     *
-     * Tag parsing is delegated to the matching Tag class's onTokenization hook
-     * (falling back to the generic TagArgument parser for unregistered names),
-     * so a tag can fully control how its own arguments are parsed, and can react
-     * immediately at tokenize-time (see RawTag, which toggles state.rawMode here
-     * rather than in onUse, since tokenize() runs once, eagerly, before any
-     * animation/process() calls happen).
-     */
     tokenize(body) {
         const queue = [];
 
@@ -1098,7 +1105,7 @@ export class SuperType {
         while (i < body.length) {
 
             // escaped characters
-            if (body[i] === "\\") {
+            if (body[i] === "\\" && this.state.rawMode === false) {
                 if (i + 1 < body.length) {
                     queue.push({
                         type: "character",
@@ -1108,18 +1115,6 @@ export class SuperType {
                     i += 2;
                     continue;
                 }
-            }
-
-            // raw mode: everything is literal except the "[raw ...]" tag itself,
-            // which is what's allowed to turn raw mode back off.
-            if (this.state.rawMode === true && !body.startsWith("[raw", i)) {
-                queue.push({
-                    type: "character",
-                    value: body[i]
-                });
-
-                i++;
-                continue;
             }
 
             // tag
@@ -1135,30 +1130,43 @@ export class SuperType {
 
                     const TagClass = SuperType.tags.get(name) ?? Tag;
 
-                    const args = TagClass.onTokenization(parts, { 
+                    const result = TagClass.onTokenization(parts, {
                         engine: this,
-                            engine: this,
-                            queue,
-                            body,
-                            index: i
+                        queue,
+                        body,
+                        index: i
                     });
 
-                    queue.push({
-                        type: "tag",
-                        name,
-                        args
-                    });
-
+                    if (result !== false) {
+                        queue.push({
+                            type: "tag",
+                            name,
+                            args: result
+                        });
+                    }
 
                     i = end + 1;
                     continue;
                 }
             }
 
+            if(body[i] === "\n"){
+                if(this.state.rawMode === true){
+                    queue.push({
+                        type: "tag",
+                        name: "newline",
+                        args: [new TagArgument("specific", "instant")]
+                    });
+                }
+
+                i++;
+                continue;
+            }
+
             if(body[i] === "*") {
                 queue.push({
-                    type: "style",
-                    value: "bold"
+                    type: this.state.rawMode ? "character" : "style",
+                    value: this.state.rawMode ? "*" : "bold"
                 });
 
                 i++;
@@ -1167,8 +1175,8 @@ export class SuperType {
 
             if(body[i] === "_") {
                 queue.push({
-                    type: "style",
-                    value: "underline"
+                    type: this.state.rawMode ? "character" : "style",
+                    value: this.state.rawMode ? "_" : "underline"
                 });
 
                 i++;
@@ -1177,8 +1185,8 @@ export class SuperType {
 
             if(body[i] === "-") {
                 queue.push({
-                    type: "style",
-                    value: "strikethrough"
+                    type: this.state.rawMode ? "character" : "style",
+                    value: this.state.rawMode ? "-" : "strikethrough"
                 });
 
                 i++;
@@ -1187,8 +1195,8 @@ export class SuperType {
 
             if(body[i] === "/") {
                 queue.push({
-                    type: "style",
-                    value: "italic"
+                    type: this.state.rawMode ? "character" : "style",
+                    value: this.state.rawMode ? "/" : "italic"
                 });
 
                 i++;

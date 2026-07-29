@@ -13,35 +13,6 @@ typewriter: {
     backToTop: true
 }
 [instant]
-[color #ff0000]
-[raw]
-
-                                     -_hi_-                                           
-                                                                                
-                                                                                
-                                                           X   _                
-                                                          ._dd|||bb_,           
-                                      -------           .dpT``   ''Tqb,         
-                                   ---       ---       .p`           'qL        
-                                  /             \     )p`             'q,       
-                                 /               \    d`               'b       
-                                |                 |   |                 |       
-                                |                 |   q,               .p       
-                                |                 |   'b,             .d`       
-                                 \               /     'b,           .d`        
-                                  \             /       'qb_,,   .__dp`         
-                                   ---       ,-----.      'TYq|||pYT`           
-                                      -----,'       `.         "                
-                                         ,'           `.                        
-                                        ;               :                       
-                                        |               |                       
-                                        :               ;                       
-                                         `.           ,'                        
-                                           `.       ,'                          
-                                             `-----'                            
-
-[raw end]
-[color reset]
 [instant off]
 Dr[ignore].[ignore] ████████ ███████ THIS[glitch 10 keep] REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
