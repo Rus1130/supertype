@@ -25,6 +25,20 @@
             "editor.tokenColorCustomizations": {
                 "textMateRules": [
                     {
+                        "scope": "special.specific.st",
+                        "settings": {
+                            "foreground": "#ff6f6f",
+                            "fontStyle": "bold"
+                        }
+                    },
+                    {
+                        "scope": "special.tag.st",
+                        "settings": {
+                            "foreground": "#b0ccff",
+                            "fontStyle": "bold"
+                        }
+                    },
+                    {
                         "scope": "comment.block.supertype",
                         "settings": {
                             "fontStyle": ""

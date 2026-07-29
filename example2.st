@@ -13,6 +13,7 @@ typewriter: {
     backToTop: true
 }
 [instant]
+[color #ff0000]
 [raw]
 
                                      -_hi_-                                           
@@ -40,6 +41,7 @@ typewriter: {
                                              `-----'                            
 
 [raw end]
+[color reset]
 [instant off]
 Dr[ignore].[ignore] ████████ ███████ THIS[glitch 10 keep] REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 

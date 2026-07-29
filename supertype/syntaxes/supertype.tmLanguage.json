@@ -2,6 +2,7 @@
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "SuperType",
     "patterns": [
+        { "include": "#raw" },
         { "include": "#comments" },
         { "include": "#markup" },
         { "include": "#header" },
@@ -9,6 +10,23 @@
         { "include": "#tags" }
     ],
 	"repository": {
+        "raw": {
+            "patterns": [
+                {
+                    "name": "string.unstyled.raw.st",
+                    "begin": "(?<!\\\\)\\[raw\\]",
+                    "end": "(?<!\\\\)\\[raw (end)\\]",
+                    "beginCaptures": {
+                        "0": { "name": "special.tag.st" }
+                    },
+                    "endCaptures": {
+                        "0": { "name": "special.tag.st" },
+                        "1": { "name": "special.specific.st" }
+                    },
+                    "patterns": []
+                }
+            ]
+        },
         "colors": {
             "patterns": [
                 {
@@ -128,7 +146,8 @@
                         }
                     },
                     "patterns": [
-                        { "include": "#escapes" }
+                        { "include": "#escapes" },
+                        { "include": "#markup" }
                     ]
                 },
                 {
@@ -152,7 +171,8 @@
                         }
                     },
                     "patterns": [
-                        { "include": "#escapes" }
+                        { "include": "#escapes" },
+                        { "include": "#markup" }
                     ]
                 },
                 {
@@ -176,7 +196,8 @@
                         }
                     },
                     "patterns": [
-                        { "include": "#escapes" }
+                        { "include": "#escapes" },
+                        { "include": "#markup" }
                     ]
                 },
                 {
@@ -200,7 +221,8 @@
                         }
                     },
                     "patterns": [
-                        { "include": "#escapes" }
+                        { "include": "#escapes" },
+                        { "include": "#markup" }
                     ]
                 }
             ]
