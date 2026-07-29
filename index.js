@@ -153,6 +153,8 @@ export class SuperType {
 
         this.targetParent = target;
         this.target = div;
+        
+        this.target.style.whiteSpace = "pre-wrap";
 
         this.state = {
             token: 0,
