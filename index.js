@@ -856,50 +856,50 @@ export class SuperType {
 
         let currentPage = "root";
 
-        for (let i = 0; i < this.tokens.length; i++) {
-            const token = this.tokens[i];
+        // for (let i = 0; i < this.tokens.length; i++) {
+        //     const token = this.tokens[i];
 
-            if (token.type === "tag" && token.name === "mixin") {
-                if (token.args.length === 0)
-                    throw new Error(`Missing mixin name at token index ${i}`);
+        //     if (token.type === "tag" && token.name === "mixin") {
+        //         if (token.args.length === 0)
+        //             throw new Error(`Missing mixin name at token index ${i}`);
 
-                if (token.args[0].type !== "string")
-                    throw new Error(`Mixin name must be a string at token index ${i}`);
+        //         if (token.args[0].type !== "string")
+        //             throw new Error(`Mixin name must be a string at token index ${i}`);
 
-                const mixinName = token.args[0].value;
+        //         const mixinName = token.args[0].value;
 
-                if (this.mixins[mixinName] !== undefined)
-                    throw new Error(`Duplicate mixin name at token index ${i}: ${mixinName}`);
+        //         if (this.mixins[mixinName] !== undefined)
+        //             throw new Error(`Duplicate mixin name at token index ${i}: ${mixinName}`);
 
-                const body = [];
+        //         const body = [];
 
-                // Find the end tag
-                let foundEnd = false;
+        //         // Find the end tag
+        //         let foundEnd = false;
 
-                for (let j = i + 1; j < this.tokens.length; j++) {
-                    const inner = this.tokens[j];
+        //         for (let j = i + 1; j < this.tokens.length; j++) {
+        //             const inner = this.tokens[j];
 
-                    if (inner.type === "tag" && inner.name === "mixin" &&
-                        inner.args.length > 0 &&
-                        inner.args[0].type === "specific" &&
-                        inner.args[0].value === "end") {
+        //             if (inner.type === "tag" && inner.name === "mixin" &&
+        //                 inner.args.length > 0 &&
+        //                 inner.args[0].type === "specific" &&
+        //                 inner.args[0].value === "end") {
 
-                        foundEnd = true;
-                        i = j; // skip the entire mixin block
-                        break;
-                    }
+        //                 foundEnd = true;
+        //                 i = j; // skip the entire mixin block
+        //                 break;
+        //             }
 
-                    body.push(inner);
-                }
+        //             body.push(inner);
+        //         }
 
-                if (!foundEnd)
-                    throw new Error(`Missing [mixin end] for mixin: ${mixinName}`);
+        //         if (!foundEnd)
+        //             throw new Error(`Missing [mixin end] for mixin: ${mixinName}`);
 
-                this.mixins[mixinName] = body;
-            }
-        }
+        //         this.mixins[mixinName] = body;
+        //     }
+        // }
 
-        console.log(this.mixins, this.tokens)
+
 
         for(let i = 0; i < this.tokens.length; i++) {
             const token = this.tokens[i];
@@ -1212,25 +1212,31 @@ export class SuperType {
 
                     const name = parts.shift();
 
-                    const TagClass = SuperType.tags.get(name) ?? Tag;
+                    const isRawEnd = name === "raw" && parts.length === 1 && parts[0] === "end";
 
-                    const result = TagClass.onTokenization(parts, {
-                        engine: this,
-                        queue,
-                        body,
-                        index: i
-                    });
+                    // While in raw mode, only [raw end] is allowed to act as a tag.
+                    // Everything else falls through and gets pushed as plain characters.
+                    if (this.state.rawMode !== true || isRawEnd) {
+                        const TagClass = SuperType.tags.get(name) ?? Tag;
 
-                    if (result !== false) {
-                        queue.push({
-                            type: "tag",
-                            name,
-                            args: result
+                        const result = TagClass.onTokenization(parts, {
+                            engine: this,
+                            queue,
+                            body,
+                            index: i
                         });
-                    }
 
-                    i = end + 1;
-                    continue;
+                        if (result !== false) {
+                            queue.push({
+                                type: "tag",
+                                name,
+                                args: result
+                            });
+                        }
+
+                        i = end + 1;
+                        continue;
+                    }
                 }
             }
 
