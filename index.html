@@ -39,7 +39,7 @@
 <body>
 </body>
 <script type="module">
-    import { SuperType } from "./index.js";
+    import { SuperType, TagArgument } from "./index.js";
 
     const tw = new SuperType(document.body, {
         "end": function() {
@@ -53,10 +53,36 @@
             tw.appendToTarget(returnButton);
             tw.target.style.overflowY = 'scroll';
             tw.target.classList.add('hide-scrollbar');
+        },
+
+        "jitterlerp": function(engine, token){
+            const [name, text, leftValue, rightValue] = token.args;
+
+            text.check("string")
+            leftValue.check("number")
+            rightValue.check("number")
+
+            for(let i = 0; i < text.value.length; i++){
+                const character = text.value.split("").reverse()[i];
+
+                // interpolate
+                const strength = rightValue.value + (leftValue.value - rightValue.value) * (i / (text.value.length - 1));
+
+                engine.insertToken({
+                    type: "tag",
+                    name: "jitter",
+                    style: token.style,
+                    args: [
+                        new TagArgument("string", character),
+                        new TagArgument("number", strength),
+                    ]
+                })
+            }
+
         }
     })
 
-    await tw.load("jitter.st").then(() => {
+    await tw.load("examples.st").then(() => {
         tw.start();
     })
 

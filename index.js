@@ -1,4 +1,4 @@
-class TagArgument {
+export class TagArgument {
     constructor(type, value) {
         this.type = type;
         this.value = value;
@@ -299,10 +299,10 @@ class FunctionTag extends Tag {
 
         const func = engine.functions.get(funcName.value);
 
-        if (!func) throw new Error(`Function not found: ${funcName.value}`);
+        if (!func) throw new Error(`Function not found: ${funcName.value}`)
 
         engine.state.scrollCount = SuperType.defaultScrollCount;
-        func(engine);
+        func(engine, token);
     }
 }
 
@@ -1027,6 +1027,21 @@ export class SuperType {
         this.state.currentStyle = null;
     }
 
+    insertToken(token) {
+        this.pages[this.state.page].splice(this.state.token, 0, token);
+    }
+    // insertTagInto(name, args = [], style = {}) {
+    //     const TagClass = SuperType.tags.get(name) ?? Tag;
+
+    //     const token = {
+    //         type: "tag",
+    //         name,
+    //         args,
+    //         style
+    //     };
+
+
+
     render = (now) => {
         if (this.state.paused) {
             requestAnimationFrame(this.render);
@@ -1176,8 +1191,12 @@ export class SuperType {
         element.style.backgroundColor = this.state.currentBg;
         element.style.fontWeight = style.bold ? "bold" : "normal";
         element.style.fontStyle = style.italic ? "italic" : "normal";
-        element.style.textDecoration = style.underline ? "underline" : "none";
-        element.style.textDecoration += style.strikethrough ? " line-through" : "";
+        
+        // Build text-decoration correctly
+        const decorations = [];
+        if (style.underline) decorations.push("underline");
+        if (style.strikethrough) decorations.push("line-through");
+        element.style.textDecoration = decorations.length > 0 ? decorations.join(" ") : "none";
     }
 
     renderCharacter(text, style) {
