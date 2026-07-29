@@ -196,11 +196,11 @@ class IgnoreTag extends Tag {
 
     static onUse(engine, token) {
         let value = token.args[0];
-        if (value === undefined) return engine.state.ignoreCustomDelays = !engine.state.ignoreCustomDelays;
+        if (value === undefined) return engine.state.ignoreCustomDelays = true;
 
-        value.checkSpecific("on", "off");
+        value.checkSpecific("off");
 
-        engine.state.ignoreCustomDelays = value.value === "on";
+        engine.state.ignoreCustomDelays = false;
     }
 }
 
@@ -209,11 +209,11 @@ class InstantTag extends Tag {
 
     static onUse(engine, token) {
         let instant = token.args[0];
-        if (instant === undefined) return engine.header.instant = !engine.header.instant;
+        if (instant === undefined) return engine.header.instant = true;
 
-        instant.checkSpecific("on", "off");
+        instant.checkSpecific("off");
 
-        engine.header.instant = instant.value === "on";
+        engine.header.instant = false;
     }
 }
 
