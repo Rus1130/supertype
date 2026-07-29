@@ -7,7 +7,7 @@ typewriter: {
         ",": 500
     }
 }
-WOW! this is normal text![linebreak]
+WOW! this is normal text![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 
 i just used a linebreak there. smirk[newline]
@@ -20,7 +20,7 @@ time to sleep... [sleep 2000]sleepy...[newline]
 
 [speed 1]SO FAST!!!![speeddefault] back to normal speed.[newline]
 
-periods are gonna be super slow now[custom "." 1000]... see?[newline] 
+periods are gonna be super slow now[custom "." 1000]... see?[newline]
 
 [customremove "."]......not anymore![newline]
 
@@ -31,7 +31,7 @@ lorem ipsum dolor sit amet ur mom[newline]
 [instant off]no more instant[newline]
 
 [ignore]comma custom delay ignored, because i used an ignore tag, so it ignores all custom delays,  sigma[newline]
-[ignore off]comma custom delay is back, because i used an ignore off tag, so it ignores all custom delays, super sigma[newline] 
+[ignore off]comma custom delay is back, because i used an ignore off tag, so it ignores all custom delays, super sigma[newline]
 
 [color #339900]green text[color reset][newline]
 
@@ -50,7 +50,7 @@ back to normal
 wow look! its a page! cool![sleep 10000] yeah ur stuck here bud. gotta reload
 [page end]
 
-[linebreak][gopage "hi" "click me if u want idk"][linebreak]
+[linebreak][gopage "hi" "click me if u want idk"][newline]
 /italic/[newline]
 *bold*[newline]
 -strikethrough-[newline]
@@ -66,4 +66,4 @@ _underline_[newline]
 
 [jitter "it types it, but they jitter the same" 10 shared][newline]
 
-[function "jitterlerp" "this is a custom lerp!" 30 1][newline]
+[function "jitterlerp" "this is a custom function that lerps!" 1 20][newline]

@@ -225,6 +225,10 @@ class RemoveLastTag extends Tag {
     }
 
     static onRender(engine, token) {
+        if (engine.state.fragment && engine.state.fragment.childNodes.length) {
+            engine.target.appendChild(engine.state.fragment); // fragment empties itself, still reusable
+        }
+
         let count = token.args[0];
 
         while (count.value > 0 && engine.target.lastChild) {
@@ -652,6 +656,8 @@ export class SuperType {
 
     static SharedMemory = {};
 
+    static MAX_CHARACTERS_PER_FRAME = 50;
+
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
 
     static randomCharacter() {
@@ -1051,28 +1057,31 @@ export class SuperType {
         const fragment = document.createDocumentFragment();
         this.state.fragment = fragment;
 
-
         let processed = 0;
 
-        while (now >= this.state.nextTime && (processed < 200 || this.header.instant)) {
-            const token = this.pages[this.state.page][this.state.token++];
+        try {
+            while (now >= this.state.nextTime && (processed < SuperType.MAX_CHARACTERS_PER_FRAME || this.header.instant)) {
+                const token = this.pages[this.state.page][this.state.token++];
 
-            if (!token) {
-                this.state.scrollLocked = false;
-                this.state.pauseLocked = true;
-                this.pause();
-                if(this.header.backToTop === true) requestAnimationFrame(() => {
-                    this.scrollWindow(0);
-                });
-                break;
+                if (!token) {
+                    this.state.scrollLocked = false;
+                    this.state.pauseLocked = true;
+                    this.pause();
+                    if (this.header.backToTop === true) requestAnimationFrame(() => {
+                        this.scrollWindow(0);
+                    });
+                    break;
+                }
+
+                this.process(token);
+                processed++;
             }
-
-            this.process(token);
-            processed++;
-        }
-
-        if (fragment.childNodes.length) {
-            this.target.appendChild(fragment);
+        } catch (err) {
+            console.error("SuperType: error processing token, skipping it", err);
+        } finally {
+            if (fragment.childNodes.length) {
+                this.target.appendChild(fragment);
+            }
         }
 
         requestAnimationFrame(this.render);
