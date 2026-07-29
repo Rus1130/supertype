@@ -109,15 +109,21 @@
             "patterns": [
                 {
                     "name": "style.bold.st",
-                    "begin": "(?<!\\\\)\\*",
+                    "begin": "(?<!\\\\)(\\*)",
                     "beginCaptures": {
                         "0": {
                             "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
-                    "end": "(?<!\\\\)\\*",
+                    "end": "(?<!\\\\)(\\*)",
                     "endCaptures": {
                         "0": {
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
                             "name": "comment.block.supertype"
                         }
                     },
@@ -127,16 +133,22 @@
                 },
                 {
                     "name": "style.italic.st",
-                    "begin": "(?<!\\\\)/",
+                    "begin": "(?<!\\\\)(/)",
                     "beginCaptures": {
                         "0": {
-                            "name": "punctuation.definition.italic.begin.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
-                    "end": "(?<!\\\\)/",
+                    "end": "(?<!\\\\)(/)",
                     "endCaptures": {
                         "0": {
-                            "name": "punctuation.definition.italic.end.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
                     "patterns": [
@@ -145,16 +157,22 @@
                 },
                 {
                     "name": "style.underline.st",
-                    "begin": "(?<!\\\\)_",
+                    "begin": "(?<!\\\\)(_)",
                     "beginCaptures": {
                         "0": {
-                            "name": "punctuation.definition.underline.begin.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
-                    "end": "(?<!\\\\)_",
+                    "end": "(?<!\\\\)(_)",
                     "endCaptures": {
                         "0": {
-                            "name": "punctuation.definition.underline.end.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
                     "patterns": [
@@ -163,16 +181,22 @@
                 },
                 {
                     "name": "style.strike.st",
-                    "begin": "(?<!\\\\)-",
+                    "begin": "(?<!\\\\)(-)",
                     "beginCaptures": {
                         "0": {
-                            "name": "punctuation.definition.strikethrough.begin.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
-                    "end": "(?<!\\\\)-",
+                    "end": "(?<!\\\\)(-)",
                     "endCaptures": {
                         "0": {
-                            "name": "punctuation.definition.strikethrough.end.supertype"
+                            "name": "comment.block.supertype"
+                        },
+                        "1": {
+                            "name": "comment.block.supertype"
                         }
                     },
                     "patterns": [
