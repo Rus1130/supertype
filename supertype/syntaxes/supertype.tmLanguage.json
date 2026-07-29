@@ -39,6 +39,22 @@
                 }
             ]
         },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.integer.st",
+                    "match": "\\b\\-?d+\\b"
+                }
+            ]
+        },
+        "booleans": {
+            "patterns": [
+                {
+                    "name": "constant.language.boolean.st",
+                    "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
         "tags": {
             "patterns": [
                 {
@@ -59,17 +75,9 @@
                         },
                         { "include": "#strings" },
                         { "include": "#colors" },
-                        {
-                            "name": "constant.numeric.integer.st",
-                            "match": "\\b\\d+\\b"
-                        },
-                        {
-                            "name": "constant.language.boolean.st",
-                            "match": "\\b(true|false)\\b"
-                        },
-                        {
-                            "include": "#escapes"
-                        }
+                        { "include": "#numbers" },
+                        { "include": "#booleans" },
+                        { "include": "#escapes" }
                     ]
                 }
             ]
@@ -113,14 +121,8 @@
                 },
                 { "include": "#strings" },
                 { "include": "#colors" },
-                {
-                    "name": "constant.numeric.integer.st",
-                    "match": "\\b\\d+\\b"
-                },
-                {
-                    "name": "constant.language.boolean.st",
-                    "match": "\\b(true|false)\\b"
-                }
+                { "include": "#numbers" },
+                { "include": "#booleans" }
             ]
         },
         "markup": {
@@ -140,12 +142,8 @@
                 }
                 },
                 "patterns": [
-                {
-                    "include": "#escapes"
-                },
-                {
-                    "include": "#markup"
-                }
+                    { "include": "#escapes" },
+                    { "include": "#markup" }
                 ]
             },
             {
@@ -163,12 +161,8 @@
                 }
                 },
                 "patterns": [
-                {
-                    "include": "#escapes"
-                },
-                {
-                    "include": "#markup"
-                }
+                    { "include": "#escapes" },
+                    { "include": "#markup" }
                 ]
             },
             {
@@ -186,12 +180,8 @@
                 }
                 },
                 "patterns": [
-                {
-                    "include": "#escapes"
-                },
-                {
-                    "include": "#markup"
-                }
+                    { "include": "#escapes" },
+                    { "include": "#markup" }
                 ]
             },
             {
@@ -209,12 +199,8 @@
                 }
                 },
                 "patterns": [
-                {
-                    "include": "#escapes"
-                },
-                {
-                    "include": "#markup"
-                }
+                    { "include": "#escapes" },
+                    { "include": "#markup" }
                 ]
             }
             ]
