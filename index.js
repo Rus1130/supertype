@@ -104,6 +104,446 @@ class TagArgument {
     }
 }
 
+/**
+ * Base class for all SuperType tags. Extend this and override any subset of
+ * the three hooks; unimplemented hooks fall back to these defaults.
+ *
+ * Register with SuperType.registerTag(YourTagClass).
+ *
+ * All hooks are static — tags don't hold per-instance state, they operate on
+ * the `engine` (the SuperType instance) and `token` ({ type, name, args, style })
+ * that are passed in.
+ */
+export class Tag {
+    /** @type {string} the `[name ...]` identifier this tag responds to */
+    static tagName = null;
+
+    /**
+     * Called while tokenize() encounters this tag, with the raw (unparsed)
+     * string arguments between the brackets. Must return the args array to
+     * store on the token (normally an array of TagArgument). Can also perform
+     * immediate side effects on `ctx.engine` if the tag needs to influence how
+     * the tokenizer itself behaves afterward (see RawTag).
+     *
+     * @param {string[]} rawArgs
+     * @param {{engine: SuperType}} ctx
+     * @returns {TagArgument[]}
+     */
+    static onTokenization(rawArgs, ctx) {
+        return rawArgs.map(arg => TagArgument.parse(arg));
+    }
+
+    /**
+     * Called from process() when the typewriter reaches this token during
+     * animation. Do validation and state mutation here. Return `false` to
+     * skip the onRender call that would otherwise follow (e.g. when a tag
+     * expands itself into other tokens instead of doing anything itself).
+     *
+     * @param {SuperType} engine
+     * @param {{type: "tag", name: string, args: TagArgument[], style: object}} token
+     * @returns {false | void}
+     */
+    static onUse(engine, token) {
+        console.error(`Unknown tag type: ${token.name}`);
+    }
+
+    /**
+     * Called from process() right after onUse (unless onUse returned false).
+     * Do any actual visual/DOM output here.
+     *
+     * @param {SuperType} engine
+     * @param {{type: "tag", name: string, args: TagArgument[], style: object}} token
+     */
+    static onRender(engine, token) {}
+}
+
+class RawTag extends Tag {
+    static tagName = "raw";
+
+    static onTokenization(rawArgs, ctx) {
+        const args = super.onTokenization(rawArgs, ctx);
+        const value = args[0];
+
+        if (value !== undefined) value.checkSpecific("end");
+
+        ctx.engine.state.rawMode = value === undefined;
+
+        if (value !== undefined) ctx.queue.push({
+            type: "tag",
+            name: "newline",
+            args: [new TagArgument("specific", "instant")],
+        });
+
+        return args;
+    }
+
+    static onUse(engine, token) {
+        // no runtime effect; entirely handled at tokenize-time above.
+    }
+}
+
+class IgnoreTag extends Tag {
+    static tagName = "ignore";
+
+    static onUse(engine, token) {
+        let value = token.args[0];
+        if (value === undefined) return engine.state.ignoreCustomDelays = !engine.state.ignoreCustomDelays;
+
+        value.checkSpecific("on", "off");
+
+        engine.state.ignoreCustomDelays = value.value === "on";
+    }
+}
+
+class InstantTag extends Tag {
+    static tagName = "instant";
+
+    static onUse(engine, token) {
+        let instant = token.args[0];
+        if (instant === undefined) return engine.header.instant = !engine.header.instant;
+
+        instant.checkSpecific("on", "off");
+
+        engine.header.instant = instant.value === "on";
+    }
+}
+
+class RemoveLastTag extends Tag {
+    static tagName = "removelast";
+
+    static onUse(engine, token) {
+        token.args[0].check("number");
+    }
+
+    static onRender(engine, token) {
+        let count = token.args[0];
+
+        while (count.value > 0 && engine.target.lastChild) {
+
+            const span = engine.target.lastChild;
+
+            if (span.nodeType !== Node.ELEMENT_NODE) {
+                engine.target.removeChild(span);
+                continue;
+            }
+
+            const text = span.firstChild;
+
+            if (!text) {
+                engine.target.removeChild(span);
+                continue;
+            }
+
+            const remove = Math.min(count.value, text.length);
+
+            text.deleteData(text.length - remove, remove);
+
+            count.value -= remove;
+
+            if (text.length === 0) {
+                engine.target.removeChild(span);
+            }
+        }
+
+        engine.resetSpanTextStyle();
+    }
+}
+
+class CustomTag extends Tag {
+    static tagName = "custom";
+
+    static onUse(engine, token) {
+        let name = token.args[0];
+        let delay = token.args[1];
+
+        if (name === undefined) throw new Error("Missing custom tag name");
+        if (delay === undefined) throw new Error("Missing custom tag delay");
+
+        name.check("string");
+        delay.check("number");
+
+        engine.header.customDelays[name.value] = delay.value;
+    }
+}
+
+class CustomRemoveTag extends Tag {
+    static tagName = "customremove";
+
+    static onUse(engine, token) {
+        let name = token.args[0];
+        if (name === undefined) throw new Error("Missing custom tag name");
+        name.check("string");
+
+        if (engine.header.customDelays[name.value] === undefined) throw new Error(`Custom tag not found: ${name.value}`);
+
+        delete engine.header.customDelays[name.value];
+    }
+}
+
+class FunctionTag extends Tag {
+    static tagName = "function";
+
+    static onUse(engine, token) {
+        const funcName = token.args[0];
+        if (funcName === undefined) throw new Error("Missing function name");
+        funcName.check("string");
+
+        const func = engine.functions.get(funcName.value);
+
+        if (!func) throw new Error(`Function not found: ${funcName.value}`);
+
+        engine.state.scrollCount = SuperType.defaultScrollCount;
+        func(engine);
+    }
+}
+
+class TabTag extends Tag {
+    static tagName = "tab";
+
+    static onUse(engine, token) {
+        let value = token.args[0];
+
+        if (value === undefined) throw new Error("Missing tab value");
+        value.check("number");
+
+        engine.addRenderTime(engine.fetchDelay(" "));
+    }
+
+    static onRender(engine, token) {
+        engine.renderRaw("&nbsp;".repeat(token.args[0].value));
+    }
+}
+
+class GopageTag extends Tag {
+    static tagName = "gopage";
+
+    static onUse(engine, token) {
+        const pageName = token.args[0];
+        if (pageName === undefined) throw new Error("Missing page name");
+        pageName.check("string");
+
+        if (engine.header.previewMode) return;
+
+        const text = token.args[1];
+        if (text === undefined) throw new Error("Missing button text");
+        text.check("string");
+
+        let keep = token.args[2];
+        if (keep !== undefined) keep.checkSpecific("keep");
+    }
+
+    static onRender(engine, token) {
+        const pageName = token.args[0];
+
+        if (engine.header.previewMode) {
+            let charCount = engine.header.wordWrap;
+            if (charCount === undefined) {
+                // get the amount of characters that would fit on a line in the screen using the target width and the font size
+                const fontSize = parseFloat(getComputedStyle(engine.target).fontSize);
+                const targetWidth = engine.target.clientWidth;
+                charCount = Math.floor(targetWidth / fontSize);
+            }
+
+            engine.renderRaw(`<br>${"=".repeat(charCount)}<br>`)
+            engine.start(pageName.value);
+            return;
+        }
+
+        const text = token.args[1];
+        const keep = token.args[2] !== undefined;
+
+        let button = document.createElement("div");
+        button.classList.add("button");
+        button.textContent = "▌" + text.value;
+
+        button.addEventListener("click", () => {
+            if (keep === false) {
+                engine.target.innerHTML = "";
+
+                engine.resetSpanTextStyle();
+
+                engine.state.glitches = [];
+            }
+            engine.start(pageName.value);
+        });
+
+        engine.appendToTarget(button);
+    }
+}
+
+class ColorTag extends Tag {
+    static tagName = "color";
+
+    static onUse(engine, token) {
+        if (token.args.length === 0) throw new Error("Missing color value");
+
+        const value = token.args[0];
+        if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid color value: Expected color or reset, got ${value.type}`);
+
+        if (value.is("color")) {
+            engine.state.currentColor = value.value;
+        } else if (value.equalsSpecific("reset")) {
+            engine.state.currentColor = engine.header.textColor;
+        }
+
+        engine.resetSpanTextStyle();
+    }
+}
+
+class BgTag extends Tag {
+    static tagName = "bg";
+
+    static onUse(engine, token) {
+        if (token.args.length === 0) throw new Error("Missing background color value");
+
+        const value = token.args[0];
+        if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid background color value: Expected color or reset, got ${value.type}`);
+
+        if (value.is("color")) {
+            engine.state.currentBg = value.value;
+        } else if (value.equalsSpecific("reset")) {
+            engine.state.currentBg = engine.header.backgroundColor;
+        }
+
+        engine.resetSpanTextStyle();
+    }
+}
+
+class SpeedTag extends Tag {
+    static tagName = "speed";
+
+    static onUse(engine, token) {
+        const value = token.args[0];
+        const option = token.args[1];
+
+        if (value === undefined) throw new Error("Missing speed value");
+
+        value.check("number");
+        if (option) option.checkSpecific("override");
+
+        engine.header.charDelay = value.value;
+        if (option != undefined) engine.state.tagSpeedOverride = true;
+    }
+}
+
+class SpeedDefaultTag extends Tag {
+    static tagName = "speeddefault";
+
+    static onUse(engine, token) {
+        engine.header.charDelay = engine.state.defaultCharDelay;
+        engine.state.tagSpeedOverride = false;
+    }
+}
+
+class NewlineTag extends Tag {
+    static tagName = "newline";
+
+    static onUse(engine, token) {
+        let instant = token.args[0];
+        if (instant !== undefined) instant.checkSpecific("instant");
+        if (instant === undefined) instant = false;
+
+        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
+        engine.state.scrollCount = SuperType.defaultScrollCount;
+    }
+
+    static onRender(engine, token) {
+        engine.renderRaw("<br>");
+    }
+}
+
+class LinebreakTag extends Tag {
+    static tagName = "linebreak";
+
+    static onUse(engine, token) {
+        let instant = token.args[0];
+        if (instant !== undefined) instant.checkSpecific("instant");
+        if (instant === undefined) instant = false;
+
+        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
+        engine.state.scrollCount = SuperType.defaultScrollCount;
+    }
+
+    static onRender(engine, token) {
+        engine.renderRaw("<br><br>");
+    }
+}
+
+class SleepTag extends Tag {
+    static tagName = "sleep";
+
+    static onUse(engine, token) {
+        let value = token.args[0];
+
+        if (value === undefined) throw new Error("Missing sleep value");
+
+        value.check("number");
+        engine.addRenderTime(value.value);
+    }
+}
+
+class GlitchTag extends Tag {
+    static tagName = "glitch";
+
+    static onUse(engine, token) {
+        let value = token.args[0];
+        let keep = token.args[1];
+
+        if (value === undefined) {
+            throw new Error("Missing glitch value");
+        }
+
+        value.check("number");
+
+        if (keep !== undefined) {
+            keep.checkSpecific("keep");
+        }
+
+        // expand temporary glitches into keep glitches
+        if (keep === undefined) {
+            const tokens = [];
+
+            for (let i = 0; i < value.value; i++) {
+                tokens.push({
+                    type: "tag",
+                    name: "glitch",
+                    args: [
+                        new TagArgument("number", 1),
+                        new TagArgument("specific", "keep")
+                    ],
+                    style: token.style
+                });
+            }
+
+            engine.pages[engine.state.page].splice(
+                engine.state.token,
+                0,
+                ...tokens
+            );
+
+            return false; // this token itself renders nothing; the spliced tokens will
+        }
+
+        engine.addRenderTime(engine.state.defaultNewlineDelay);
+    }
+
+    static onRender(engine, token) {
+        const value = token.args[0];
+
+        for (let i = 0; i < value.value; i++) {
+            engine.createGlitch(token.style);
+        }
+    }
+}
+
+class PageTag extends Tag {
+    static tagName = "page";
+
+    // "page" tokens are never dispatched through process(): load() filters them
+    // out of the token stream entirely and uses them purely to route subsequent
+    // tokens into the right page bucket. onUse/onRender are intentionally unused.
+}
+
 export class SuperType {
 
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
@@ -114,9 +554,25 @@ export class SuperType {
 
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "separate", "on", "off"];
 
-    static AllTags = ["removelast", "custom", "customremove", "function", "tab", "gopage", "color", "bg", "speed", "speeddefault", "newline", "linebreak", "sleep", "glitch", "instant", "page", "ignore"];
-
     static defaultScrollCount = 6;
+
+    static tags = new Map();
+
+    static registerTag(TagClass) {
+        if (!TagClass.tagName) {
+            throw new Error(`Tag class "${TagClass.name}" must define a static tagName`);
+        }
+
+        if (SuperType.tags.has(TagClass.tagName)) {
+            throw new Error(`Tag "${TagClass.tagName}" is already registered`);
+        }
+
+        SuperType.tags.set(TagClass.tagName, TagClass);
+    }
+
+    static get AllTags() {
+        return [...SuperType.tags.keys()];
+    }
 
     glitchLoop = () => {
         for (const text of this.state.glitches) {
@@ -183,6 +639,9 @@ export class SuperType {
 
             ignoreCustomDelays: false,
 
+            // tokenizer-time only: whether we're currently inside a [raw] ... [raw end] block.
+            // this must be toggled during tokenize(), NOT during process()/animation, since
+            // tokenize() runs once, eagerly, over the entire body before any animation starts.
             rawMode: false
         }
     }
@@ -236,7 +695,7 @@ export class SuperType {
     }
 
     async load(path) {
-        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
+        this.data = (await this.fetch(path)).replaceAll(/\{\{#(?!raw)[\s\S]*?#\}\}/g, "");
 
         const start = this.data.indexOf("typewriter");
         const open = this.data.indexOf("{", start);
@@ -277,9 +736,9 @@ export class SuperType {
         }
 
         this.header = header.parsed.typewriter;
-        this.body = this.data.slice(i).replace(/\{\{#raw[\s\S]*?#\}\}|\r?\n/g,
-            (match) => match.startsWith("{{#raw") ? match : ""
-        )
+
+
+        this.body = this.data.slice(i).replaceAll(/\r?\n/g, "\n");
 
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
@@ -347,6 +806,8 @@ export class SuperType {
 
             for(let i = 0; i < pageTokens.length; i++) {
                 const token = pageTokens[i];
+
+                console.log(token.type, token.character, this.state.rawMode)
 
                 if(token.type === "style") {
                     if(token.value === "bold") styleStack.bold = !styleStack.bold;
@@ -532,300 +993,12 @@ export class SuperType {
             return;
         }
 
-        switch (token.name) {
+        const TagClass = SuperType.tags.get(token.name) ?? Tag;
+        const result = TagClass.onUse(this, token);
 
-            case "raw": {
-                let value = token.args[0];
+        if (result === false) return;
 
-                if(value != undefined) value.checkSpecific("end");
-
-                if(value === undefined){
-                    console.log("Start raw")
-                } else if(value.equalsSpecific("end")){
-                    console.log("End raw")
-                }
-
-            } break;
-
-            case "ignore": {
-                let value = token.args[0];
-                if(value === undefined) return this.state.ignoreCustomDelays = !this.state.ignoreCustomDelays;
-                
-                value.checkSpecific("on", "off");
-                
-                this.state.ignoreCustomDelays = value.value === "on";
-            } break;
-
-            case "instant": {
-                let instant = token.args[0];
-                if(instant === undefined) return this.header.instant = !this.header.instant;
-
-                instant.checkSpecific("on", "off");
-
-                this.header.instant = instant.value === "on";
-            } break;
-
-            case "removelast": {
-                let count = token.args[0];
-
-                count.check("number");
-
-                while (count.value > 0 && this.target.lastChild) {
-
-                    const span = this.target.lastChild;
-
-                    if (span.nodeType !== Node.ELEMENT_NODE) {
-                        this.target.removeChild(span);
-                        continue;
-                    }
-
-                    const text = span.firstChild;
-
-                    if (!text) {
-                        this.target.removeChild(span);
-                        continue;
-                    }
-
-                    const remove = Math.min(count.value, text.length);
-
-                    text.deleteData(text.length - remove, remove);
-
-                    count.value -= remove;
-
-                    if (text.length === 0) {
-                        this.target.removeChild(span);
-                    }
-                }
-
-                this.resetSpanTextStyle();
-
-                break;
-            }
-
-            case "custom": {
-                let name = token.args[0];
-                let delay = token.args[1];
-
-                if(name === undefined) throw new Error("Missing custom tag name");
-                if(delay === undefined) throw new Error("Missing custom tag delay");
-
-                name.check("string");
-                delay.check("number");
-
-                this.header.customDelays[name.value] = delay.value;
-            } break;
-
-            case "customremove": {
-                let name = token.args[0];
-                if(name === undefined) throw new Error("Missing custom tag name");
-                name.check("string");
-
-                if(this.header.customDelays[name.value] === undefined) throw new Error(`Custom tag not found: ${name.value}`);
-
-                delete this.header.customDelays[name.value];
-            } break;
-
-            case "function": {
-                const funcName = token.args[0];
-                if(funcName === undefined) throw new Error("Missing function name");
-                funcName.check("string");
-
-                const func = this.functions.get(funcName.value);
-
-                if(!func) throw new Error(`Function not found: ${funcName.value}`);
-
-                this.state.scrollCount = SuperType.defaultScrollCount;
-                func(this);
-            } break;
-
-            case "tab": {
-                let value = token.args[0];
-
-                if(value === undefined) throw new Error("Missing tab value");
-                value.check("number");
-
-                this.renderRaw("&nbsp;".repeat(value.value));
-                this.addRenderTime(this.fetchDelay(" "));
-                
-            } break;
-
-            case "gopage": {
-                const pageName = token.args[0];
-                if(pageName === undefined) throw new Error("Missing page name");
-                pageName.check("string");
-
-                if(this.header.previewMode){
-                    let charCount = this.header.wordWrap;
-                    if(charCount === undefined){
-                        // get the amount of characters that would fit on a line in the screen using the target width and the font size
-                        const fontSize = parseFloat(getComputedStyle(this.target).fontSize);
-                        const targetWidth = this.target.clientWidth;
-                        charCount = Math.floor(targetWidth / fontSize);
-                    }
-
-                    this.renderRaw(`<br>${"=".repeat(charCount)}<br>`)
-                    this.start(pageName.value);
-                    return;
-                }
-
-
-                const text = token.args[1];
-                if(text === undefined) throw new Error("Missing button text");
-                text.check("string");
-
-                let keep = token.args[2];
-                if(keep !== undefined) keep.checkSpecific("keep");
-
-                keep = (keep === undefined) ? false : true
-
-                let button = document.createElement("div");
-                button.classList.add("button");
-                button.textContent = "▌" + text.value;
-
-                button.addEventListener("click", () => {
-                    if(keep === false) {
-                        this.target.innerHTML = "";
-
-                        this.resetSpanTextStyle();
-
-                        this.state.glitches = [];
-                    }
-                    this.start(pageName.value);
-                });
-
-                this.appendToTarget(button);
-            } break;
-
-            case "color": {
-                if(token.args.length === 0) throw new Error("Missing color value");
-
-                const value = token.args[0];
-                if(!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid color value: Expected color or reset, got ${value.type}`);
-
-                if(value.is("color")) {
-                    this.state.currentColor = value.value;
-                } else if(value.equalsSpecific("reset")) {
-                    this.state.currentColor = this.header.textColor;
-                }
-
-                this.resetSpanTextStyle();
-            } break;
-
-            case "bg": {
-                if(token.args.length === 0) throw new Error("Missing background color value");
-
-                const value = token.args[0];
-                if(!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid background color value: Expected color or reset, got ${value.type}`);
-
-                if(value.is("color")) {
-                    this.state.currentBg = value.value;
-                } else if(value.equalsSpecific("reset")) {
-                    this.state.currentBg = this.header.backgroundColor;
-                }
-
-                this.resetSpanTextStyle();
-            } break;
-
-            case "speed": {
-                const value = token.args[0];
-                const option = token.args[1];
-
-                if(value === undefined) throw new Error("Missing speed value");
-
-                value.check("number");
-                if(option) option.checkSpecific("override");
-
-                this.header.charDelay = value.value;
-                if(option != undefined) this.state.tagSpeedOverride = true;
-            } break;
-
-            case "speeddefault": {
-                this.header.charDelay = this.state.defaultCharDelay;
-                this.state.tagSpeedOverride = false;
-            } break;
-
-            case "newline": {
-
-                let instant = token.args[0];
-                if(instant !== undefined) instant.checkSpecific("instant");
-                if(instant === undefined) instant = false;
-
-                if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
-                this.renderRaw("<br>");
-                this.state.scrollCount = SuperType.defaultScrollCount;
-            } break;
-
-            case "linebreak": {
-                let instant = token.args[0];
-                if(instant !== undefined) instant.checkSpecific("instant");
-                if(instant === undefined) instant = false;
-
-                if(instant == false) this.addRenderTime(this.state.defaultNewlineDelay);
-                this.renderRaw("<br><br>");
-                this.state.scrollCount = SuperType.defaultScrollCount;
-            } break;
-
-            case "sleep": {
-                let value = token.args[0];
-
-                if(value === undefined) throw new Error("Missing sleep value");
-
-                value.check("number");
-                this.addRenderTime(value.value);
-            } break;
-
-            case "glitch": {
-                let value = token.args[0];
-                let keep = token.args[1];
-
-                if (value === undefined) {
-                    throw new Error("Missing glitch value");
-                }
-
-                value.check("number");
-
-                if (keep !== undefined) {
-                    keep.checkSpecific("keep");
-                }
-
-                // expand temporary glitches into keep glitches
-                if (keep === undefined) {
-                    const tokens = [];
-
-                    for (let i = 0; i < value.value; i++) {
-                        tokens.push({
-                            type: "tag",
-                            name: "glitch",
-                            args: [
-                                new TagArgument("number", 1),
-                                new TagArgument("specific", "keep")
-                            ],
-                            style: token.style
-                        });
-                    }
-
-                    this.pages[this.state.page].splice(
-                        this.state.token,
-                        0,
-                        ...tokens
-                    );
-
-                    break;
-                }
-
-                // actual glitch creation
-                for (let i = 0; i < value.value; i++) {
-                    this.createGlitch(token.style);
-                }
-
-                this.addRenderTime(this.state.defaultNewlineDelay);
-
-            } break;
-
-            default: {
-                console.error(`Unknown tag type: ${token.name}`);
-            }
-        }
+        TagClass.onRender(this, token);
     }
 
     fetchDelay(tokenValue){
@@ -907,37 +1080,22 @@ export class SuperType {
         this.state.fragment.appendChild(template.content);
     }
 
+    /**
+     * Tokenizes the raw body string into a flat token queue.
+     *
+     * Tag parsing is delegated to the matching Tag class's onTokenization hook
+     * (falling back to the generic TagArgument parser for unregistered names),
+     * so a tag can fully control how its own arguments are parsed, and can react
+     * immediately at tokenize-time (see RawTag, which toggles state.rawMode here
+     * rather than in onUse, since tokenize() runs once, eagerly, before any
+     * animation/process() calls happen).
+     */
     tokenize(body) {
         const queue = [];
 
         let i = 0;
 
         while (i < body.length) {
-
-        if (body.startsWith("{{#raw", i)) {
-            const start = body.indexOf("\n", i);
-
-            // Find the closing #}}
-            const end = body.indexOf("#}}", i);
-
-            if (end !== -1) {
-                // Skip the {{#raw line
-                const contentStart = start === -1 ? i + "{{#raw".length : start + 1;
-                const raw = body.slice(contentStart, end);
-
-                // Emit every character literally
-                for (const ch of raw) {
-                    console.log(ch == "\n")
-                    queue.push({
-                        type: "character",
-                        value: ch
-                    });
-                }
-
-                i = end + 3; // skip "#}}"
-                continue;
-            }
-        }
 
             // escaped characters
             if (body[i] === "\\") {
@@ -952,6 +1110,17 @@ export class SuperType {
                 }
             }
 
+            // raw mode: everything is literal except the "[raw ...]" tag itself,
+            // which is what's allowed to turn raw mode back off.
+            if (this.state.rawMode === true && !body.startsWith("[raw", i)) {
+                queue.push({
+                    type: "character",
+                    value: body[i]
+                });
+
+                i++;
+                continue;
+            }
 
             // tag
             if (body[i] === "[") {
@@ -964,9 +1133,15 @@ export class SuperType {
 
                     const name = parts.shift();
 
+                    const TagClass = SuperType.tags.get(name) ?? Tag;
 
-                    const args = parts.map(arg => TagArgument.parse(arg));
-
+                    const args = TagClass.onTokenization(parts, { 
+                        engine: this,
+                            engine: this,
+                            queue,
+                            body,
+                            index: i
+                    });
 
                     queue.push({
                         type: "tag",
@@ -1047,6 +1222,29 @@ export class SuperType {
 
         return await response.text();
     }
+}
+
+for (const TagClass of [
+    RawTag,
+    IgnoreTag,
+    InstantTag,
+    RemoveLastTag,
+    CustomTag,
+    CustomRemoveTag,
+    FunctionTag,
+    TabTag,
+    GopageTag,
+    ColorTag,
+    BgTag,
+    SpeedTag,
+    SpeedDefaultTag,
+    NewlineTag,
+    LinebreakTag,
+    SleepTag,
+    GlitchTag,
+    PageTag
+]) {
+    SuperType.registerTag(TagClass);
 }
 
 function getContext() {
