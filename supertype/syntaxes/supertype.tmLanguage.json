@@ -17,11 +17,11 @@
                     "begin": "(?<!\\\\)\\[raw\\]",
                     "end": "(?<!\\\\)\\[raw (end)\\]",
                     "beginCaptures": {
-                        "0": { "name": "special.tag.st" }
+                        "0": { "name": "tag.st" }
                     },
                     "endCaptures": {
-                        "0": { "name": "special.tag.st" },
-                        "1": { "name": "special.specific.st" }
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "specific.st" }
                     },
                     "patterns": []
                 }

@@ -13,13 +13,7 @@ typewriter: {
     backToTop: true
 }
 
-{{# n * 0.1 #}}
-[jitter "this is jitter" 10][newline]
-[jitter "this" 10 keep] [jitter "this" 10 keep] [jitter "this" 10 keep][newline]
-[glitch 10][newline]
-[glitch 10 keep][newline]
-[sleep 100]
-[instant]
+
 Dr[ignore].[ignore off] ████████ ███████ THIS  REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
 This report was written by the Interplanetary Transit Authority[sleep 350] (“ITA”) [sleep 351]to document the events surrounding what has been dubbed [sleep 400]the “Psyche Incident”[sleep 400].[sleep 1000][linebreak]
