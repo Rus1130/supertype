@@ -11,6 +11,7 @@ typewriter: {
         "?": 600
     }
     wordWrap: 72
+    instant: true
 }
 
 [sleep 1000]

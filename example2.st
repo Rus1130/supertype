@@ -11,6 +11,7 @@ typewriter: {
     }
     wordWrap: 100
     backToTop: true
+    instant: true
 }
 
 

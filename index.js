@@ -613,6 +613,14 @@ class PageTag extends Tag {
     // tokens into the right page bucket. onUse/onRender are intentionally unused.
 }
 
+class MixinTag extends Tag {
+    static tagName = "mixin";
+
+    // "mixin" tokens are never dispatched through process(): load() filters them
+    // out of the token stream entirely and uses them purely to route subsequent
+    // tokens into the right mixin bucket. onUse/onRender are intentionally unused.
+}
+
 export class SuperType {
 
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
@@ -684,6 +692,8 @@ export class SuperType {
         this.pages = {
             root: []
         };
+        this.mixins = {};
+
         this.functions = new Map();
 
         for (const [name, func] of Object.entries(functions)) {
@@ -839,17 +849,63 @@ export class SuperType {
         if(this.header.instant === undefined) this.header.instant = false;
         if(this.header.completionBar === undefined) this.header.completionBar = false;
 
+        this.target.style.display = "inline-block";
+        this.target.style.width = this.header.wordWrap ? `${this.header.wordWrap}ch` : "auto";
+
         this.tokens = this.tokenize(this.body)
 
         let currentPage = "root";
+
+        for (let i = 0; i < this.tokens.length; i++) {
+            const token = this.tokens[i];
+
+            if (token.type === "tag" && token.name === "mixin") {
+                if (token.args.length === 0)
+                    throw new Error(`Missing mixin name at token index ${i}`);
+
+                if (token.args[0].type !== "string")
+                    throw new Error(`Mixin name must be a string at token index ${i}`);
+
+                const mixinName = token.args[0].value;
+
+                if (this.mixins[mixinName] !== undefined)
+                    throw new Error(`Duplicate mixin name at token index ${i}: ${mixinName}`);
+
+                const body = [];
+
+                // Find the end tag
+                let foundEnd = false;
+
+                for (let j = i + 1; j < this.tokens.length; j++) {
+                    const inner = this.tokens[j];
+
+                    if (inner.type === "tag" && inner.name === "mixin" &&
+                        inner.args.length > 0 &&
+                        inner.args[0].type === "specific" &&
+                        inner.args[0].value === "end") {
+
+                        foundEnd = true;
+                        i = j; // skip the entire mixin block
+                        break;
+                    }
+
+                    body.push(inner);
+                }
+
+                if (!foundEnd)
+                    throw new Error(`Missing [mixin end] for mixin: ${mixinName}`);
+
+                this.mixins[mixinName] = body;
+            }
+        }
+
+        console.log(this.mixins, this.tokens)
 
         for(let i = 0; i < this.tokens.length; i++) {
             const token = this.tokens[i];
 
             if(token.type === "tag" && token.name === "page") {
                 if(token.args.length === 0) throw new Error(`Missing page name at token index ${i}`);
-                
-                // if(token.args[0].type !== "string") throw new Error(`Invalid page name at token index ${i}: Expected string, got ${token.args[0].type}`);
 
                 if(token.args[0].type === "string"){
                     let pageName = token.args[0].value;
@@ -868,7 +924,7 @@ export class SuperType {
 
                 if(token.args[0].type === "specific"){
                     if(token.args[0].value === "end") currentPage = "root";
-                    else throw new Error(`Invalid page name at token index ${i}: Expected String or end, got ${token.args[0].type}`);
+                    else throw new Error(`Invalid page argument token index ${i}: Expected String or end, got ${token.args[0].type}`);
                 } 
             } else {
                 token.style = {
@@ -915,72 +971,6 @@ export class SuperType {
                         "underline": styleStack.underline,
                         "strikethrough": styleStack.strikethrough
                     }
-                }
-            }
-            
-            let lineCharacterCount = 0;
-            let lastSpaceIndex = -1;
-
-            for(let i = 0; i < pageTokens.length; i++) {
-                const token = pageTokens[i];
-
-                if(token.type === "tag"){
-                    if(
-                        token.name === "newline" ||
-                        token.name === "linebreak" ||
-                        token.name === "newpage"
-                    ) {
-                        lineCharacterCount = 0;
-                        lastSpaceIndex = -1;
-                    }
-
-                    continue;
-                }
-
-                lineCharacterCount++;
-
-                if(/\s/.test(token.value)) {
-                    lastSpaceIndex = i;
-                }
-
-                if(
-                    this.header.wordWrap !== undefined &&
-                    lineCharacterCount > this.header.wordWrap
-                ) {
-                    const insertIndex = lastSpaceIndex !== -1 ? lastSpaceIndex + 1 : i;
-
-                    pageTokens.splice(insertIndex, 0, {
-                        type: "tag",
-                        name: "newline",
-                        args: [
-                            new TagArgument("specific", "instant")
-                        ],
-                        style: {
-                            "color": this.header.textColor,
-                            "bg": this.header.backgroundColor,
-                            "bold": false,
-                            "italic": false,
-                            "underline": false,
-                            "strikethrough": false
-                        }
-                    });
-
-                    lineCharacterCount = 0;
-                    lastSpaceIndex = -1;
-
-                    for(let k = insertIndex + 1; k <= i + 1; k++) {
-                        const t = pageTokens[k];
-
-                        if(t.type === "character") {
-                            lineCharacterCount++;
-
-                            if(/\s/.test(t.value)) {
-                                lastSpaceIndex = k;
-                            }
-                        }
-                    }
-
-                    i++;
                 }
             }
         }
@@ -1345,7 +1335,8 @@ for (const TagClass of [
     SleepTag,
     GlitchTag,
     PageTag,
-    JitterTag
+    JitterTag,
+    MixinTag
 ]) {
     SuperType.registerTag(TagClass);
 }
