@@ -12,8 +12,15 @@ typewriter: {
     wordWrap: 100
     backToTop: true
 }
+
+{{# n * 0.1 #}}
+[jitter "this is jitter" 10][newline]
+[jitter "this" 10 keep] [jitter "this" 10 keep] [jitter "this" 10 keep][newline]
+[glitch 10][newline]
+[glitch 10 keep][newline]
+[sleep 100]
 [instant]
-Dr[ignore].[ignore] ████████ ███████ THIS[glitch 10 keep] REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
+Dr[ignore].[ignore off] ████████ ███████ THIS  REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
 This report was written by the Interplanetary Transit Authority[sleep 350] (“ITA”) [sleep 351]to document the events surrounding what has been dubbed [sleep 400]the “Psyche Incident”[sleep 400].[sleep 1000][linebreak]
 
@@ -21,7 +28,7 @@ BACKGROUND[sleep 1500][linebreak]
 
 Project ATLAS was a large\-scale interplanetary logistics initiative consisting of two operational phases. The first phase involved transporting Asteroid 16 Psyche[sleep 350] (“Psyche”) [sleep 351]from its position within the asteroid belt to a fixed position approximately 500 kilometers above the continent of Australia. The second, indefinite phase involved the continued extraction of metallic resources from Psyche and their distribution to terrestrial industries, as well as orbital facilities throughout the Inner Solar System.[sleep 550][linebreak]
 
-Project ATLAS was conceived by Dr[ignore].[ignore] ████████ ███████ as a long\-term solution to humanity’s continued depletion of economically viable metal reserves on Earth. Following an evaluation of numerous candidate asteroids, Psyche was selected due to its high abundance of iron, nickel, and platinum metals, as well as its already established mining infrastructure. Subsequent studies concluded that the relocation of the asteroid to Earth would be substantially more economical than transporting millions of individual shipments from the asteroid belt over the lifetime of the project.[sleep 550][linebreak]
+Project ATLAS was conceived by Dr[ignore].[ignore off] ████████ ███████ as a long\-term solution to humanity’s continued depletion of economically viable metal reserves on Earth. Following an evaluation of numerous candidate asteroids, Psyche was selected due to its high abundance of iron, nickel, and platinum metals, as well as its already established mining infrastructure. Subsequent studies concluded that the relocation of the asteroid to Earth would be substantially more economical than transporting millions of individual shipments from the asteroid belt over the lifetime of the project.[sleep 550][linebreak]
 
 After multiple independent site\-selection studies, the region of space above Australia was selected as the final destination for Psyche. The decision was based on a combination of engineering, economic, and logistical considerations. At the time of project approval, nearly half of Earth’s shipbuilding industry was located within Australia, which allowed for extracted materials to be transported directly to major manufacturing centers with minimal transit time, as well as reducing the need for additional infrastructure to be constructed. Australia’s vast sparsely populated interior also insured that in the event of a failure, casualties could be kept to a minimum. Additionally, the continent’s relatively low volcanic and seismic activity made it a favorable location for the long\-term operation of critical ground infrastructure. Ultimately, the Martian\-Australian Mining Company endorsed Australia as the preferred site after determining that no other candidate location provided an equivalent combination of industrial capacity, logistical efficiency, operational safety, and political support.[sleep 550][linebreak]
 

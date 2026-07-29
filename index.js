@@ -533,7 +533,7 @@ class GlitchTag extends Tag {
             return false; // this token itself renders nothing; the spliced tokens will
         }
 
-        engine.addRenderTime(engine.state.defaultNewlineDelay);
+        engine.addRenderTime(engine.state.defaultCharDelay);
     }
 
     static onRender(engine, token) {
@@ -542,6 +542,66 @@ class GlitchTag extends Tag {
         for (let i = 0; i < value.value; i++) {
             engine.createGlitch(token.style);
         }
+    }
+}
+
+class JitterTag extends Tag {
+    static tagName = "jitter";
+
+    static onUse(engine, token) {
+        const value = token.args[0];
+        const strength = token.args[1];
+        const keep = token.args[2];
+
+        if (value === undefined) throw new Error("Missing jitter value");
+        if (strength === undefined) throw new Error("Missing jitter strength");
+
+        value.check("string");
+        strength.check("number");
+
+        if (keep !== undefined) {
+            keep.checkSpecific("keep");
+        }
+
+        // Expand into one-character keep tags.
+        if (keep === undefined) {
+            const tokens = [];
+
+            for (const ch of value.value) {
+                tokens.push({
+                    type: "tag",
+                    name: "jitter",
+                    args: [
+                        new TagArgument("string", ch),
+                        new TagArgument("number", strength.value),
+                        new TagArgument("specific", "keep")
+                    ],
+                    style: token.style
+                });
+            }
+
+            engine.pages[engine.state.page].splice(
+                engine.state.token,
+                0,
+                ...tokens
+            );
+
+            return false;
+        }
+
+        // Render this character with the normal typewriter delay.
+        engine.addRenderTime(engine.fetchDelay(value.value));
+    }
+
+    static onRender(engine, token) {
+        const value = token.args[0];
+        const strength = token.args[1];
+
+        engine.createJitter(
+            value.value,
+            strength.value,
+            token.style
+        );
     }
 }
 
@@ -604,6 +664,15 @@ export class SuperType {
         requestAnimationFrame(this.glitchLoop);
     }
 
+    jitterLoop = () => {
+        for(const jitter of this.state.jitters) {
+            jitter.textNode.parentElement.style.transform = `translate(${(Math.random() * 2 - 1) * (jitter.strength / 10)}px, ${(Math.random() * 2 - 1) * (jitter.strength / 10)}px)`;
+
+        }
+
+        requestAnimationFrame(this.jitterLoop);
+    }
+
     /**
      * 
      * @param {HTMLElement} target 
@@ -641,6 +710,7 @@ export class SuperType {
             paused: false,
             page: "root",
             glitches: [],
+            jitters: [],
             scrollCount: 0,
 
             tagSpeedOverride: false,
@@ -694,7 +764,8 @@ export class SuperType {
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
         // if page is reset, then clear glitches
-        // this.state.glitches = [];
+        this.state.glitches = [];
+        this.state.jitters = [];
         this.state.defaultCharDelay = new Number(this.header.charDelay);
         this.state.defaultNewlineDelay = new Number(this.header.newlineDelay);
 
@@ -711,6 +782,7 @@ export class SuperType {
 
         requestAnimationFrame(this.render);
         requestAnimationFrame(this.glitchLoop);
+        requestAnimationFrame(this.jitterLoop);
     }
 
     async load(path) {
@@ -981,6 +1053,23 @@ export class SuperType {
         this.resetSpanTextStyle();
     }
 
+    createJitter(character, strength, style) {
+        this.resetSpanTextStyle();
+
+        this.renderCharacter(character, style);
+
+        let jitter = {
+            textNode: this.state.currentText,
+            strength
+        }
+        
+        jitter.textNode.parentElement.style.display = "inline-block";
+
+        this.state.jitters.push(jitter);
+
+        this.resetSpanTextStyle();
+    }
+
     scrollWindow(to){
         window.scrollTo({
             top: to,
@@ -1019,9 +1108,14 @@ export class SuperType {
     }
 
     fetchDelay(tokenValue){
-        if(this.state.ignoreCustomDelays === true) return this.header.charDelay;
-        if(this.state.tagSpeedOverride === true) return this.header.charDelay;
-        return this.header.customDelays[tokenValue] ?? this.header.charDelay;
+
+        let delay = null;
+
+        if(this.state.ignoreCustomDelays === true) delay = this.header.charDelay;
+        else if(this.state.tagSpeedOverride === true) delay = this.header.charDelay;
+        else delay = (this.header.customDelays[tokenValue] ?? this.header.charDelay);
+
+        return delay;
     }
 
     renderToken(token) {
@@ -1250,7 +1344,8 @@ for (const TagClass of [
     LinebreakTag,
     SleepTag,
     GlitchTag,
-    PageTag
+    PageTag,
+    JitterTag
 ]) {
     SuperType.registerTag(TagClass);
 }
