@@ -454,6 +454,7 @@ class NewlineTag extends Tag {
 
         if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
         engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.lineWidth = 0;
     }
 
     static onRender(engine, token) {
@@ -471,6 +472,7 @@ class LinebreakTag extends Tag {
 
         if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
         engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.lineWidth = 0;
     }
 
     static onRender(engine, token) {
@@ -722,6 +724,7 @@ export class SuperType {
             glitches: [],
             jitters: [],
             scrollCount: 0,
+            lineWidth: 0,
 
             tagSpeedOverride: false,
             userSpeedOverride: null,
@@ -1109,10 +1112,18 @@ export class SuperType {
     }
 
     renderToken(token) {
-        let delay = this.fetchDelay(token.value);
+        if (this.state.inWord !== true && token.value !== " ") {
+            this.maybeBreakBeforeWord(token);
+        }
+        this.state.inWord = token.value !== " ";
 
+        let delay = this.fetchDelay(token.value);
         this.addRenderTime(delay);
         this.renderCharacter(token.value, token.style);
+
+        if (this.header.wordWrap) {
+            this.state.lineWidth += this.getMeasureCtx(token.style).measureText(token.value).width;
+        }
     }
 
     styleElement(element, style) {
@@ -1167,18 +1178,64 @@ export class SuperType {
 
         if (html === "<br>") {
             this.state.fragment.appendChild(document.createElement("br"));
+            this.state.lineWidth = 0;
             return;
         }
 
         if (html === "<br><br>") {
             this.state.fragment.appendChild(document.createElement("br"));
             this.state.fragment.appendChild(document.createElement("br"));
+            this.state.lineWidth = 0;
             return;
         }
 
         const template = document.createElement("template");
         template.innerHTML = html;
         this.state.fragment.appendChild(template.content);
+    }
+
+    getMeasureCtx(style = {}) {
+        if (!this._measureCtx) {
+            this._measureCtx = document.createElement("canvas").getContext("2d");
+        }
+        if (!this._fontBase) {
+            const cs = getComputedStyle(this.target);
+            this._fontBase = { size: cs.fontSize, family: cs.fontFamily };
+        }
+        const weight = style.bold ? "bold" : "normal";
+        const slant = style.italic ? "italic" : "normal";
+        this._measureCtx.font = `${slant} ${weight} ${this._fontBase.size} ${this._fontBase.family}`;
+        return this._measureCtx;
+    }
+    lookAheadWord(firstChar) {
+        let word = firstChar;
+        const tokens = this.pages[this.state.page];
+        let idx = this.state.token; // already points past the token just pulled in render()
+
+        while (idx < tokens.length) {
+            const t = tokens[idx];
+            if (t.type !== "character" || t.value === " ") break;
+            word += t.value;
+            idx++;
+        }
+        return word;
+    }
+
+    maybeBreakBeforeWord(token) {
+        if (!this.header.wordWrap) return; // only meaningful with a fixed wordWrap width
+
+        const word = this.lookAheadWord(token.value);
+        const ctx = this.getMeasureCtx(token.style);
+        const wordWidth = ctx.measureText(word).width;
+        const containerWidth = this.target.clientWidth;
+
+        // only force a break if the word actually fits on its own line
+        // (otherwise let normal char-wrapping handle the overflow, same as today)
+        if (this.state.lineWidth > 0 && this.state.lineWidth + wordWidth > containerWidth && wordWidth <= containerWidth) {
+            this.state.fragment.appendChild(document.createElement("br"));
+            this.resetSpanTextStyle();
+            this.state.lineWidth = 0;
+        }
     }
 
     tokenize(body) {
