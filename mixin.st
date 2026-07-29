@@ -7,6 +7,9 @@ typewriter: {
     backToTop: true
     instant: true
 }
-[mixin "name"]
-    a mixin uses <String> and also <Number> and perhaps <instant> or so and [linebreak]
+[mixin "ok"]
+    [color #339900]<String>[color reset][newline]
+    [jitter "<String>" 10]
 [mixin end]
+
+[@ "ok" "jitt!"]
