@@ -7,7 +7,6 @@ typewriter: {
         ",": 500
     }
 }
-[function "jitterlerp" "this is a custom function that lerps!" 1 20][newline]
 WOW! this is normal text![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 
@@ -74,5 +73,5 @@ _underline_[newline]
     [jitter <String> <Number>][newline]
 [mixin end]
 
-[@use "ok" "first string" "second string" 10]
-[@use "ok" "therd" "4rd" 20]
+[@use "ok" "these" "examples" 10]
+[@use "ok" "of" "mixins!" 20]
