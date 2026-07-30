@@ -52,14 +52,17 @@ typewriter: {
 
 ### Text
 Controls how text is desplayed.
-| Tag                                        | Description                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------|
-| `[newline]`                                | Creates a new line. Raw newlines are ignored in .st files.        |
-| `[newline instant]`                        | Creates a new line instantly.                                     |
-| `[linebreak]`                              | Two new lines for the timing of 1.                                |
-| `[linebreak instant]`                      | Creates two new lines instantly.                                  |
-| `[tab count<Number>]`                      | Inserts `count` spaces.                                           |
-| `[removelast count<Number>]`               | Removes the last `count` rendered characters from the typewriter. |
+| Tag                          | Description                                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `[newline]`                  | Creates a new line. Raw newlines are ignored in .st files.                                                      |
+| `[newline instant]`          | Creates a new line instantly.                                                                                   |
+| `[linebreak]`                | Two new lines for the timing of 1.                                                                              |
+| `[linebreak instant]`        | Creates two new lines instantly.                                                                                |
+| `[tab count<Number>]`        | Inserts `count` spaces.                                                                                         |
+| `[removelast count<Number>]` | Removes the last `count` rendered characters from the typewriter.                                               |
+| `[mixin name<Sring>]`        | Starts a mixin with the name `name`. See the Mixins section for more information.                               |
+| `[mixin end]`                | Ends a mixin.                                                                                                   |
+| `[@use name<String> ...]`    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
 ### Timing
 Modifies character timing.
@@ -78,33 +81,76 @@ Modifies character timing.
 
 ### Styling
 Change the color of the text and background.
-| Tag                                        | Description                                                                                                                     |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------|
-| `[color color<Color>]`                     | Sets the text color to `color`.                                                                                                 |
-| `[color reset]`                            | Resets the text color to the default.                                                                                           |
-| `[bg color<Color>]`                        | Sets the background color to `color`.                                                                                           |
-| `[bg reset]`                               | Resets the background color to the default.                                                                                     |
-| `[raw]`                                    | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
-| `[raw end]`                                | Exits raw mode.                                                                                                                 |
+| Tag                                        | Description                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------|
+| `[color color<Color>]`  | Sets the text color to `color`.                                                                                                 |
+| `[color reset]`         | Resets the text color to the default.                                                                                           |
+| `[bg color<Color>]`     | Sets the background color to `color`.                                                                                           |
+| `[bg reset]`            | Resets the background color to the default.                                                                                     |
+| `[raw]`                 | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
+| `[raw end]`             | Exits raw mode.                                                                                                                 |
 
 ### Pages
-| Tag                                           | Description                                                                                                    |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------|
-| `[page name<String>]`                      | Creates a page with name `name`.                                                                                  |
-| `[page end]`                               | Closes a page.                                                                                                    |
-| `[gopage page<String> text<String>]`       | Creates a button that opens page `page`, with text `text` on the button.                                          |
-| `[gopage page<String> text<String> keep]`  | Creates a button that opens page `page`, with text `text` on the button, and does reset currently displayed text. |
+| Tag                                       | Description                                                                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `[page name<String>]`                     | Creates a page with name `name`.                                                                                  |
+| `[page end]`                              | Closes a page.                                                                                                    |
+| `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                          |
+| `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button, and does reset currently displayed text. |
 
 ### Miscellaneous
 Other tags.
-| Tag                                           | Description                                                                                                           |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------|
-| `[glitch count<Number>]`                      | Inserts `count` glitching characters.                                                                                 |
-| `[glitch count<Number> keep]`                 | Inserts `count` glitching characters as a single group.                                                               |
-| `[jitter text<String> strength<Number>]`      | Inserts `text` with a jittering effect of `strength`. Intended values are 0-100.                                      |
-| `[jitter text<String> strength<Number> keep]` | Inserts `text` with a jittering effect of `strength` as a single group. Values 1-20 are intended, but there are no limits.                    |
-| `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. Values 1-20 are intended, but there are no limits. |
-| `[function name<String>]`                     | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
+| Tag                                             | Description                                                                                                                                          |
+| ----------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `[glitch count<Number>]`                        | Inserts `count` glitching characters.                                                                                                                |
+| `[glitch count<Number> keep]`                   | Inserts `count` glitching characters as a single group.                                                                                              |
+| `[jitter text<String> strength<Number>]`        | Inserts `text` with a jittering effect of `strength`.                                                                                                |
+| `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` as a single group.                                                                              |
+| `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. |
+| `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor.                                |
+
+### Mixins
+Mixins are a way to create reusable blocks of tags and text.
+
+#### Create a mixin
+```
+[mixin "name"]
+    hello![newline]
+[mixin end]
+```
+
+Using the mixin above would look like this:
+
+```
+[@use "name"]
+[@use "name"]
+```
+
+And would render as:
+
+```
+hello!
+hello!
+```
+
+#### Use a mixin with parameters
+Include `<String>`, `<Number>`, `<Boolean>`, or `<Color>` in the mix-in to use parameters. The order they appear in the mixin dictates the order they must be passed in when using the mixin.
+
+```
+[mixin "name"]
+    hello <String>![newline]
+[mixin end]
+```
+
+```
+[@use "name" "johny"]
+[@use "name" "clara"]
+```
+
+```
+hello johny!
+hello clara!
+```
 
 ## Comment
 ```

@@ -68,3 +68,11 @@ _underline_[newline]
 [jitter "it types it, but they jitter the same" 10 shared][newline]
 
 [function "jitterlerp" "this is a custom function that lerps!" 1 20][newline]
+
+[mixin "ok"]
+    [color #339900]<String>[color reset][newline]
+    [jitter <String> <Number>][newline]
+[mixin end]
+
+[@use "ok" "first string" "second string" 10]
+[@use "ok" "therd" "4rd" 20]
