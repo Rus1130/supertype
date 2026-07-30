@@ -7,13 +7,11 @@ typewriter: {
     backToTop: true
     instant: true
 }
-[page "hi"]
-what
-[page end]
 
 [mixin "ok"]
     [color #339900]<String>[color reset][newline]
-    [jitter "<String>" 10]
+    [jitter <String> <Number>][newline]
 [mixin end]
 
-[@use "ok" "jitt!"]
+[@use "ok" "first string" "second string" 10]
+[@use "ok" "therd" "4rd" 20]

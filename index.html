@@ -62,13 +62,15 @@
             leftValue.check("number")
             rightValue.check("number")
 
+            const tokens = [];
+
             for(let i = 0; i < text.value.length; i++){
-                const character = text.value.split("").reverse()[i];
+                const character = text.value[i];
 
                 // interpolate
-                const strength = rightValue.value + (leftValue.value - rightValue.value) * (i / (text.value.length - 1));
+                const strength = leftValue.value + (rightValue.value - leftValue.value) * (i / (text.value.length - 1));
 
-                engine.insertToken({
+                tokens.push({
                     type: "tag",
                     name: "jitter",
                     style: token.style,
@@ -79,10 +81,11 @@
                 })
             }
 
+            engine.insertTokens(tokens);
         }
     })
 
-    await tw.load("examples.st").then(() => {
+    await tw.load("mixin.st").then(() => {
         tw.start();
     })
 

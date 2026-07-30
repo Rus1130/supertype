@@ -114,6 +114,7 @@ hi
 ```
 
 ## Markdown Guide
+Markdown persists through newlines, but due to limitations of the vscode extension, it will not show as so in `.st` files.
 ```
 *bold*
 /italic/

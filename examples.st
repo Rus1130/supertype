@@ -7,6 +7,7 @@ typewriter: {
         ",": 500
     }
 }
+[function "jitterlerp" "this is a custom function that lerps!" 1 20][newline]
 WOW! this is normal text![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 

@@ -25,6 +25,20 @@
             "editor.tokenColorCustomizations": {
                 "textMateRules": [
                     {
+                        "scope": "mixin.tag.st",
+                        "settings": {
+                            "foreground": "#46e891",
+                            "fontStyle": ""
+                        }
+                    },
+                    {
+                        "scope": "param.mixin.st",
+                        "settings": {
+                            "foreground": "#ffab89",
+                            "fontStyle": "bold"
+                        }
+                    },
+                    {
                         "scope": "comment.block.supertype",
                         "settings": {
                             "fontStyle": ""

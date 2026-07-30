@@ -7,7 +7,8 @@
         { "include": "#markup" },
         { "include": "#header" },
         { "include": "#escapes" },
-        { "include": "#tags" }
+        { "include": "#tags" },
+        { "include": "#mixin" }
     ],
 	"repository": {
         "raw": {
@@ -43,7 +44,7 @@
             "patterns": [
                 {
                     "name": "constant.numeric.integer.st",
-                    "match": "\\b\\-?d+\\b"
+                    "match": "\\b-?\\d+\\b"
                 }
             ]
         },
@@ -52,6 +53,39 @@
                 {
                     "name": "constant.language.boolean.st",
                     "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
+        "mixin": {
+            "patterns": [
+                {
+                    "begin": "(?<!\\\\)\\[(mixin)\\s+(\"[^\"]*\")\\]",
+                    "beginCaptures": {
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "tag.st" },
+                        "2": { "name": "string.quoted.double.supertype" }
+                    },
+                    "end": "(?<!\\\\)\\[(mixin)\\s+(end)\\]",
+                    "endCaptures": {
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "tag.st" },
+                        "2": { "name": "specific.st" }
+                    },
+                    "patterns": [
+                        { "include": "#comments" },
+                        { "include": "#markup" },
+                        { "include": "#escapes" },
+                        { "include": "#tags" },
+                        { "include": "#mixinPlaceholder" }
+                    ]
+                }
+            ]
+        },
+        "mixinPlaceholder": {
+            "patterns": [
+                {
+                    "name": "param.mixin.st",
+                    "match": "<(String|Number|Color|Boolean)>"
                 }
             ]
         },
@@ -69,10 +103,30 @@
                         "0": { "name": "tag.st" }
                     },
                     "patterns": [
+                        { "include": "#mixinPlaceholder" },
                         {
                             "name": "specific.st",
                             "match": "\\b(reset|override|default|keep|end|instant|off|shared)\\b"
                         },
+                        { "include": "#strings" },
+                        { "include": "#colors" },
+                        { "include": "#numbers" },
+                        { "include": "#booleans" },
+                        { "include": "#escapes" }
+                    ]
+                },
+                {
+                    "name": "tag.st",
+                    "begin": "(?<!\\\\)\\[((?:@use))\\b",
+                    "beginCaptures": {
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "mixin.tag.st" }
+                    },
+                    "end": "(?<!\\\\)\\]",
+                    "endCaptures": {
+                        "0": { "name": "tag.st" }
+                    },
+                    "patterns": [
                         { "include": "#strings" },
                         { "include": "#colors" },
                         { "include": "#numbers" },

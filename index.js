@@ -172,6 +172,107 @@ export class Tag {
     static onRender(engine, token) {}
 }
 
+class UseTag extends Tag {
+    static tagName = "@use";
+
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+
+        const nameArg = args[0];
+        if (nameArg === undefined) throw new Error("Missing mixin name");
+        nameArg.check("string");
+
+        const mixinBody = ctx.engine.mixins[nameArg.value];
+        if (mixinBody === undefined) {
+            throw new Error(`Mixin not found: ${nameArg.value}`);
+        }
+
+        const substitutions = args.slice(1);
+        let argIndex = 0;
+        let depth = 0;
+        let expanded = "";
+
+        for (let i = 0; i < mixinBody.length; i++) {
+            if (mixinBody.startsWith("<String>", i)) {
+                const value = substitutions[argIndex];
+                if (value === undefined) {
+                    throw new Error(
+                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
+                    );
+                }
+                value.check("string");
+
+                expanded += depth > 0
+                    ? `"${value.value.replace(/"/g, '\\"')}"`
+                    : value.value;
+
+                argIndex++;
+                i += "<String>".length - 1;
+                continue;
+            }
+
+            if (mixinBody.startsWith("<Number>", i)) {
+                const value = substitutions[argIndex];
+                if (value === undefined) {
+                    throw new Error(
+                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
+                    );
+                }
+                value.check("number");
+
+                expanded += String(value.value);
+
+                argIndex++;
+                i += "<Number>".length - 1;
+                continue;
+            }
+
+            if (mixinBody.startsWith("<Color>", i)) {
+                const value = substitutions[argIndex];
+                if (value === undefined) {
+                    throw new Error(
+                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
+                    );
+                }
+                value.check("color");
+
+                expanded += value.value;
+
+                argIndex++;
+                i += "<Color>".length - 1;
+                continue;
+            }
+
+            if (mixinBody.startsWith("<Boolean>", i)) {
+                const value = substitutions[argIndex];
+                if (value === undefined) {
+                    throw new Error(
+                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
+                    );
+                }
+                value.check("boolean");
+
+                expanded += String(value.value);
+
+                argIndex++;
+                i += "<Boolean>".length - 1;
+                continue;
+            }
+
+            if (mixinBody[i] === "[") depth++;
+            else if (mixinBody[i] === "]") depth = Math.max(0, depth - 1);
+
+            expanded += mixinBody[i];
+        }
+
+        expanded = expanded.replace(/\n[ \t]+/g, "\n");
+
+        ctx.queue.push(...ctx.engine.tokenize(expanded));
+
+        return false;
+    }
+}
+
 class RawTag extends Tag {
     static tagName = "raw";
 
@@ -790,16 +891,28 @@ export class SuperType {
         }
     }
 
+    /**
+     * Checks if the typewriter is currently paused.
+     * @returns {Boolean}
+     */
     paused(){
         return this.state.paused;
     }
 
+    /**
+     * Pauses the typewriter, freezing the schedule and allowing the user to scroll.
+     * @returns {void}
+     */
     pause() {
         this.state.pausedAt = performance.now();
         this.state.paused = true;
         this.state.scrollLocked = false;
     }
 
+    /**
+     * Unpauses the typewriter, shifting the schedule forward by the amount of time it was paused.
+     * @returns {void}
+     */
     resume() {
         if(this.state.pauseLocked === true) return;
         const delta = performance.now() - this.state.pausedAt;
@@ -809,6 +922,11 @@ export class SuperType {
         this.scrollWindow(this.targetParent.scrollHeight);
     }
 
+    /**
+     * begins rendering the given page, or "root" if no page is specified
+     * @param {String} page page name
+     * @returns {void}
+     */
     start(page = "root") {
         if(this.header.previewMode === true) this.header.instant = true;
 
@@ -840,6 +958,11 @@ export class SuperType {
         requestAnimationFrame(this.jitterLoop);
     }
 
+    /**
+     * Loads a SuperType file from the given path, parses it, and prepares it for rendering.
+     * @param {string} path - The path to the SuperType file to load.
+     * @returns 
+     */
     async load(path) {
         this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
 
@@ -885,6 +1008,20 @@ export class SuperType {
 
         this.body = this.data.slice(i).replace(/\r?\n/g, "\n");
 
+        this.body = this.body.replace(
+            /\[mixin\s+"([^"]+)"\]([\s\S]*?)\[mixin\s+end\]/g,
+            (match, name, content) => {
+                if (this.mixins[name] !== undefined) {
+                    throw new Error(`Duplicate mixin name: ${name}`);
+                }
+                this.mixins[name] = content;
+                return ""; // remove from the body entirely
+            }
+        );
+
+        // trim all whitespace following newlines
+        this.body = this.body.replace(/\n[ \t]+/g, "\n");
+
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
         if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
@@ -900,51 +1037,6 @@ export class SuperType {
         this.tokens = this.tokenize(this.body)
 
         let currentPage = "root";
-
-        // for (let i = 0; i < this.tokens.length; i++) {
-        //     const token = this.tokens[i];
-
-        //     if (token.type === "tag" && token.name === "mixin") {
-        //         if (token.args.length === 0)
-        //             throw new Error(`Missing mixin name at token index ${i}`);
-
-        //         if (token.args[0].type !== "string")
-        //             throw new Error(`Mixin name must be a string at token index ${i}`);
-
-        //         const mixinName = token.args[0].value;
-
-        //         if (this.mixins[mixinName] !== undefined)
-        //             throw new Error(`Duplicate mixin name at token index ${i}: ${mixinName}`);
-
-        //         const body = [];
-
-        //         // Find the end tag
-        //         let foundEnd = false;
-
-        //         for (let j = i + 1; j < this.tokens.length; j++) {
-        //             const inner = this.tokens[j];
-
-        //             if (inner.type === "tag" && inner.name === "mixin" &&
-        //                 inner.args.length > 0 &&
-        //                 inner.args[0].type === "specific" &&
-        //                 inner.args[0].value === "end") {
-
-        //                 foundEnd = true;
-        //                 i = j; // skip the entire mixin block
-        //                 break;
-        //             }
-
-        //             body.push(inner);
-        //         }
-
-        //         if (!foundEnd)
-        //             throw new Error(`Missing [mixin end] for mixin: ${mixinName}`);
-
-        //         this.mixins[mixinName] = body;
-        //     }
-        // }
-
-
 
         for(let i = 0; i < this.tokens.length; i++) {
             const token = this.tokens[i];
@@ -1036,17 +1128,10 @@ export class SuperType {
     insertToken(token) {
         this.pages[this.state.page].splice(this.state.token, 0, token);
     }
-    // insertTagInto(name, args = [], style = {}) {
-    //     const TagClass = SuperType.tags.get(name) ?? Tag;
 
-    //     const token = {
-    //         type: "tag",
-    //         name,
-    //         args,
-    //         style
-    //     };
-
-
+    insertTokens(tokenArray){
+        this.pages[this.state.page].splice(this.state.token, 0, ...tokenArray);
+    }
 
     render = (now) => {
         if (this.state.paused) {
@@ -1313,7 +1398,6 @@ export class SuperType {
 
     tokenize(body) {
         const queue = [];
-
         let i = 0;
 
         while (i < body.length) {
@@ -1472,7 +1556,8 @@ for (const TagClass of [
     GlitchTag,
     PageTag,
     JitterTag,
-    MixinTag
+    MixinTag,
+    UseTag
 ]) {
     SuperType.registerTag(TagClass);
 }
