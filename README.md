@@ -1,5 +1,5 @@
 # supertype
-SuperType is an easy way to add a typewriter effect to your webpage. Just type your text in a `.st` file, and it will be rendered on your webpage with a typewriter effect. You can also add tags to change the speed, color, and other properties of the typewriter.
+SuperType is an easy way to add a typewriter effect to your webpage. Just type your text in a `.st` file, and it will be rendered on your webpage with a typewriter effect. You can also add tags to change the speed, color, and other properties of the typewriter. I recommend using this [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension for VSCode to be able to see it effectively.
 ## Examples
 Look at `example.st` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
 
