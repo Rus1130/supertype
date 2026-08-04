@@ -106,7 +106,7 @@ export class TagArgument {
 
 /**
  * Base class for all SuperType tags. Extend this and override any subset of
- * the three hooks; unimplemented hooks fall back to these defaults.
+ * the hooks; unimplemented hooks fall back to these defaults.
  *
  * Register with SuperType.registerTag(YourTagClass).
  *
@@ -170,6 +170,57 @@ export class Tag {
      * @param {{type: "tag", name: string, args: TagArgument[], style: object}} token
      */
     static onRender(engine, token) {}
+
+    // ---------------------------------------------------------------------
+    // Tags that wrap a span of content between an opening `[name ...]` and
+    // a matching `[name end]` need to hook in at a specific point in the
+    // load/tokenize pipeline. A tag class opts in by *overriding* one of
+    // the two hooks below - there's no separate flag to set. The engine
+    // detects opt-in with `Object.hasOwn(TagClass, "beforeTokenize")` (etc),
+    // i.e. "did this specific subclass define its own version", not just
+    // "does this method exist" - these base versions below exist purely so
+    // the hooks show up in JSDoc/autocomplete, and are never called
+    // themselves. If neither is overridden, nothing extra happens (e.g.
+    // `raw`, which handles its own wrapping entirely inside onTokenization
+    // by toggling tokenizer state).
+    // ---------------------------------------------------------------------
+
+    /**
+     * Implement this if the tag needs to act on its wrapped content BEFORE
+     * tokenization happens, working directly on raw body text (e.g. a
+     * mixin definition, which is stored as a text template rather than
+     * tokenized on the spot). Only called for tag classes that override
+     * it themselves - the base implementation here is never invoked.
+     *
+     * Called once per matched `[name ...] ... [name end]` block, with the
+     * raw (unparsed) opening-tag args and the raw text content in between.
+     *
+     * @param {string[]} rawArgs
+     * @param {string} content
+     * @param {{engine: SuperType}} ctx
+     * @returns {string} text to splice into the body in place of the whole
+     *   block (return "" to remove it entirely, as mixins do)
+     */
+    static beforeTokenize(rawArgs, content, ctx) {}
+
+    /**
+     * Implement this if the tag needs to route already-tokenized content
+     * into a separate page AFTER tokenization happens (e.g. `page`, which
+     * decides which page subsequent tokens land in). Only called for tag
+     * classes that override it themselves - the base implementation here
+     * is never invoked.
+     *
+     * Called for every token of this tag encountered while sorting tokens
+     * into pages. Should create/validate the target page as a side effect
+     * if needed, and return the page name to switch into (return "root" to
+     * switch back to the default page, e.g. on `[name end]`).
+     *
+     * @param {SuperType} engine
+     * @param {{type: "tag", name: string, args: TagArgument[]}} token
+     * @param {number} index
+     * @returns {string}
+     */
+    static afterTokenize(engine, token, index) {}
 }
 
 class UseTag extends Tag {
@@ -276,6 +327,9 @@ class UseTag extends Tag {
 class RawTag extends Tag {
     static tagName = "raw";
 
+    // Wraps [raw] ... [raw end], but unlike mixin/page below, raw doesn't
+    // need beforeTokenize or afterTokenize - it handles its own wrapping
+    // right here in onTokenization by toggling tokenizer state directly.
     static onTokenization(rawArgs, ctx) {
         const args = super.onTokenization(rawArgs, ctx);
         const value = args[0];
@@ -740,17 +794,60 @@ class JitterTag extends Tag {
 class PageTag extends Tag {
     static tagName = "page";
 
-    // "page" tokens are never dispatched through process(): load() filters them
-    // out of the token stream entirely and uses them purely to route subsequent
-    // tokens into the right page bucket. onUse/onRender are intentionally unused.
+    // "page" tokens are never dispatched through process(): load() filters
+    // them out of the token stream entirely, calling afterTokenize below to
+    // decide which page subsequent tokens get routed into. onUse/onRender
+    // are intentionally unused.
+    static afterTokenize(engine, token, index) {
+        const arg = token.args[0];
+
+        if (arg === undefined) throw new Error(`Missing page name at token index ${index}`);
+
+        if (arg.type === "string") {
+            const name = arg.value;
+
+            if (name === "root") {
+                throw new Error(`Invalid page name at token index ${index}: 'root' is reserved`);
+            }
+
+            if (engine.pages[name] !== undefined) {
+                throw new Error(`Duplicate page name at token index ${index}: ${name}`);
+            }
+
+            engine.pages[name] = [];
+
+            return name;
+        }
+
+        if (arg.type === "specific" && arg.value === "end") {
+            return "root";
+        }
+
+        throw new Error(`Invalid page argument token index ${index}: Expected String or end, got ${arg.type}`);
+    }
 }
 
 class MixinTag extends Tag {
     static tagName = "mixin";
 
-    // "mixin" tokens are never dispatched through process(): load() filters them
-    // out of the token stream entirely and uses them purely to route subsequent
-    // tokens into the right mixin bucket. onUse/onRender are intentionally unused.
+    // "mixin" tokens never make it to tokenize() at all: load() calls
+    // beforeTokenize below to strip `[mixin "name"] ... [mixin end]` blocks
+    // out of the raw body before tokenization happens. onUse/onRender are
+    // intentionally unused.
+    static beforeTokenize(rawArgs, content, ctx) {
+        const nameArg = rawArgs[0];
+        if (nameArg === undefined) throw new Error("Missing mixin name");
+
+        const name = nameArg.replace(/^"|"$/g, "");
+
+        if (ctx.engine.mixins[name] !== undefined) {
+            throw new Error(`Duplicate mixin name: ${name}`);
+        }
+
+        ctx.engine.mixins[name] = content;
+
+        return ""; // remove from the body entirely
+    }
 }
 
 export class SuperType {
@@ -959,6 +1056,31 @@ export class SuperType {
     }
 
     /**
+     * Runs beforeTokenize (see Tag) for every registered tag that defines
+     * it, pulling matched `[name ...] ... [name end]` blocks out of the raw
+     * body before tokenization happens (e.g. mixin definitions). Adding a
+     * new tag that needs this requires touching nothing here - just define
+     * a `beforeTokenize` static method on the Tag class.
+     *
+     * @param {string} body
+     * @returns {string}
+     */
+    runBeforeTokenizeHooks(body) {
+        for (const [name, TagClass] of SuperType.tags) {
+            if (!Object.hasOwn(TagClass, "beforeTokenize")) continue;
+
+            const re = new RegExp(`\\[${name}(?:\\s+([^\\]]*))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
+
+            body = body.replace(re, (match, rawArgsStr, content) => {
+                const rawArgs = (rawArgsStr ?? "").match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+                return TagClass.beforeTokenize(rawArgs, content, { engine: this });
+            });
+        }
+
+        return body;
+    }
+
+    /**
      * Loads a SuperType file from the given path, parses it, and prepares it for rendering.
      * @param {string} path - The path to the SuperType file to load.
      * @returns 
@@ -1008,16 +1130,7 @@ export class SuperType {
 
         this.body = this.data.slice(i).replace(/\r?\n/g, "\n");
 
-        this.body = this.body.replace(
-            /\[mixin\s+"([^"]+)"\]([\s\S]*?)\[mixin\s+end\]/g,
-            (match, name, content) => {
-                if (this.mixins[name] !== undefined) {
-                    throw new Error(`Duplicate mixin name: ${name}`);
-                }
-                this.mixins[name] = content;
-                return ""; // remove from the body entirely
-            }
-        );
+        this.body = this.runBeforeTokenizeHooks(this.body);
 
         // trim all whitespace following newlines
         this.body = this.body.replace(/\n[ \t]+/g, "\n");
@@ -1041,40 +1154,25 @@ export class SuperType {
         for(let i = 0; i < this.tokens.length; i++) {
             const token = this.tokens[i];
 
-            if(token.type === "tag" && token.name === "page") {
-                if(token.args.length === 0) throw new Error(`Missing page name at token index ${i}`);
+            const TagClass = token.type === "tag" ? SuperType.tags.get(token.name) : undefined;
 
-                if(token.args[0].type === "string"){
-                    let pageName = token.args[0].value;
+            if (TagClass && Object.hasOwn(TagClass, "afterTokenize")) {
+                const afterValue = TagClass.afterTokenize(this, token, i);
 
-                    if(this.pages[pageName] !== undefined) throw new Error(`Duplicate page name at token index ${i}: ${pageName}`);
-
-
-                    if(pageName === "root") throw new Error(`Invalid page name at token index ${i}: 'root' is reserved`);
-
-                    if(this.pages[pageName] === undefined) {
-                        this.pages[pageName] = [];
-                    }
-
-                    currentPage = pageName;
-                }
-
-                if(token.args[0].type === "specific"){
-                    if(token.args[0].value === "end") currentPage = "root";
-                    else throw new Error(`Invalid page argument token index ${i}: Expected String or end, got ${token.args[0].type}`);
-                } 
-            } else {
-                token.style = {
-                    "color": this.header.textColor,
-                    "bg": this.header.backgroundColor,
-                    "bold": false,
-                    "italic": false,
-                    "underline": false,
-                    "strikethrough": false
-                }
-
-                this.pages[currentPage].push(token);
+                if (afterValue != null) currentPage = afterValue;
+                continue;
             }
+
+            token.style = {
+                "color": this.header.textColor,
+                "bg": this.header.backgroundColor,
+                "bold": false,
+                "italic": false,
+                "underline": false,
+                "strikethrough": false
+            }
+
+            this.pages[currentPage].push(token);
         }
 
 

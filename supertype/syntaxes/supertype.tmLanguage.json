@@ -181,82 +181,22 @@
         },
         "markup": {
             "patterns": [
-            {
-                "name": "style.bold.st",
-                "begin": "(?<!\\\\)(\\*)",
-                "beginCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
+                {
+                    "name": "style.markdown.st",
+                    "match": "(?<!\\\\)\\*"
                 },
-                "end": "(?<!\\\\)([*/_-])|$",
-                "endCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
+                {
+                    "name": "style.markdown.st",
+                    "match": "(?<!\\\\)/"
                 },
-                "patterns": [
-                    { "include": "#escapes" },
-                    { "include": "#markup" }
-                ]
-            },
-            {
-                "name": "style.italic.st",
-                "begin": "(?<!\\\\)(/)",
-                "beginCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
+                {
+                    "name": "style.markdown.st",
+                    "match": "(?<!\\\\)_"
                 },
-                "end": "(?<!\\\\)([*/_-])|$",
-                "endCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
+                {
+                    "name": "style.markdown.st",
+                    "match": "(?<!\\\\)-"
                 }
-                },
-                "patterns": [
-                    { "include": "#escapes" },
-                    { "include": "#markup" }
-                ]
-            },
-            {
-                "name": "style.underline.st",
-                "begin": "(?<!\\\\)(_)",
-                "beginCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
-                },
-                "end": "(?<!\\\\)([*/_-])|$",
-                "endCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
-                },
-                "patterns": [
-                    { "include": "#escapes" },
-                    { "include": "#markup" }
-                ]
-            },
-            {
-                "name": "style.strike.st",
-                "begin": "(?<!\\\\)(-)",
-                "beginCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
-                },
-                "end": "(?<!\\\\)([*/_-])|$",
-                "endCaptures": {
-                "1": {
-                    "name": "comment.block.supertype"
-                }
-                },
-                "patterns": [
-                    { "include": "#escapes" },
-                    { "include": "#markup" }
-                ]
-            }
             ]
         },
         "escapes": {

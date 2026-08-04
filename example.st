@@ -46,7 +46,7 @@ wow look! its a page! cool![sleep 10000] yeah ur stuck here bud. gotta reload
 *bold*[newline]
 -strikethrough-[newline]
 _underline_[newline]
-/*multi/_p-le_-*[linebreak]
+*mu*ltiple[linebreak]
 
 [glitch 10][newline]
 [glitch 10 keep][newline]
