@@ -60,6 +60,7 @@ Controls how text is desplayed.
 | `[linebreak instant]`        | Creates two new lines instantly.                                                                                |
 | `[tab count<Number>]`        | Inserts `count` spaces.                                                                                         |
 | `[removelast count<Number>]` | Removes the last `count` rendered characters from the typewriter.                                               |
+| `[removelast count<Number> keep]` | Removes the last `count` rendered characters from the typewriter as a single group. |
 | `[mixin name<Sring>]`        | Starts a mixin with the name `name`. See the Mixins section for more information.                               |
 | `[mixin end]`                | Ends a mixin.                                                                                                   |
 | `[@use name<String> ...]`    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |

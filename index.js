@@ -377,6 +377,33 @@ class RemoveLastTag extends Tag {
 
     static onUse(engine, token) {
         token.args[0].check("number");
+
+        const [number, keep] = token.args;
+
+        if (keep !== undefined) keep.checkSpecific("keep");
+
+        // expand into one-character removals, animated one at a time
+        if (keep === undefined) {
+            const tokens = [];
+
+            for (let i = 0; i < number.value; i++) {
+                tokens.push({
+                    type: "tag",
+                    name: "removelast",
+                    args: [
+                        new TagArgument("number", 1),
+                        new TagArgument("specific", "keep")
+                    ],
+                    style: token.style
+                });
+            }
+
+            engine.insertTokens(tokens);
+
+            return false; // this token itself renders nothing; the spliced tokens will
+        }
+
+        engine.addRenderTime(engine.state.defaultCharDelay);
     }
 
     static onRender(engine, token) {
