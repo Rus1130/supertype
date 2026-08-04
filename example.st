@@ -23,7 +23,7 @@ periods are gonna be super slow now[custom "." 1000]... see?[newline]
 INSTANT![newline]
 INSTANT![newline]
 lorem ipsum dolor sit amet ur mom[newline]
-[instant off]no more instant[newline]
+[instant off]no more instant[linebreak]
 
 [ignore]comma custom delay ignored, because i used an ignore tag, so it ignores all custom delays, sigma[newline]
 [ignore off]comma custom delay is back, because i used an ignore off tag, so it ignores all custom delays, super sigma[linebreak]
@@ -37,7 +37,7 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 everything is now RAW
     [newline][newline] see how nothing works
 even ne/wlines /that are present in the file are here, super
-[raw end]
+[raw end][linebreak]
 {{# [color #fc7d0e]comment[color reset][linebreak] #}}
 
 [page "hi"]
