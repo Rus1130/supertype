@@ -621,6 +621,33 @@ class NewlineTag extends Tag {
     }
 }
 
+class RepeatTag extends Tag {
+    static tagName = "repeat";
+
+    static onUse(engine, token) {
+        const [value, count, instant] = token.args;
+
+        value.check("string");
+        count.check("number");
+
+        if(instant !== undefined) instant.checkSpecific("instant");
+
+        if(instant === undefined || instant.value === false){
+            for (let i = 0; i < count.value; i++) {
+                engine.insertToken({
+                    type: "character",
+                    value: value.value,
+                    style: token.style
+                });
+            }
+        } else {
+            engine.renderCharacter(value.value.repeat(count.value), token.style);
+        }
+
+    }
+}
+
+
 class LinebreakTag extends Tag {
     static tagName = "linebreak";
 
@@ -1227,9 +1254,10 @@ export class SuperType {
     }
 
     resetSpanTextStyle(){
+        this.state.currentStyle = null;
         this.state.currentSpan = null;
         this.state.currentText = null;
-        this.state.currentStyle = null;
+        return;
     }
 
     insertToken(token) {
@@ -1269,7 +1297,7 @@ export class SuperType {
                 processed++;
             }
         } catch (err) {
-            console.error("SuperType: error processing token, skipping it", err);
+            console.error("SuperType: error processing token, skipping it\n", err);
         } finally {
             if (fragment.childNodes.length) {
                 this.target.appendChild(fragment);
@@ -1676,7 +1704,8 @@ for (const TagClass of [
     JitterTag,
     MixinTag,
     UseTag,
-    SwapTag
+    SwapTag,
+    RepeatTag
 ]) {
     SuperType.registerTag(TagClass);
 }
