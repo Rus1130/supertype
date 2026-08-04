@@ -52,18 +52,19 @@ typewriter: {
 
 ### Text
 Controls how text is desplayed.
-| Tag                          | Description                                                                                                     |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `[newline]`                  | Creates a new line. Raw newlines are ignored in .st files.                                                      |
-| `[newline instant]`          | Creates a new line instantly.                                                                                   |
-| `[linebreak]`                | Two new lines for the timing of 1.                                                                              |
-| `[linebreak instant]`        | Creates two new lines instantly.                                                                                |
-| `[tab count<Number>]`        | Inserts `count` spaces.                                                                                         |
-| `[removelast count<Number>]` | Removes the last `count` rendered characters from the typewriter.                                               |
-| `[removelast count<Number> keep]` | Removes the last `count` rendered characters from the typewriter as a single group. |
-| `[mixin name<Sring>]`        | Starts a mixin with the name `name`. See the Mixins section for more information.                               |
-| `[mixin end]`                | Ends a mixin.                                                                                                   |
-| `[@use name<String> ...]`    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
+| Tag                                  | Description                                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `[newline]`                          | Creates a new line. Raw newlines are ignored in .st files.                                                      |
+| `[newline instant]`                  | Creates a new line instantly.                                                                                   |
+| `[linebreak]`                        | Two new lines for the timing of 1.                                                                              |
+| `[linebreak instant]`                | Creates two new lines instantly.                                                                                |
+| `[tab count<Number>]`                | Inserts `count` spaces.                                                                                         |
+| `[removelast count<Number>]`         | Removes the last `count` rendered characters from the typewriter.                                               |
+| `[removelast count<Number> keep]`    | Removes the last `count` rendered characters from the typewriter as a single group.                             |
+| `[repeat str<String> count<Number>]` | Repeats `str` `count` times.                                                                                    |
+| `[mixin name<Sring>]`                | Starts a mixin with the name `name`. See the Mixins section for more information.                               |
+| `[mixin end]`                        | Ends a mixin.                                                                                                   |
+| `[@use name<String> ...]`            | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
 ### Timing
 Modifies character timing.

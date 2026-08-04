@@ -34,11 +34,9 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 [color #ff0000][bg #339900]red text on green background[newline]
 [swap]swapped the colors![color reset][bg reset][linebreak]
 
-[raw]
-everything is now RAW
+[raw]everything is now RAW
     [newline][newline] see how nothing works
-even ne/wlines /that are present in the file are here, super
-[raw end][linebreak]
+even ne/wlines /that are present in the file are here, super[raw end][linebreak]
 {{# [color #fc7d0e]comment[color reset][linebreak] #}}
 
 [page "hi"]

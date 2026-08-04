@@ -400,7 +400,7 @@ class RemoveLastTag extends Tag {
 
             engine.insertTokens(tokens);
 
-            return false; // this token itself renders nothing; the spliced tokens will
+            return false;
         }
 
         engine.addRenderTime(engine.state.defaultCharDelay);
@@ -408,7 +408,7 @@ class RemoveLastTag extends Tag {
 
     static onRender(engine, token) {
         if (engine.state.fragment && engine.state.fragment.childNodes.length) {
-            engine.target.appendChild(engine.state.fragment); // fragment empties itself, still reusable
+            engine.target.appendChild(engine.state.fragment);
         }
 
         let count = token.args[0];
@@ -739,11 +739,7 @@ class GlitchTag extends Tag {
                 });
             }
 
-            engine.pages[engine.state.page].splice(
-                engine.state.token,
-                0,
-                ...tokens
-            );
+            engine.insertTokens(tokens);
 
             return false; // this token itself renders nothing; the spliced tokens will
         }
@@ -794,11 +790,7 @@ class JitterTag extends Tag {
                 });
             }
 
-            engine.pages[engine.state.page].splice(
-                engine.state.token,
-                0,
-                ...tokens
-            );
+            engine.insertTokens(tokens);
 
             return false;
         } else if (third.equalsSpecific("shared")) {
@@ -819,11 +811,7 @@ class JitterTag extends Tag {
                 });
             }
 
-            engine.pages[engine.state.page].splice(
-                engine.state.token,
-                0,
-                ...tokens
-            );
+            engine.insertTokens(tokens);
 
             return false;
         }
