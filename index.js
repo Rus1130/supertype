@@ -850,6 +850,18 @@ class MixinTag extends Tag {
     }
 }
 
+class SwapTag extends Tag {
+    static tagName = "swap";
+
+    static onUse(engine, token) {
+        let bg = new String(engine.state.currentBg);
+        let color = new String(engine.state.currentColor);
+        
+        engine.state.currentBg = color.toString();
+        engine.state.currentColor = bg.toString();
+    }
+}
+
 export class SuperType {
 
     static SharedMemory = {};
@@ -1036,11 +1048,11 @@ export class SuperType {
         // if page is reset, then clear glitches
         this.state.glitches = [];
         this.state.jitters = [];
-        this.state.defaultCharDelay = new Number(this.header.charDelay);
-        this.state.defaultNewlineDelay = new Number(this.header.newlineDelay);
+        this.state.defaultCharDelay = +(new Number(this.header.charDelay))
+        this.state.defaultNewlineDelay = +(new Number(this.header.newlineDelay))
 
-        this.state.currentColor = new String(this.header.textColor);
-        this.state.currentBg = new String(this.header.backgroundColor);
+        this.state.currentColor = new String(this.header.textColor).toString();
+        this.state.currentBg = new String(this.header.backgroundColor).toString();
 
         this.state.scrollLocked = false;
         this.state.pauseLocked = false;
@@ -1655,13 +1667,10 @@ for (const TagClass of [
     PageTag,
     JitterTag,
     MixinTag,
-    UseTag
+    UseTag,
+    SwapTag
 ]) {
     SuperType.registerTag(TagClass);
-}
-
-function getContext() {
-    return "wtf"
 }
 
 class Color {

@@ -81,14 +81,15 @@ Modifies character timing.
 
 ### Styling
 Change the color of the text and background.
-| Tag                                        | Description                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------|
-| `[color color<Color>]`  | Sets the text color to `color`.                                                                                                 |
-| `[color reset]`         | Resets the text color to the default.                                                                                           |
-| `[bg color<Color>]`     | Sets the background color to `color`.                                                                                           |
-| `[bg reset]`            | Resets the background color to the default.                                                                                     |
-| `[raw]`                 | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
-| `[raw end]`             | Exits raw mode.                                                                                                                 |
+| Tag                    | Description                                                                                                                     |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------|
+| `[color color<Color>]` | Sets the text color to `color`.                                                                                                 |
+| `[color reset]`        | Resets the text color to the default.                                                                                           |
+| `[bg color<Color>]`    | Sets the background color to `color`.                                                                                           |
+| `[bg reset]`           | Resets the background color to the default.                                                                                     |
+| `[raw]`                | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
+| `[raw end]`            | Exits raw mode.                                                                                                                 |
+| `[swap]`               | Swaps the text and background colors.                                                                                           |
 
 ### Pages
 | Tag                                       | Description                                                                                                       |

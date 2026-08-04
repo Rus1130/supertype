@@ -7,6 +7,7 @@ typewriter: {
         ",": 500
     }
 }
+[invert]wow its different now[invert]
 WOW! this is normal text![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 i just used a linebreak there. smirk[newline]
