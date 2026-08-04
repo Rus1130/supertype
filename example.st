@@ -7,7 +7,6 @@ typewriter: {
         ",": 500
     }
 }
-[invert]wow its different now[invert]
 WOW! this is normal text![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 i just used a linebreak there. smirk[newline]
@@ -29,20 +28,21 @@ lorem ipsum dolor sit amet ur mom[newline]
 
 [color #339900]green text[color reset][newline]
 not green anymore, but now [bg #339900]green background[bg reset][newline]
-[color #ff0000][bg #339900]red text on green background[color reset][bg reset][newline]
+[color #ff0000][bg #339900]red text on green background[newline]
+[swap]swapped the colors![color reset][bg reset][linebreak]
 
 [raw]
 everything is now RAW
 [newline][newline] see how nothing works
 even ne/wlines /that are present in the file are here, super
 [raw end]
-[color #fc7d0e]back to normal[color reset]
+{{# [color #fc7d0e]comment[color reset][linebreak] #}}
 
 [page "hi"]
 wow look! its a page! cool![sleep 10000] yeah ur stuck here bud. gotta reload
 [page end]
 
-[linebreak][gopage "hi" "click me if u want idk"][newline]
+[gopage "hi" "click me if u want idk"][newline]
 /italic/[newline]
 *bold*[newline]
 -strikethrough-[newline]
@@ -60,9 +60,9 @@ _underline_[newline]
 
 [function "jitterlerp" "this is a custom function that lerps!" 1 20][linebreak]
 
-[mixin "ok"]
+[mixin "cool mixin"]
     [color #339900]<String>[color reset] [jitter <String> <Number>][newline]
 [mixin end]
 
-[@use "ok" "these" "are examples" 10]
-[@use "ok" "of" "mixins!" 20]
+[@use "cool mixin" "these" "are examples" 10]
+[@use "cool mixin" "of" "mixins!" 20]

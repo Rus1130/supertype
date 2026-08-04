@@ -1144,9 +1144,6 @@ export class SuperType {
 
         this.body = this.runBeforeTokenizeHooks(this.body);
 
-        // trim all whitespace following newlines
-        this.body = this.body.replace(/\n[ \t]+/g, "\n");
-
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
         if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
@@ -1564,16 +1561,27 @@ export class SuperType {
                 }
             }
 
-            if(body[i] === "\n"){
-                if(this.state.rawMode === true){
+            if (body[i] === "\n") {
+                if (this.state.rawMode) {
                     queue.push({
                         type: "tag",
                         name: "newline",
                         args: [new TagArgument("specific", "instant")]
                     });
+
+                    i++;
+
+                    // Preserve indentation in raw mode.
+                    continue;
                 }
 
+                // Outside raw mode, discard indentation after a newline.
                 i++;
+
+                while (body[i] === " " || body[i] === "\t") {
+                    i++;
+                }
+
                 continue;
             }
 
