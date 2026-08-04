@@ -1,6 +1,6 @@
 typewriter: {
-    charDelay: 80
-    newlineDelay: 150
+    charDelay: 40
+    newlineDelay: 120
     textColor: #ffffff
     backgroundColor: #000000
     customDelays: {
@@ -8,6 +8,8 @@ typewriter: {
     }
 }
 WOW! this is normal text![newline]
+    normally, lines cannot start with whitespace.
+newlines dont do anything either![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 i just used a linebreak there. smirk[newline]
 [tab 4]tabbed[newline]
@@ -33,7 +35,7 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 
 [raw]
 everything is now RAW
-[newline][newline] see how nothing works
+    [newline][newline] see how nothing works
 even ne/wlines /that are present in the file are here, super
 [raw end]
 {{# [color #fc7d0e]comment[color reset][linebreak] #}}
