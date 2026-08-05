@@ -11,6 +11,14 @@
         { "include": "#mixin" }
     ],
 	"repository": {
+        "specifics": {
+            "patterns": [
+                {
+                    "name": "specific.st",
+                    "match": "\\b(reset|override|default|keep|end|instant|off|shared)\\b"
+                }
+            ]
+        },
         "raw": {
             "patterns": [
                 {
@@ -104,10 +112,7 @@
                     },
                     "patterns": [
                         { "include": "#mixinPlaceholder" },
-                        {
-                            "name": "specific.st",
-                            "match": "\\b(reset|override|default|keep|end|instant|off|shared)\\b"
-                        },
+                        { "include": "#specifics" },
                         { "include": "#strings" },
                         { "include": "#colors" },
                         { "include": "#numbers" },
@@ -128,6 +133,7 @@
                     },
                     "patterns": [
                         { "include": "#strings" },
+                        { "include": "#specifics" },
                         { "include": "#colors" },
                         { "include": "#numbers" },
                         { "include": "#booleans" },

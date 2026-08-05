@@ -7,8 +7,10 @@ typewriter: {
         ",": 500
     }
 }
-this will be under the root page[newline]
-
-[page "hi"]
-this will be under the importExample\-hi page[newline]
+[page "imported-page"]
+this is an imported page. WOW! [newline]
 [page end]
+
+[mixin "import-mixin"]
+this is an imported mixin![newline]
+[mixin end]

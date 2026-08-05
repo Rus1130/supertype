@@ -7,6 +7,10 @@ typewriter: {
         ",": 500
     }
 }
+[@import]
+    importExample.st
+[@import end]
+
 WOW! this is normal text![newline]
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
@@ -67,4 +71,6 @@ _underline_[newline]
 [mixin end]
 
 [@use "cool mixin" "these" "are examples" 10]
-[@use "cool mixin" "of" "mixins!" 20]
+[@use "cool mixin" "of" "mixins!" 20][newline]
+
+[gopage "importExample-page" "click me to go to the importExample page!"][newline]

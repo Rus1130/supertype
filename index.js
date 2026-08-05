@@ -172,25 +172,40 @@ export class Tag {
     static onRender(engine, token) {}
 
     // ---------------------------------------------------------------------
-    // Tags that wrap a span of content between an opening `[name ...]` and
-    // a matching `[name end]` need to hook in at a specific point in the
-    // load/tokenize pipeline. A tag class opts in by *overriding* one of
-    // the two hooks below - there's no separate flag to set. The engine
-    // detects opt-in with `Object.hasOwn(TagClass, "beforeTokenize")` (etc),
+    // Three optional hooks let a tag class reach outside the normal
+    // onTokenization/onUse/onRender flow. Each one opts in by being
+    // *overridden* on the subclass - there's no separate flag to set. The
+    // engine detects opt-in with `Object.hasOwn(TagClass, "<hookName>")`,
     // i.e. "did this specific subclass define its own version", not just
-    // "does this method exist" - these base versions below exist purely so
+    // "does this method exist" - the base versions below exist purely so
     // the hooks show up in JSDoc/autocomplete, and are never called
-    // themselves. If neither is overridden, nothing extra happens (e.g.
+    // themselves. If none are overridden, nothing extra happens (e.g.
     // `raw`, which handles its own wrapping entirely inside onTokenization
     // by toggling tokenizer state).
     // ---------------------------------------------------------------------
 
     /**
-     * Implement this if the tag needs to act on its wrapped content BEFORE
-     * tokenization happens, working directly on raw body text (e.g. a
-     * mixin definition, which is stored as a text template rather than
-     * tokenized on the spot). Only called for tag classes that override
-     * it themselves - the base implementation here is never invoked.
+     * Implement this if the tag needs to do one-time setup work right
+     * before tokenize() runs over the full body - e.g. resetting engine
+     * state that a previous load() call may have left behind. Only called
+     * for tag classes that override it themselves - the base
+     * implementation here is never invoked.
+     *
+     * Called once per tag class (not once per occurrence in the body),
+     * right before `tokenize()` is invoked.
+     *
+     * @param {{engine: SuperType, body: string}} ctx
+     * @returns {void}
+     */
+    static beforeTokenization(ctx) {}
+
+    /**
+     * Implement this if the tag wraps a span of content between an opening
+     * `[name ...]` and a matching `[name end]`, and needs to rewrite or
+     * consume that raw text BEFORE tokenization happens (e.g. a mixin
+     * definition, which is stored as a text template rather than tokenized
+     * on the spot). Only called for tag classes that override it
+     * themselves - the base implementation here is never invoked.
      *
      * Called once per matched `[name ...] ... [name end]` block, with the
      * raw (unparsed) opening-tag args and the raw text content in between.
@@ -201,14 +216,14 @@ export class Tag {
      * @returns {string} text to splice into the body in place of the whole
      *   block (return "" to remove it entirely, as mixins do)
      */
-    static beforeTokenize(rawArgs, content, ctx) {}
+    static extractBlock(rawArgs, content, ctx) {}
 
     /**
      * Implement this if the tag needs to route already-tokenized content
-     * into a separate page AFTER tokenization happens (e.g. `page`, which
-     * decides which page subsequent tokens land in). Only called for tag
-     * classes that override it themselves - the base implementation here
-     * is never invoked.
+     * into a separate page (e.g. `page`, which decides which page
+     * subsequent tokens land in). Only called for tag classes that
+     * override it themselves - the base implementation here is never
+     * invoked.
      *
      * Called for every token of this tag encountered while sorting tokens
      * into pages. Should create/validate the target page as a side effect
@@ -220,7 +235,7 @@ export class Tag {
      * @param {number} index
      * @returns {string}
      */
-    static afterTokenize(engine, token, index) {}
+    static routeToPage(engine, token, index) {}
 }
 
 class UseTag extends Tag {
@@ -324,11 +339,41 @@ class UseTag extends Tag {
     }
 }
 
+class ImportTag extends Tag {
+    static tagName = "@import";
+
+    static async beforeTokenization(ctx) {
+
+        console.log(ctx)
+        
+        // const filePath = token.args[0];
+
+        // filePath.check("string");
+
+        // const dummy = document.createElement("div");
+
+        // const importedEngine = new SuperType(dummy, engine.functions);
+
+        // await importedEngine.load(filePath.value).then(() => {
+
+        //     const pages = importedEngine.pages;
+        //     const mixins = importedEngine.mixins;
+
+        //     for (const [name, tokens] of Object.entries(pages)) {
+        //         const importName = importedEngine.fileName + "-" + name;
+        //         if (engine.pages[importName] !== undefined) throw new Error(`Duplicate page name from import: ${name}`);
+
+        //         engine.pages[importName] = tokens;
+        //     }
+        // });
+    }
+}
+
 class RawTag extends Tag {
     static tagName = "raw";
 
     // Wraps [raw] ... [raw end], but unlike mixin/page below, raw doesn't
-    // need beforeTokenize or afterTokenize - it handles its own wrapping
+    // need extractBlock or routeToPage, it handles its own wrapping
     // right here in onTokenization by toggling tokenizer state directly.
     static onTokenization(rawArgs, ctx) {
         const args = super.onTokenization(rawArgs, ctx);
@@ -837,10 +882,10 @@ class PageTag extends Tag {
     static tagName = "page";
 
     // "page" tokens are never dispatched through process(): load() filters
-    // them out of the token stream entirely, calling afterTokenize below to
+    // them out of the token stream entirely, calling routeToPage below to
     // decide which page subsequent tokens get routed into. onUse/onRender
     // are intentionally unused.
-    static afterTokenize(engine, token, index) {
+    static routeToPage(engine, token, index) {
         const arg = token.args[0];
 
         if (arg === undefined) throw new Error(`Missing page name at token index ${index}`);
@@ -873,10 +918,10 @@ class MixinTag extends Tag {
     static tagName = "mixin";
 
     // "mixin" tokens never make it to tokenize() at all: load() calls
-    // beforeTokenize below to strip `[mixin "name"] ... [mixin end]` blocks
+    // extractBlock below to strip `[mixin "name"] ... [mixin end]` blocks
     // out of the raw body before tokenization happens. onUse/onRender are
     // intentionally unused.
-    static beforeTokenize(rawArgs, content, ctx) {
+    static extractBlock(rawArgs, content, ctx) {
         const nameArg = rawArgs[0];
         if (nameArg === undefined) throw new Error("Missing mixin name");
 
@@ -1006,6 +1051,7 @@ export class SuperType {
 
         this.targetParent = target;
         this.target = div;
+        this.fileName = null;
         
         this.target.style.whiteSpace = "pre-wrap";
 
@@ -1110,28 +1156,47 @@ export class SuperType {
     }
 
     /**
-     * Runs beforeTokenize (see Tag) for every registered tag that defines
+     * Runs extractBlock (see Tag) for every registered tag that defines
      * it, pulling matched `[name ...] ... [name end]` blocks out of the raw
      * body before tokenization happens (e.g. mixin definitions). Adding a
      * new tag that needs this requires touching nothing here - just define
-     * a `beforeTokenize` static method on the Tag class.
+     * an `extractBlock` static method on the Tag class.
      *
      * @param {string} body
      * @returns {string}
      */
-    runBeforeTokenizeHooks(body) {
+    runExtractBlockHooks(body) {
         for (const [name, TagClass] of SuperType.tags) {
-            if (!Object.hasOwn(TagClass, "beforeTokenize")) continue;
+            if (!Object.hasOwn(TagClass, "extractBlock")) continue;
 
             const re = new RegExp(`\\[${name}(?:\\s+([^\\]]*))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
 
             body = body.replace(re, (match, rawArgsStr, content) => {
                 const rawArgs = (rawArgsStr ?? "").match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
-                return TagClass.beforeTokenize(rawArgs, content, { engine: this });
+                return TagClass.extractBlock(rawArgs, content, { engine: this });
             });
         }
 
         return body;
+    }
+
+    /**
+     * Runs beforeTokenization (see Tag) for every registered tag that
+     * defines it. This fires once per tag class, immediately before
+     * tokenize() is called over the (already block-extracted) body, and is
+     * meant for one-time setup side effects rather than text rewriting.
+     * Adding a new tag that needs this requires touching nothing here -
+     * just define a `beforeTokenization` static method on the Tag class.
+     *
+     * @param {string} body
+     * @returns {void}
+     */
+    runBeforeTokenizationHooks(body) {
+        for (const [name, TagClass] of SuperType.tags) {
+            if (!Object.hasOwn(TagClass, "beforeTokenization")) continue;
+
+            TagClass.beforeTokenization({ engine: this, body });
+        }
     }
 
     /**
@@ -1141,6 +1206,8 @@ export class SuperType {
      */
     async load(path) {
         this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
+
+        this.fileName = path.split("/").pop().split(".")[0];
 
         const start = this.data.indexOf("typewriter");
         const open = this.data.indexOf("{", start);
@@ -1184,7 +1251,7 @@ export class SuperType {
 
         this.body = this.data.slice(i).replace(/\r?\n/g, "\n");
 
-        this.body = this.runBeforeTokenizeHooks(this.body);
+        this.body = this.runExtractBlockHooks(this.body);
 
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
@@ -1198,6 +1265,8 @@ export class SuperType {
         this.target.style.display = "inline-block";
         this.target.style.width = this.header.wordWrap ? `${this.header.wordWrap}ch` : "auto";
 
+        this.runBeforeTokenizationHooks(this.body);
+
         this.tokens = this.tokenize(this.body)
 
         let currentPage = "root";
@@ -1207,10 +1276,10 @@ export class SuperType {
 
             const TagClass = token.type === "tag" ? SuperType.tags.get(token.name) : undefined;
 
-            if (TagClass && Object.hasOwn(TagClass, "afterTokenize")) {
-                const afterValue = TagClass.afterTokenize(this, token, i);
+            if (TagClass && Object.hasOwn(TagClass, "routeToPage")) {
+                const routedValue = TagClass.routeToPage(this, token, i);
 
-                if (afterValue != null) currentPage = afterValue;
+                if (routedValue != null) currentPage = routedValue;
                 continue;
             }
 
@@ -1720,7 +1789,8 @@ for (const TagClass of [
     MixinTag,
     UseTag,
     SwapTag,
-    RepeatTag
+    RepeatTag,
+    ImportTag
 ]) {
     SuperType.registerTag(TagClass);
 }
