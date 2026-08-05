@@ -191,7 +191,7 @@ To import the files, used a wrapped import tag in your main `.st` file. Inside o
 [@import end]
 ```
 
-Once imported, the pages and mixins can be used. Page names are prefixed with the file name, so `page` becomes `fileName-page`, including the root context. Mixins are not prefixed.
+Once imported, the pages and mixins can be used. Page names are prefixed with the file name, so `page` becomes `fileName-page`, including the root context. Mixins are not prefixed. Headers are ignored.
 
 ## Comment
 ```
