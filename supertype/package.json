@@ -25,7 +25,7 @@
             "editor.tokenColorCustomizations": {
                 "textMateRules": [
                     {
-                        "scope": "mixin.tag.st",
+                        "scope": "attag.tag.st",
                         "settings": {
                             "foreground": "#46e891",
                             "fontStyle": ""
@@ -68,7 +68,7 @@
                     {
                         "scope": "style.markdown.st",
                         "settings": {
-                            "foreground": "#febeeb"
+                            "foreground": "#febeeb7f"
                         }
                     }
                 ]

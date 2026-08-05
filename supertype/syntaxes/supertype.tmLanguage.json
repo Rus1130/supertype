@@ -117,10 +117,10 @@
                 },
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:@use))\\b",
+                    "begin": "(?<!\\\\)\\[((?:@use|@import))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
-                        "1": { "name": "mixin.tag.st" }
+                        "1": { "name": "attag.tag.st" }
                     },
                     "end": "(?<!\\\\)\\]",
                     "endCaptures": {
@@ -187,15 +187,15 @@
                 },
                 {
                     "name": "style.markdown.st",
-                    "match": "(?<!\\\\)/"
+                    "match": "(?<!\\\\)\\/"
                 },
                 {
                     "name": "style.markdown.st",
-                    "match": "(?<!\\\\)_"
+                    "match": "(?<!\\\\)\\_"
                 },
                 {
                     "name": "style.markdown.st",
-                    "match": "(?<!\\\\)-"
+                    "match": "(?<!\\\\)\\-"
                 }
             ]
         },
