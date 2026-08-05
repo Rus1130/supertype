@@ -10,7 +10,7 @@ typewriter: {
 imported root page.
 
 [page "page"]
-this is an imported page. WOW! [newline]
+this is an imported page. WOW![newline]
 [page end]
 
 [mixin "imported-mixin"]
