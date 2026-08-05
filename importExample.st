@@ -7,10 +7,12 @@ typewriter: {
         ",": 500
     }
 }
-[page "imported-page"]
+imported root page.
+
+[page "page"]
 this is an imported page. WOW! [newline]
 [page end]
 
-[mixin "import-mixin"]
-this is an imported mixin![newline]
+[mixin "imported-mixin"]
+this is an imported mixin, <String>![newline]
 [mixin end]

@@ -210,11 +210,16 @@ export class Tag {
      * Called once per matched `[name ...] ... [name end]` block, with the
      * raw (unparsed) opening-tag args and the raw text content in between.
      *
+     * May be async - the engine awaits the return value before continuing
+     * to scan for the next match, so it's safe to do things like fetching
+     * and loading another file here (see `@import`).
+     *
      * @param {string[]} rawArgs
      * @param {string} content
      * @param {{engine: SuperType}} ctx
-     * @returns {string} text to splice into the body in place of the whole
-     *   block (return "" to remove it entirely, as mixins do)
+     * @returns {string | Promise<string>} text to splice into the body in
+     *   place of the whole block (return "" to remove it entirely, as
+     *   mixins do)
      */
     static extractBlock(rawArgs, content, ctx) {}
 
@@ -342,30 +347,34 @@ class UseTag extends Tag {
 class ImportTag extends Tag {
     static tagName = "@import";
 
-    static async beforeTokenization(ctx) {
+    static async extractBlock(rawArgs, content, ctx) {
+        const filePaths = content.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
-        console.log(ctx)
-        
-        // const filePath = token.args[0];
+        // async for loop
+        for (const filePath of filePaths) {
+            const dummy = document.createElement("div");
 
-        // filePath.check("string");
+            const importedEngine = new SuperType(dummy, ctx.engine.functions);
 
-        // const dummy = document.createElement("div");
+            await importedEngine.load(filePath).then(() => {
+                const pages = importedEngine.pages;
+                const mixins = importedEngine.mixins;
 
-        // const importedEngine = new SuperType(dummy, engine.functions);
+                for (const [name, tokens] of Object.entries(pages)) {
+                    const importName = importedEngine.fileName + "-" + name;
+                    if (ctx.engine.pages[importName] !== undefined) throw new Error(`Duplicate page name in imported file: ${name}`);
+                    ctx.engine.pages[importName] = tokens;
+                }
 
-        // await importedEngine.load(filePath.value).then(() => {
+                for (const [name, tokens] of Object.entries(mixins)) {
+                    if (ctx.engine.mixins[name] !== undefined) throw new Error(`Duplicate mixin name in imported file: ${name}`);
+                    ctx.engine.mixins[name] = tokens;
+                }
+            })
+        }
+    }
 
-        //     const pages = importedEngine.pages;
-        //     const mixins = importedEngine.mixins;
-
-        //     for (const [name, tokens] of Object.entries(pages)) {
-        //         const importName = importedEngine.fileName + "-" + name;
-        //         if (engine.pages[importName] !== undefined) throw new Error(`Duplicate page name from import: ${name}`);
-
-        //         engine.pages[importName] = tokens;
-        //     }
-        // });
+    static onUse(engine, token) {
     }
 }
 
@@ -574,6 +583,8 @@ class GopageTag extends Tag {
 
     static onRender(engine, token) {
         const pageName = token.args[0];
+
+        if(engine.pages[pageName.value] === undefined) throw new Error(`Page not found: ${pageName.value}`);
 
         if (engine.header.previewMode) {
             let charCount = engine.header.wordWrap;
@@ -1162,19 +1173,36 @@ export class SuperType {
      * new tag that needs this requires touching nothing here - just define
      * an `extractBlock` static method on the Tag class.
      *
+     * This is deliberately NOT built on String.replace(): replace() always
+     * stringifies whatever its callback returns immediately, so an async
+     * extractBlock would come back as the literal text "[object Promise]"
+     * instead of being awaited. Scanning manually with exec() lets us await
+     * each replacement before resuming the search on the updated body.
+     *
      * @param {string} body
-     * @returns {string}
+     * @returns {Promise<string>}
      */
-    runExtractBlockHooks(body) {
+    async runExtractBlockHooks(body) {
         for (const [name, TagClass] of SuperType.tags) {
             if (!Object.hasOwn(TagClass, "extractBlock")) continue;
 
             const re = new RegExp(`\\[${name}(?:\\s+([^\\]]*))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
 
-            body = body.replace(re, (match, rawArgsStr, content) => {
+            let match;
+            re.lastIndex = 0;
+
+            while ((match = re.exec(body)) !== null) {
+                const [fullMatch, rawArgsStr, content] = match;
                 const rawArgs = (rawArgsStr ?? "").match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
-                return TagClass.extractBlock(rawArgs, content, { engine: this });
-            });
+
+                const replacement = (await TagClass.extractBlock(rawArgs, content, { engine: this })) ?? "";
+
+                body = body.slice(0, match.index) + replacement + body.slice(match.index + fullMatch.length);
+
+                // resume scanning right after the spliced-in replacement,
+                // on the now-updated body string
+                re.lastIndex = match.index + replacement.length;
+            }
         }
 
         return body;
@@ -1251,7 +1279,7 @@ export class SuperType {
 
         this.body = this.data.slice(i).replace(/\r?\n/g, "\n");
 
-        this.body = this.runExtractBlockHooks(this.body);
+        this.body = await this.runExtractBlockHooks(this.body);
 
         if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
         if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");

@@ -41,7 +41,8 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 
 [raw]everything is now RAW
     [newline][newline] see how nothing works
-even ne/wlines /that are present in the file are here, super[raw end][linebreak]
+even ne/wlines /that are present in the file are here, super
+nooooooooooooooooooooooooooooooooooooooooo wooooooooooooooooooooooooooooooooooooooooooord wraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaap[raw end][linebreak]
 {{# [color #fc7d0e]comment[color reset][linebreak] #}}
 
 [page "hi"]
@@ -73,4 +74,5 @@ _underline_[newline]
 [@use "cool mixin" "these" "are examples" 10]
 [@use "cool mixin" "of" "mixins!" 20][newline]
 
-[gopage "importExample-page" "click me to go to the importExample page!"][newline]
+[gopage "importExample-page" "imported page"]
+[@use "imported-mixin" "cool"]

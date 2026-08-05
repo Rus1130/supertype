@@ -3,6 +3,10 @@ SuperType is an easy way to add a typewriter effect to your webpage. Just type y
 ## Examples
 Look at `example.st` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
 
+## Terms
+- Wrapped tag: `[tagName] ... [tagname end]`
+- Root (context): the main content of the `.st` file; all text and tags outside of pages and mixins.
+
 ## Types
 ```
   Number : 1
@@ -111,6 +115,7 @@ Other tags.
 | `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` as a single group.                                                                              |
 | `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. |
 | `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor.                                |
+| `[@import]`                                     | See `imports` section.                                                                                                                               |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.
@@ -154,6 +159,39 @@ Include `<String>`, `<Number>`, `<Boolean>`, or `<Color>` in the mix-in to use p
 hello johny!
 hello clara!
 ```
+
+### Imports
+Imports are a way to include other `.st` files into your current file.
+
+`importExample.st`:
+```
+typewriter: {
+    charDelay: 40
+    newlineDelay: 120
+    textColor: #ffffff
+    backgroundColor: #000000
+    customDelays: {
+        ",": 500
+    }
+}
+imported root page.
+
+[page "page"]
+    this is an imported page. WOW! [newline]
+[page end]
+
+[mixin "imported-mixin"]
+    this is an imported mixin, <String>![newline]
+[mixin end]
+```
+To import the files, used a wrapped import tag in your main `.st` file. Inside of the tag, include the path to the file you want to import. If you want to import multiple files, separate the paths by newlines.
+```
+[@import]
+    importExample.st
+[@import end]
+```
+
+Once imported, the pages and mixins can be used. Page names are prefixed with the file name, so `page` becomes `fileName-page`, including the root context. Mixins are not prefixed.
 
 ## Comment
 ```
