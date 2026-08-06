@@ -545,7 +545,7 @@ class CustomRemoveTag extends Tag {
         if (name === undefined) throw new Error("Missing custom tag name");
         name.check("string");
 
-        if (engine.header.customDelays[name.value] === undefined) throw new Error(`Custom tag not found: ${name.value}`);
+        if (engine.header.customDelays[name.value] === undefined) return;
 
         delete engine.header.customDelays[name.value];
     }
@@ -726,24 +726,6 @@ class SpeedDefaultTag extends Tag {
     }
 }
 
-class NewlineTag extends Tag {
-    static tagName = "newline";
-
-    static onUse(engine, token) {
-        let instant = token.args[0];
-        if (instant !== undefined) instant.checkSpecific("instant");
-        if (instant === undefined) instant = false;
-
-        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
-        engine.state.scrollCount = SuperType.defaultScrollCount;
-        engine.state.lineWidth = 0;
-    }
-
-    static onRender(engine, token) {
-        engine.renderRaw("<br>");
-    }
-}
-
 class RepeatTag extends Tag {
     static tagName = "repeat";
 
@@ -770,6 +752,24 @@ class RepeatTag extends Tag {
     }
 }
 
+class NewlineTag extends Tag {
+    static tagName = "newline";
+
+    static onUse(engine, token) {
+        let instant = token.args[0];
+        if (instant !== undefined) instant.checkSpecific("instant");
+        if (instant === undefined) instant = false;
+
+        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
+        engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.lineWidth = 0;
+        engine.state.inWord = false;
+    }
+
+    static onRender(engine, token) {
+        engine.renderRaw("<br>");
+    }
+}
 
 class LinebreakTag extends Tag {
     static tagName = "linebreak";
@@ -782,6 +782,7 @@ class LinebreakTag extends Tag {
         if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
         engine.state.scrollCount = SuperType.defaultScrollCount;
         engine.state.lineWidth = 0;
+        engine.state.inWord = false;
     }
 
     static onRender(engine, token) {
@@ -1020,8 +1021,6 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    // comment because shit BROKE !!! fuck fill amirite
-    // comment because shit BROKE !!! fuck fill amirite
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
 
     static defaultScrollCount = 6;
@@ -1115,6 +1114,29 @@ export class SuperType {
         this.target = div;
         this.fileName = null;
 
+        // Cached layout measurements used by word-wrap. Both are invalidated
+        // (set back to null) only when the layout could actually have
+        // changed, rather than either caching forever (stale after the
+        // element/font changes) or re-measuring on every character (forces
+        // a synchronous reflow per call, which gets slower the more content
+        // is already on the page).
+        this._containerWidth = null;
+        this._fontBase = null;
+
+        if (typeof ResizeObserver !== "undefined") {
+            this._resizeObserver = new ResizeObserver(() => {
+                this._containerWidth = null;
+                this._fontBase = null; // font-size can be responsive too
+            });
+            this._resizeObserver.observe(this.target);
+        }
+
+        if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                this._fontBase = null;
+            });
+        }
+
         const controlsCheck = (value) => {
             return (this.allowedControls.has(value) || this.allowedControls.has("all"));
         }
@@ -1127,7 +1149,8 @@ export class SuperType {
             if(controlsCheck("fastforward") && e.key === "ArrowRight") this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
 
             if(controlsCheck("reset") && e.key === "r"){
-                this.targetParent.innerHTML = "";
+                this.target.innerHTML = "";
+                this.resetSpanTextStyle();
                 this.start(this.state.page)
             }
         })
@@ -1144,6 +1167,7 @@ export class SuperType {
             jitters: [],
             scrollCount: 0,
             lineWidth: 0,
+            inWord: false,
 
             tagSpeedOverride: false,
             userSpeedOverride: null,
@@ -1225,9 +1249,14 @@ export class SuperType {
         this.state.nextTime = performance.now();
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
-        // if page is reset, then clear glitches
+
+        this.state.jitters.forEach(jitter => {
+            jitter.textNode.remove()
+        });
+
         this.state.glitches = [];
         this.state.jitters = [];
+
         this.state.defaultCharDelay = +(new Number(this.header.charDelay))
         this.state.defaultNewlineDelay = +(new Number(this.header.newlineDelay))
 
@@ -1494,6 +1523,14 @@ export class SuperType {
         } finally {
             if (fragment.childNodes.length) {
                 this.target.appendChild(fragment);
+
+                if (this.state.scrollCount > 0) {
+                    this.state.scrollCount--;
+
+                    requestAnimationFrame(() => {
+                        this.scrollTargetParent(this.targetParent.scrollHeight);
+                    });
+                }
             }
         }
 
@@ -1561,14 +1598,6 @@ export class SuperType {
     }
 
     process(token) {
-        if (this.state.scrollCount > 0) {
-            this.state.scrollCount--;
-
-            requestAnimationFrame(() => {
-                this.scrollWindow(this.targetParent.scrollHeight);
-            });
-        }
-
         if(token.type === "character") {
             this.renderToken(token);
             return;
@@ -1683,10 +1712,12 @@ export class SuperType {
         if (!this._measureCtx) {
             this._measureCtx = document.createElement("canvas").getContext("2d");
         }
+
         if (!this._fontBase) {
             const cs = getComputedStyle(this.target);
             this._fontBase = { size: cs.fontSize, family: cs.fontFamily };
         }
+
         const weight = style.bold ? "bold" : "normal";
         const slant = style.italic ? "italic" : "normal";
         this._measureCtx.font = `${slant} ${weight} ${this._fontBase.size} ${this._fontBase.family}`;
@@ -1712,14 +1743,20 @@ export class SuperType {
         const word = this.lookAheadWord(token.value);
         const ctx = this.getMeasureCtx(token.style);
         const wordWidth = ctx.measureText(word).width;
-        const containerWidth = this.target.clientWidth;
 
-        // only force a break if the word actually fits on its own line
-        // (otherwise let normal char-wrapping handle the overflow, same as today)
-        if (this.state.lineWidth > 0 && this.state.lineWidth + wordWidth > containerWidth && wordWidth <= containerWidth) {
-            this.state.fragment.appendChild(document.createElement("br"));
-            this.resetSpanTextStyle();
-            this.state.lineWidth = 0;
+        if (this._containerWidth === null) {
+            this._containerWidth = this.target.getBoundingClientRect().width;
+        }
+        const containerWidth = this._containerWidth;
+
+        if (this.state.lineWidth > 0 && this.state.lineWidth + wordWidth > containerWidth) {
+            if (wordWidth <= containerWidth) {
+                this.state.fragment.appendChild(document.createElement("br"));
+                this.resetSpanTextStyle();
+                this.state.lineWidth = 0;
+            } else {
+                this.state.lineWidth = containerWidth;
+            }
         }
     }
 
