@@ -1,7 +1,8 @@
 export class TagArgument {
-    constructor(type, value) {
+    constructor(type, value, raw = null) {
         this.type = type;
         this.value = value;
+        this.raw = raw;
     }
 
     /**
@@ -59,23 +60,23 @@ export class TagArgument {
 
     static parse(value) {
         if (SuperType.specificTypes.includes(value)) {
-            return new TagArgument("specific", value);
+            return new TagArgument("specific", value, value);
         }
 
         if (/^-?\d+(\.\d+)?$/.test(value)) {
-            return new TagArgument("number", Number(value));
+            return new TagArgument("number", Number(value), value);
         }
 
         if (value === "true") {
-            return new TagArgument("boolean", true);
+            return new TagArgument("boolean", true, value);
         }
 
         if (value === "false") {
-            return new TagArgument("boolean", false);
+            return new TagArgument("boolean", false, value);
         }
 
         if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-            return new TagArgument("color", new Color(value).toString());
+            return new TagArgument("color", new Color(value).toString(), value);
         }
 
         if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(value)) {
@@ -86,19 +87,14 @@ export class TagArgument {
                 g >= 0 && g <= 255 &&
                 b >= 0 && b <= 255
             ) {
-                return new TagArgument("color", new Color(r, g, b).toString());
+                return new TagArgument("color", new Color(r, g, b).toString(), value);
             }
 
             throw new Error(`Invalid RGB color: ${value}`);
         }
 
         if (value.startsWith('"') && value.endsWith('"')) {
-            return new TagArgument("string", value.slice(1, -1));
-        }
-
-
-        if(value.startsWith("'") && value.endsWith("'")) {
-            return new TagArgument("string", value.slice(1, -1));
+            return new TagArgument("string", value.slice(1, -1), value);
         }
 
         throw new Error(`Invalid value: ${value}`);
@@ -260,89 +256,106 @@ class UseTag extends Tag {
         }
 
         const substitutions = args.slice(1);
-        let argIndex = 0;
-        let depth = 0;
+
         let expanded = "";
+        let argIndex = 0;
+
+        let inTag = false;
+        let inDoubleString = false;
+        let inSingleString = false;
 
         for (let i = 0; i < mixinBody.length; i++) {
-            if (mixinBody.startsWith("<String>", i)) {
-                const value = substitutions.length > 0
-                    ? substitutions[argIndex % substitutions.length]
-                    : undefined;
-                if (value === undefined) {
-                    throw new Error(
-                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
-                    );
-                }
-                value.check("string");
 
-                expanded += depth > 0
-                    ? `"${value.value.replace(/"/g, '\\"')}"`
-                    : value.value.replace(/\\/g, '\\\\').replace(/\[/g, '\\[');
-
-                argIndex++;
-                i += "<String>".length - 1;
+            // escaped character
+            if (mixinBody[i] === "\\" && i + 1 < mixinBody.length) {
+                expanded += mixinBody[i];
+                expanded += mixinBody[++i];
                 continue;
             }
 
-            if (mixinBody.startsWith("<Number>", i)) {
-                const value = substitutions.length > 0
-                    ? substitutions[argIndex % substitutions.length]
-                    : undefined;
-                if (value === undefined) {
-                    throw new Error(
-                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
-                    );
+            const ch = mixinBody[i];
+
+            // update parser state
+            if (inTag) {
+                if (ch === '"' && !inSingleString) {
+                    inDoubleString = !inDoubleString;
+                    expanded += ch;
+                    continue;
                 }
-                value.check("number");
 
-                expanded += String(value.value);
+                if (ch === "'" && !inDoubleString) {
+                    inSingleString = !inSingleString;
+                    expanded += ch;
+                    continue;
+                }
 
-                argIndex++;
-                i += "<Number>".length - 1;
+                if (!inDoubleString && !inSingleString && ch === "]") {
+                    inTag = false;
+                    expanded += ch;
+                    continue;
+                }
+            } else if (ch === "[") {
+                inTag = true;
+                expanded += ch;
                 continue;
             }
 
-            if (mixinBody.startsWith("<Color>", i)) {
-                const value = substitutions.length > 0
-                    ? substitutions[argIndex % substitutions.length]
-                    : undefined;
+            let matched = null;
+
+            if (mixinBody.startsWith("<String>", i)) matched = "string";
+            else if (mixinBody.startsWith("<Number>", i)) matched = "number";
+            else if (mixinBody.startsWith("<Color>", i)) matched = "color";
+            else if (mixinBody.startsWith("<Boolean>", i)) matched = "boolean";
+
+            if (matched !== null) {
+
+                const value = substitutions[argIndex];
+
                 if (value === undefined) {
                     throw new Error(
-                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
+                        `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
                     );
                 }
-                value.check("color");
 
-                expanded += value.value;
+                value.check(matched);
+
+                switch (matched) {
+
+                    case "string":
+                        if (inTag) {
+                            expanded += `"${value.value
+                                .replace(/\\/g, "\\\\")
+                                .replace(/"/g, '\\"')}"`;
+                        } else {
+                            expanded += value.value
+                                .replace(/\\/g, "\\\\")
+                                .replace(/\[/g, "\\[")
+                                .replace(/\]/g, "\\]");
+                        }
+                        i += "<String>".length - 1;
+                        break;
+
+                    case "number":
+                        expanded += value.raw ?? String(value.value);
+                        i += "<Number>".length - 1;
+                        break;
+
+                    case "color":
+                        expanded += value.raw ?? value.value;
+                        i += "<Color>".length - 1;
+                        break;
+
+                    case "boolean":
+                        expanded += value.raw ?? String(value.value);
+                        i += "<Boolean>".length - 1;
+                        break;
+                }
 
                 argIndex++;
-                i += "<Color>".length - 1;
                 continue;
             }
 
-            if (mixinBody.startsWith("<Boolean>", i)) {
-                const value = substitutions.length > 0
-                    ? substitutions[argIndex % substitutions.length]
-                    : undefined;
-                if (value === undefined) {
-                    throw new Error(
-                        `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
-                    );
-                }
-                value.check("boolean");
-
-                expanded += String(value.value);
-
-                argIndex++;
-                i += "<Boolean>".length - 1;
-                continue;
-            }
-
-            if (mixinBody[i] === "[") depth++;
-            else if (mixinBody[i] === "]") depth = Math.max(0, depth - 1);
-
-            expanded += mixinBody[i];
+            expanded += ch;
         }
 
         expanded = expanded.replace(/\n[ \t]+/g, "\n");
@@ -1682,42 +1695,42 @@ export class SuperType {
         }
     }
 
-    tokenize(body) {
-        function findTagEnd(body, openIndex) {
-            let i = openIndex + 1;
-            let inDoubleString = false;
-            let inSingleString = false;
+    findTagEnd(body, openIndex) {
+        let i = openIndex + 1;
+        let inDoubleString = false;
+        let inSingleString = false;
 
-            while (i < body.length) {
-                const ch = body[i];
+        while (i < body.length) {
+            const ch = body[i];
 
-                if (ch === "\\" && (inDoubleString || inSingleString) && i + 1 < body.length) {
-                    i += 2;
-                    continue;
-                }
-
-                if (ch === '"' && !inSingleString) {
-                    inDoubleString = !inDoubleString;
-                    i++;
-                    continue;
-                }
-
-                if (ch === "'" && !inDoubleString) {
-                    inSingleString = !inSingleString;
-                    i++;
-                    continue;
-                }
-
-                if (ch === "]" && !inDoubleString && !inSingleString) {
-                    return i;
-                }
-
-                i++;
+            if (ch === "\\" && (inDoubleString || inSingleString) && i + 1 < body.length) {
+                i += 2;
+                continue;
             }
 
-            return -1;
+            if (ch === '"' && !inSingleString) {
+                inDoubleString = !inDoubleString;
+                i++;
+                continue;
+            }
+
+            if (ch === "'" && !inDoubleString) {
+                inSingleString = !inSingleString;
+                i++;
+                continue;
+            }
+
+            if (ch === "]" && !inDoubleString && !inSingleString) {
+                return i;
+            }
+
+            i++;
         }
 
+        return -1;
+    }
+
+    tokenize(body) {
         const queue = [];
         let i = 0;
 
@@ -1752,7 +1765,7 @@ export class SuperType {
             }
 
             if (body[i] === "[" && !inDoubleString) {
-                const end = findTagEnd(body, i);
+                const end = this.findTagEnd(body, i);
 
                 if (end !== -1) {
                     const content = body.slice(i + 1, end).trim();
