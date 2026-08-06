@@ -1021,6 +1021,7 @@ export class SuperType {
     }
 
     // comment because shit BROKE !!! fuck fill amirite
+    // comment because shit BROKE !!! fuck fill amirite
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
 
     static defaultScrollCount = 6;
