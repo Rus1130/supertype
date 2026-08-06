@@ -1015,7 +1015,7 @@ export class SuperType {
     // comment because shit BROKE !!! fuck fill amirite
     static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
 
-    static defaultScrollCount = 6;
+    static defaultScrollCount = 12;
 
     /**
      * Registry of tag name -> Tag class. Populated via SuperType.registerTag().
@@ -1552,13 +1552,13 @@ export class SuperType {
     }
 
     process(token) {
-        if (this.state.scrollCount > 0) {
-            this.state.scrollCount--;
+        // if (this.state.scrollCount > 0) {
+        //     this.state.scrollCount--;
 
             requestAnimationFrame(() => {
                 this.scrollWindow(this.targetParent.scrollHeight);
             });
-        }
+        // }
 
         if(token.type === "character") {
             this.renderToken(token);
@@ -1927,7 +1927,7 @@ for (const TagClass of [
     SwapTag,
     RepeatTag,
     ImportTag,
-    ResetColorsTag,
+    ResetColorsTag
 ]) {
     SuperType.registerTag(TagClass);
 }
