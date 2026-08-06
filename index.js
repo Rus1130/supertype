@@ -479,7 +479,7 @@ class RemoveLastTag extends Tag {
             return false;
         }
 
-        engine.addRenderTime(engine.state.defaultCharDelay);
+        engine.addRenderTime(engine.state.charDelay);
     }
 
     static onRender(engine, token) {
@@ -533,7 +533,9 @@ class CustomTag extends Tag {
         name.check("string");
         delay.check("number");
 
-        if(name.value == "\\n") engine.header.newlineDelay = delay.value;
+        console.log(engine)
+
+        if(name.value == "\\n") engine.state.newlineDelay = delay.value;
         else engine.header.customDelays[name.value] = delay.value;
     }
 }
@@ -722,7 +724,7 @@ class SpeedDefaultTag extends Tag {
     static tagName = "speeddefault";
 
     static onUse(engine, token) {
-        engine.header.charDelay = engine.state.defaultCharDelay;
+        engine.header.charDelay = engine.state.charDelay;
         engine.state.tagSpeedOverride = false;
     }
 }
@@ -761,7 +763,7 @@ class NewlineTag extends Tag {
         if (instant !== undefined) instant.checkSpecific("instant");
         if (instant === undefined) instant = false;
 
-        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
+        if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
         engine.state.scrollCount = SuperType.defaultScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
@@ -780,7 +782,7 @@ class LinebreakTag extends Tag {
         if (instant !== undefined) instant.checkSpecific("instant");
         if (instant === undefined) instant = false;
 
-        if (instant == false) engine.addRenderTime(engine.state.defaultNewlineDelay);
+        if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
         engine.state.scrollCount = SuperType.defaultScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
@@ -842,7 +844,7 @@ class GlitchTag extends Tag {
             return false; // this token itself renders nothing; the spliced tokens will
         }
 
-        engine.addRenderTime(engine.state.defaultCharDelay);
+        engine.addRenderTime(engine.state.charDelay);
     }
 
     static onRender(engine, token) {
@@ -1174,8 +1176,8 @@ export class SuperType {
             userSpeedOverride: null,
             userInstantOverride: false,
 
-            defaultCharDelay: null,
-            defaultNewlineDelay: null,
+            charDelay: null,
+            newlineDelay: null,
             currentColor: null,
             currentBg: null,
             fragment: null,
@@ -1254,8 +1256,8 @@ export class SuperType {
         this.state.glitches = [];
         this.state.jitters = [];
 
-        this.state.defaultCharDelay = +(new Number(this.header.charDelay))
-        this.state.defaultNewlineDelay = +(new Number(this.header.newlineDelay))
+        this.state.charDelay = +(new Number(this.header.charDelay))
+        this.state.newlineDelay = +(new Number(this.header.newlineDelay))
 
         this.state.currentColor = new String(this.header.textColor).toString();
         this.state.currentBg = new String(this.header.backgroundColor).toString();
