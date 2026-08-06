@@ -96,8 +96,9 @@ export class TagArgument {
             return new TagArgument("string", value.slice(1, -1));
         }
 
-        if (typeof value === "string") {
-            return new TagArgument("string", value);
+
+        if(value.startsWith("'") && value.endsWith("'")) {
+            return new TagArgument("string", value.slice(1, -1));
         }
 
         throw new Error(`Invalid value: ${value}`);
@@ -265,7 +266,9 @@ class UseTag extends Tag {
 
         for (let i = 0; i < mixinBody.length; i++) {
             if (mixinBody.startsWith("<String>", i)) {
-                const value = substitutions[argIndex];
+                const value = substitutions.length > 0
+                    ? substitutions[argIndex % substitutions.length]
+                    : undefined;
                 if (value === undefined) {
                     throw new Error(
                         `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
@@ -275,7 +278,7 @@ class UseTag extends Tag {
 
                 expanded += depth > 0
                     ? `"${value.value.replace(/"/g, '\\"')}"`
-                    : value.value;
+                    : value.value.replace(/\\/g, '\\\\').replace(/\[/g, '\\[');
 
                 argIndex++;
                 i += "<String>".length - 1;
@@ -283,7 +286,9 @@ class UseTag extends Tag {
             }
 
             if (mixinBody.startsWith("<Number>", i)) {
-                const value = substitutions[argIndex];
+                const value = substitutions.length > 0
+                    ? substitutions[argIndex % substitutions.length]
+                    : undefined;
                 if (value === undefined) {
                     throw new Error(
                         `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
@@ -299,7 +304,9 @@ class UseTag extends Tag {
             }
 
             if (mixinBody.startsWith("<Color>", i)) {
-                const value = substitutions[argIndex];
+                const value = substitutions.length > 0
+                    ? substitutions[argIndex % substitutions.length]
+                    : undefined;
                 if (value === undefined) {
                     throw new Error(
                         `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
@@ -315,7 +322,9 @@ class UseTag extends Tag {
             }
 
             if (mixinBody.startsWith("<Boolean>", i)) {
-                const value = substitutions[argIndex];
+                const value = substitutions.length > 0
+                    ? substitutions[argIndex % substitutions.length]
+                    : undefined;
                 if (value === undefined) {
                     throw new Error(
                         `Mixin "${nameArg.value}" expected a value for placeholder #${argIndex + 1}`
@@ -1674,11 +1683,47 @@ export class SuperType {
     }
 
     tokenize(body) {
+        function findTagEnd(body, openIndex) {
+            let i = openIndex + 1;
+            let inDoubleString = false;
+            let inSingleString = false;
+
+            while (i < body.length) {
+                const ch = body[i];
+
+                if (ch === "\\" && (inDoubleString || inSingleString) && i + 1 < body.length) {
+                    i += 2;
+                    continue;
+                }
+
+                if (ch === '"' && !inSingleString) {
+                    inDoubleString = !inDoubleString;
+                    i++;
+                    continue;
+                }
+
+                if (ch === "'" && !inDoubleString) {
+                    inSingleString = !inSingleString;
+                    i++;
+                    continue;
+                }
+
+                if (ch === "]" && !inDoubleString && !inSingleString) {
+                    return i;
+                }
+
+                i++;
+            }
+
+            return -1;
+        }
+
         const queue = [];
         let i = 0;
 
-        while (i < body.length) {
+        let inDoubleString = false;
 
+        while (i < body.length) {
             // escaped characters
             if (body[i] === "\\" && this.state.rawMode === false) {
                 if (i + 1 < body.length) {
@@ -1692,37 +1737,39 @@ export class SuperType {
                 }
             }
 
-            // tag
-            if (body[i] === "[") {
-                const end = body.indexOf("]", i);
+            // quote handling
+            if (this.state.rawMode === false) {
+                if (body[i] === '"') {
+                    inDoubleString = !inDoubleString;
+                    queue.push({
+                        type: "character",
+                        value: '"'
+                    });
+
+                    i++;
+                    continue;
+                }
+            }
+
+            if (body[i] === "[" && !inDoubleString) {
+                const end = findTagEnd(body, i);
 
                 if (end !== -1) {
                     const content = body.slice(i + 1, end).trim();
-
                     const parts = content.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
-
                     const name = parts.shift();
 
                     const isRawEnd = name === "raw" && parts.length === 1 && parts[0] === "end";
 
-                    // While in raw mode, only [raw end] is allowed to act as a tag.
-                    // Everything else falls through and gets pushed as plain characters.
                     if (this.state.rawMode !== true || isRawEnd) {
                         const TagClass = SuperType.tags.get(name) ?? Tag;
 
                         const result = TagClass.onTokenization(parts, {
-                            engine: this,
-                            queue,
-                            body,
-                            index: i
+                            engine: this, queue, body, index: i
                         });
 
                         if (result !== false) {
-                            queue.push({
-                                type: "tag",
-                                name,
-                                args: result
-                            });
+                            queue.push({ type: "tag", name, args: result });
                         }
 
                         i = end + 1;
@@ -1730,7 +1777,6 @@ export class SuperType {
                     }
                 }
             }
-
             if (body[i] === "\n") {
                 if (this.state.rawMode) {
                     queue.push({
