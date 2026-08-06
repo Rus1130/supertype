@@ -63,6 +63,7 @@ Controls how text is desplayed.
 | `[linebreak]`                        | Two new lines for the timing of 1.                                                                              |
 | `[linebreak instant]`                | Creates two new lines instantly.                                                                                |
 | `[tab count<Number>]`                | Inserts `count` spaces.                                                                                         |
+| `[tab count<Number> fill]`           | Inserts `count` spaces. The spaces will be the background color.                                                |
 | `[removelast count<Number>]`         | Removes the last `count` rendered characters from the typewriter.                                               |
 | `[removelast count<Number> keep]`    | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]` | Repeats `str` `count` times.                                                                                    |

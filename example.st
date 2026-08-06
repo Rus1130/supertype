@@ -11,12 +11,14 @@ typewriter: {
     importExample.st
 [@import end]
 
+
 WOW! this is normal text![newline]
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
 Normal text, but different, because delay, see? cool[linebreak]
 i just used a linebreak there. smirk[newline]
-[tab 4]tabbed[newline]
+[tab 4]tabbed![newline]
+[tab 4 fill]tabbed with background color![newline]
 wowwwww[removelast 7 keep]bet ya didnt see that[newline]
 type and delete[removelast 15][newline]
 time to sleep... [sleep 2000]sleepy...[newline]
@@ -37,7 +39,7 @@ lorem ipsum dolor sit amet ur mom[newline]
 [color #339900]green text[color reset][newline]
 not green anymore, but now [bg #339900]green background[bg reset][newline]
 [color #ff0000][bg #339900]red text on green background[newline]
-[swap]swapped the colors![color reset][bg reset][linebreak]
+[swap]swapped the colors![resetcolors][linebreak]
 
 [raw]everything is now RAW
     [newline][newline] see how nothing works

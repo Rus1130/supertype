@@ -572,16 +572,23 @@ class TabTag extends Tag {
     static tagName = "tab";
 
     static onUse(engine, token) {
-        let value = token.args[0];
+
+        const [value, fill] = token.args;
 
         if (value === undefined) throw new Error("Missing tab value");
+
         value.check("number");
+
+        if(fill !== undefined) fill.checkSpecific("fill");
 
         engine.addRenderTime(engine.fetchDelay(" "));
     }
 
     static onRender(engine, token) {
-        engine.renderRaw("&nbsp;".repeat(token.args[0].value));
+        const [value, fill] = token.args;
+
+        if(fill !== undefined) engine.renderCharacter(" ".repeat(value.value), token.style);
+        else engine.renderRaw("&nbsp;".repeat(value.value));
     }
 }
 
@@ -677,6 +684,17 @@ class BgTag extends Tag {
         } else if (value.equalsSpecific("reset")) {
             engine.state.currentBg = engine.header.backgroundColor;
         }
+
+        engine.resetSpanTextStyle();
+    }
+}
+
+class ResetColorsTag extends Tag {
+    static tagName = "resetcolors";
+
+    static onUse(engine, token) {
+        engine.state.currentColor = engine.header.textColor;
+        engine.state.currentBg = engine.header.backgroundColor;
 
         engine.resetSpanTextStyle();
     }
@@ -994,7 +1012,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
 
     static defaultScrollCount = 6;
 
@@ -1632,9 +1650,7 @@ export class SuperType {
     }
 
     renderRaw(html) {
-
         this.resetSpanTextStyle();
-
         if (html === "<br>") {
             this.state.fragment.appendChild(document.createElement("br"));
             this.state.lineWidth = 0;
