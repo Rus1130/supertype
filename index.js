@@ -533,8 +533,6 @@ class CustomTag extends Tag {
         name.check("string");
         delay.check("number");
 
-        console.log(engine)
-
         if(name.value == "\\n") engine.state.newlineDelay = delay.value;
         else engine.header.customDelays[name.value] = delay.value;
     }
