@@ -1094,7 +1094,7 @@ export class SuperType {
         this.targetParent.addEventListener("keydown", (e) => {
             if(controlsCheck("pause") && e.key === " ") this.paused() ? this.resume() : this.pause();
 
-            if(controlsCheck("instant") && e.key === "i") this.header.instant = !this.header.instant;
+            if(controlsCheck("instant") && e.key === "i") this.state.userInstantOverride = !this.state.userInstantOverride;
 
             if(controlsCheck("fastforward") && e.key === "ArrowRight") this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
 
@@ -1119,6 +1119,7 @@ export class SuperType {
 
             tagSpeedOverride: false,
             userSpeedOverride: null,
+            userInstantOverride: false,
 
             defaultCharDelay: null,
             defaultNewlineDelay: null,
@@ -1444,7 +1445,7 @@ export class SuperType {
         let processed = 0;
 
         try {
-            while (now >= this.state.nextTime && (processed < SuperType.MAX_CHARACTERS_PER_FRAME || this.header.instant)) {
+            while (now >= this.state.nextTime && (processed < SuperType.MAX_CHARACTERS_PER_FRAME || (this.state.userInstantOverride || this.header.instant))) {
                 const token = this.pages[this.state.page][this.state.token++];
 
                 if (!token) {
@@ -1472,6 +1473,7 @@ export class SuperType {
     }
 
     addRenderTime(ms){
+        if(this.state.userInstantOverride) return;
         if(this.header.instant) return;
         if (this.state.userSpeedOverride !== null) {
             ms = this.state.userSpeedOverride;
