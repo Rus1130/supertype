@@ -1925,7 +1925,8 @@ for (const TagClass of [
     UseTag,
     SwapTag,
     RepeatTag,
-    ImportTag
+    ImportTag,
+    ResetColorsTag,
 ]) {
     SuperType.registerTag(TagClass);
 }
