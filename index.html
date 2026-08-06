@@ -83,13 +83,13 @@
 
             engine.insertTokens(tokens);
         },
-        
+
         "hardinstant": function() {
             tw.state.userInstantOverride = !tw.state.userInstantOverride;
         }
     })
 
-    await tw.load("test2.st").then(() => {
+    await tw.load("example.st").then(() => {
         tw.addControls("all");
         tw.start();
     })

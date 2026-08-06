@@ -1250,10 +1250,6 @@ export class SuperType {
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
 
-        this.state.jitters.forEach(jitter => {
-            jitter.textNode.remove()
-        });
-
         this.state.glitches = [];
         this.state.jitters = [];
 
