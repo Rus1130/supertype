@@ -73,18 +73,18 @@ Controls how text is desplayed.
 
 ### Timing
 Modifies character timing.
-| Tag                                        | Description                                                              |
-| ------------------------------------------ | -------------------------------------------------------------------------|
-| `[sleep ms<Number>]`                       | Pauses the typewriter for `ms` milliseconds.                             |
-| `[speed delay<Number>]`                    | Sets `charDelay` to `delay` milliseconds.                                |
-| `[speed delay<Number> override]`           | Sets `charDelay` to `delay` milliseconds and ignores all `customDelays`. |
-| `[speeddefault]`                           | Resets `charDelay` to the default value and disables override mode.      |
-| `[custom character<String> delay<Number>]` | Sets `customDelays[character]` to `delay` milliseconds.                  |
-| `[customremove character<String>]`         | Removes `customDelays[character]`.                                       |
-| `[instant]`                                | Toggles instant mode.                                                    |
-| `[instant off]`                            | Turns off instant mode.                                                  |
-| `[ignore]`                                 | Toggles if custom character delays are ignored.                          |
-| `[ignore off]`                             | Turns off ignore mode.                                                   |
+| Tag                                        | Description                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------|
+| `[sleep ms<Number>]`                       | Pauses the typewriter for `ms` milliseconds.                                              |
+| `[speed delay<Number>]`                    | Sets `charDelay` to `delay` milliseconds.                                                 |
+| `[speed delay<Number> override]`           | Sets `charDelay` to `delay` milliseconds and ignores all `customDelays`.                  |
+| `[speeddefault]`                           | Resets `charDelay` to the default value and disables override mode.                       |
+| `[custom character<String> delay<Number>]` | Sets `customDelays[character]` to `delay` milliseconds. Use "\n" to change newline delay. |
+| `[customremove character<String>]`         | Removes `customDelays[character]`.                                                        |
+| `[instant]`                                | Toggles instant mode.                                                                     |
+| `[instant off]`                            | Turns off instant mode.                                                                   |
+| `[ignore]`                                 | Toggles if custom character delays are ignored.                                           |
+| `[ignore off]`                             | Turns off ignore mode.                                                                    |
 
 ### Styling
 Change the color of the text and background.
