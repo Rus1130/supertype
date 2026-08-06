@@ -94,6 +94,7 @@ Change the color of the text and background.
 | `[color reset]`        | Resets the text color to the default.                                                                                           |
 | `[bg color<Color>]`    | Sets the background color to `color`.                                                                                           |
 | `[bg reset]`           | Resets the background color to the default.                                                                                     |
+| `[resetcolors]`        | Resets the text and background colors to the default.                                                                           |
 | `[raw]`                | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
 | `[raw end]`            | Exits raw mode.                                                                                                                 |
 | `[swap]`               | Swaps the text and background colors.                                                                                           |
