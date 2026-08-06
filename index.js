@@ -1046,6 +1046,7 @@ export class SuperType {
         };
         this.mixins = {};
 
+        this.allowedControls = new Set();
         this.functions = new Map();
 
         for (const [name, func] of Object.entries(functions)) {
@@ -1063,7 +1064,24 @@ export class SuperType {
         this.targetParent = target;
         this.target = div;
         this.fileName = null;
-        
+
+        const controlsCheck = (value) => {
+            return (this.allowedControls.has(value) || this.allowedControls.has("all"));
+        }
+
+        this.targetParent.addEventListener("keydown", (e) => {
+            if(controlsCheck("pause") && e.key === " ") this.paused() ? this.resume() : this.pause();
+
+            if(controlsCheck("instant") && e.key === "i") this.header.instant = !this.header.instant;
+
+            if(controlsCheck("fastforward") && e.key === "ArrowRight") this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
+
+            if(controlsCheck("reset") && e.key === "r"){
+                this.targetParent.innerHTML = "";
+                this.start(this.state.page)
+            }
+        })
+
         this.target.style.whiteSpace = "pre-wrap";
 
         this.state = {
@@ -1096,6 +1114,18 @@ export class SuperType {
             ignoreCustomDelays: false,
 
             rawMode: false
+        }
+    }
+
+    static allowedControls = ["reset", "instant", "pause", "fastforward", "all"]
+
+    addControls(...controls){
+        for(const control of controls){
+            if(!SuperType.allowedControls.includes(control)){
+                throw new Error(`Invalid control: ${control}`);
+            }
+
+            this.allowedControls.add(control);
         }
     }
 
