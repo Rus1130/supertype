@@ -118,6 +118,7 @@ Other tags.
 | `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. |
 | `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor.                                |
 | `[@import]`                                     | See `imports` section.                                                                                                                               |
+| `[forcescroll]`                                 | Forces the typewriter to scroll.                                                                                                                     |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.
