@@ -1025,7 +1025,7 @@ class ForceScrollTag extends Tag {
         engine.state.scrollCount = SuperType.defaultScrollCount;
     }
 }
-
+/*
 class TableTag extends Tag {
     static tagName = "table";
 
@@ -1316,13 +1316,12 @@ class TableTag extends Tag {
         engine.addRenderTime(engine.state.charDelay);
     }
 }
-
 class RowTag extends Tag {
     static tagName = "row";
 
     static onUse(engine, token) {}
 }
-
+*/
 export class SuperType {
     static MAX_CHARACTERS_PER_FRAME = 200;
 
