@@ -16,6 +16,10 @@
                 {
                     "name": "specific.st",
                     "match": "\\b(reset|override|default|keep|end|instant|off|shared|fill)\\b"
+                },
+                {
+                    "name": "none.specific.st",
+                    "match": "\\b(none)\\b"
                 }
             ]
         },

@@ -59,8 +59,22 @@ export class TagArgument {
     }
 
     static parse(value) {
+        // "none" is a universal stand-in for "no argument was passed" -
+        // any tag argument slot that receives the literal string "none"
+        // behaves exactly as if that slot had been omitted entirely
+        // (i.e. resolves to JavaScript `undefined`, not a TagArgument
+        // instance). Every call site of parse() must be prepared to
+        // receive `undefined` back as a result of this.
+        if (value === "none") {
+            return undefined;
+        }
+
         if (SuperType.specificTypes.includes(value)) {
             return new TagArgument("specific", value, value);
+        }
+
+        if (value.startsWith('"') && value.endsWith('"')) {
+            return new TagArgument("string", value.slice(1, -1), value);
         }
 
         if (/^-?\d+(\.\d+)?$/.test(value)) {
@@ -91,10 +105,6 @@ export class TagArgument {
             }
 
             throw new Error(`Invalid RGB color: ${value}`);
-        }
-
-        if (value.startsWith('"') && value.endsWith('"')) {
-            return new TagArgument("string", value.slice(1, -1), value);
         }
 
         throw new Error(`Invalid value: ${value}`);
@@ -372,7 +382,6 @@ class ImportTag extends Tag {
     static async extractBlock(rawArgs, content, ctx) {
         const filePaths = content.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
-        // async for loop
         for (const filePath of filePaths) {
             const dummy = document.createElement("div");
 
@@ -452,9 +461,11 @@ class RemoveLastTag extends Tag {
     static tagName = "removelast";
 
     static onUse(engine, token) {
-        token.args[0].check("number");
-
         const [number, keep] = token.args;
+
+        if (number === undefined) throw new Error("Missing removelast value");
+
+        number.check("number");
 
         if (keep !== undefined) keep.checkSpecific("keep");
 
@@ -656,9 +667,9 @@ class ColorTag extends Tag {
     static tagName = "color";
 
     static onUse(engine, token) {
-        if (token.args.length === 0) throw new Error("Missing color value");
-
         const value = token.args[0];
+        if (value === undefined) throw new Error("Missing color value");
+
         if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid color value: Expected color or reset, got ${value.type}`);
 
         if (value.is("color")) {
@@ -675,9 +686,9 @@ class BgTag extends Tag {
     static tagName = "bg";
 
     static onUse(engine, token) {
-        if (token.args.length === 0) throw new Error("Missing background color value");
-
         const value = token.args[0];
+        if (value === undefined) throw new Error("Missing background color value");
+
         if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid background color value: Expected color or reset, got ${value.type}`);
 
         if (value.is("color")) {
@@ -732,6 +743,9 @@ class RepeatTag extends Tag {
 
     static onUse(engine, token) {
         const [value, count, instant] = token.args;
+
+        if (value === undefined) throw new Error("Missing repeat value");
+        if (count === undefined) throw new Error("Missing repeat count");
 
         value.check("string");
         count.check("number");
@@ -856,6 +870,8 @@ class GlitchTag extends Tag {
 
 class JitterTag extends Tag {
     static tagName = "jitter";
+
+    static jitters = {};
 
     static onUse(engine, token) {
         const value = token.args[0];
@@ -1010,10 +1026,304 @@ class ForceScrollTag extends Tag {
     }
 }
 
+class TableTag extends Tag {
+    static tagName = "table";
+
+    static tables = {};
+
+    static getRenderedWidth(tokens) {
+        let width = 0;
+
+        for (const token of tokens) {
+            switch (token.type) {
+                case "character":
+                    width++;
+                    break;
+
+                case "tag":
+                    switch (token.name) {
+                        case "tab":
+                        case "glitch":
+                            width += token.args[0].value;
+                            break;
+
+                        case "jitter":
+                            width += token.args[0].value.length;
+                            break;
+
+                        // Tags that occupy no horizontal space.
+                        case "color":
+                        case "background":
+                        case "resetcolor":
+                        case "resetbackground":
+                        case "invert":
+                        case "speed":
+                        case "speeddefault":
+                        case "sleep":
+                        case "newline":
+                        case "linebreak":
+                        case "function":
+                        case "custom":
+                        case "customremove":
+                        case "removelast":
+                        case "gopage":
+                            break;
+
+                        default:
+                            // Unknown tags are assumed to have no width.
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        return width;
+    }
+
+    static extractBlock(rawArgs, content, ctx) {
+        let [colCount, vSeparator, hSeparator, rowAlign] = rawArgs;
+
+        colCount = TagArgument.parse(colCount);
+
+        if (vSeparator !== undefined) {
+            vSeparator = TagArgument.parse(vSeparator);
+        }
+
+        if (hSeparator !== undefined) {
+            hSeparator = TagArgument.parse(hSeparator);
+        }
+
+        if (rowAlign === undefined) {
+            rowAlign = new TagArgument("specific", "left");
+        } else {
+            rowAlign = TagArgument.parse(rowAlign);
+        }
+
+        colCount.check("number");
+        if (vSeparator) vSeparator.check("string");
+        if (hSeparator) hSeparator.check("string");
+        rowAlign.checkSpecific("left", "center", "right");
+
+        const tokens = ctx.engine.tokenize(content);
+
+        const rows = [];
+        let currentRow = [];
+
+        for (const token of tokens) {
+            if (token.type === "tag" && token.name === "row") {
+                if (currentRow.length > 0) {
+                    rows.push(currentRow);
+                    currentRow = [];
+                }
+            } else {
+                currentRow.push(token);
+            }
+        }
+
+        const table = [];
+
+        const rowCount = rows.length / colCount.value;
+
+        for (let row = 0; row < rowCount; row++) {
+            let rowTokens = [];
+
+            for (let col = 0; col < colCount.value; col++) {
+                const index = row + col * rowCount;
+                rowTokens.push(rows[index]);
+            }
+
+            // find the longest row in rowTokens
+            let longestRowLength = 0;
+
+            for (const row of rowTokens) {
+                const width = TableTag.getRenderedWidth(row);
+
+                if (width > longestRowLength) {
+                    longestRowLength = width;
+                }
+            }
+
+            rowTokens.forEach(row => {
+                const padding = longestRowLength - TableTag.getRenderedWidth(row);
+
+                if (padding <= 0) return;
+
+                let left = 0;
+                let right = 0;
+
+                switch (rowAlign.value) {
+                    case "left":
+                        right = padding + 1;
+                        break;
+
+                    case "right":
+                        left = padding + 1;
+                        break;
+
+                    case "center":
+                        left = Math.floor((padding + 1) / 2);
+                        right = Math.ceil((padding + 1) / 2);
+                        break;
+                }
+
+                if (left > 0) {
+                    row.unshift({
+                        type: "tag",
+                        name: "tab",
+                        args: [new TagArgument("number", left)],
+                        style: {}
+                    });
+                }
+
+                if (right > 0) {
+                    row.push({
+                        type: "tag",
+                        name: "tab",
+                        args: [new TagArgument("number", right)],
+                        style: {}
+                    });
+                }
+            });
+
+            table.push(rowTokens);
+        }
+
+        const output = [];
+
+        for (let row = 0; row < table.length; row++) {
+
+            // Render one row
+            for (let col = 0; col < table[row].length; col++) {
+                output.push(...table[row][col]);
+
+                // Vertical separator between columns
+                if (col < table[row].length - 1 && vSeparator?.value.length > 0) {
+                    for (const ch of vSeparator.value) {
+                        output.push({
+                            type: "character",
+                            value: ch,
+                            style: {}
+                        });
+                    }
+                }
+            }
+
+            // Last row doesn't get a separator afterwards
+            if (row === table.length - 1) break;
+
+            // Newline after the row
+            output.push({
+                type: "tag",
+                name: "newline",
+                args: [],
+                style: {}
+            });
+
+            // Horizontal separator
+            if (hSeparator?.value.length > 0) {
+                for (let col = 0; col < table[row].length; col++) {
+
+                    const cell = table[row][col];
+
+                    const width = TableTag.getRenderedWidth(cell);
+
+                    output.push(...Array.from(hSeparator.value.repeat(width), ch => ({
+                        type: "character",
+                        value: ch,
+                        style: {}
+                    })));
+
+                    // Vertical separator in the horizontal rule
+                    if (col < table[row].length - 1 && vSeparator?.value.length > 0) {
+                        for (const ch of vSeparator.value) {
+                            output.push({
+                                type: "tag",
+                                name: "tab",
+                                args: [new TagArgument("number", 1)],
+                                style: {}
+                            })
+                            output.push({
+                                type: "character",
+                                value: ch,
+                                style: {}
+                            });
+                            output.push({
+                                type: "tag",
+                                name: "tab",
+                                args: [new TagArgument("number", 1)],
+                                style: {}
+                            })
+                        }
+                    }
+                }
+
+                output.push({
+                    type: "tag",
+                    name: "newline",
+                    args: [],
+                    style: {}
+                });
+            }
+        }
+
+        const id = `table-${Math.random().toString(36).substr(2, 9)}`;
+
+        TableTag.tables[id] = output;
+
+        ctx.engine.insertTokens([
+            {
+                type: "tag",
+                name: "table",
+                args: [
+                    colCount,
+                    vSeparator,
+                    hSeparator,
+                    rowAlign
+                ],
+                id: id
+            }
+        ]);
+    }
+
+    static onUse(engine, token) {
+        const [colCount, vSeparator, hSeparator, rowAlign] = token.args;
+
+        if (colCount === undefined) {
+            throw new Error("Missing table column count");
+        }
+
+        colCount.check("number");
+        if (vSeparator !== undefined) vSeparator.check("string");
+        if (hSeparator !== undefined) hSeparator.check("string");
+        if (rowAlign !== undefined) rowAlign.checkSpecific("left", "center", "right");
+
+        const table = TableTag.tables[token.id];
+
+        if(table === undefined) throw new Error(`Table not found: ${token.id}`);
+
+        engine.insertToken({
+            type: "tag",
+            name: "instant",
+            args: []
+        })
+        engine.insertTokens(table);
+        engine.insertToken({
+            type: "tag",
+            name: "instant",
+            args: [new TagArgument("specific", "off")]
+        });
+
+        engine.addRenderTime(engine.state.charDelay);
+    }
+}
+
+class RowTag extends Tag {
+    static tagName = "row";
+
+    static onUse(engine, token) {}
+}
+
 export class SuperType {
-
-    static SharedMemory = {};
-
     static MAX_CHARACTERS_PER_FRAME = 200;
 
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
@@ -1022,7 +1332,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill", "left", "center", "right"];
 
     static defaultScrollCount = 6;
 
@@ -1072,7 +1382,7 @@ export class SuperType {
 
         // get shared jitters
 
-        for(const jitters of Object.values(SuperType.SharedMemory)) {
+        for(const jitters of Object.values(JitterTag.jitters)) {
             const transform = `translate(${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px, ${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px)`;
             jitters.forEach(jitter => {
                 jitter.textNode.parentElement.style.transform = transform;
@@ -1567,10 +1877,10 @@ export class SuperType {
         jitter.textNode.parentElement.style.display = "inline-block";
 
         if(sharedID !== undefined){
-            if(SuperType.SharedMemory[sharedID] === undefined){
-                SuperType.SharedMemory[sharedID] = [jitter];
+            if(JitterTag.jitters[sharedID] === undefined){
+                JitterTag.jitters[sharedID] = [jitter];
             } else {
-                SuperType.SharedMemory[sharedID].push(jitter);
+                JitterTag.jitters[sharedID].push(jitter);
             }
 
         } else {
@@ -1971,7 +2281,7 @@ for (const TagClass of [
     RepeatTag,
     ImportTag,
     ResetColorsTag,
-    ForceScrollTag
+    ForceScrollTag,
 ]) {
     SuperType.registerTag(TagClass);
 }

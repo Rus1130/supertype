@@ -70,6 +70,13 @@
                         "settings": {
                             "foreground": "#febeeb7f"
                         }
+                    },
+                    {
+                        "scope": "none.specific.st",
+                        "settings": {
+                            "foreground": "#c369ff",
+                            "fontStyle": "italic"
+                        }
                     }
                 ]
             }
