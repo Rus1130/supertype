@@ -1332,7 +1332,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill", "left", "center", "right"];
+    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
 
     static defaultScrollCount = 6;
 
