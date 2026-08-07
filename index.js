@@ -1195,7 +1195,7 @@ export class SuperType {
 
     static allowedControls = ["reset", "instant", "pause", "fastforward", "all"]
 
-    addControls(...controls){
+    allowControls(...controls){
         for(const control of controls){
             if(!SuperType.allowedControls.includes(control)){
                 throw new Error(`Invalid control: ${control}`);

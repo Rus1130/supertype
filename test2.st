@@ -40,8 +40,6 @@ typewriter: {
     [sleep 10]
 [mixin end]
 
-[function "hardinstant"]
-
 He felt a finger jab the back of his head,[sleep 200] twice.[sleep 200] The second time stronger.[sleep 300][newline]
 “Hey, wake up.”[sleep 1380][newline]
 [speed 48]After a moment of no reaction, he threw himself upright in [sleep 80]short\-lived, sleep\-deprived panic.[sleep 150][newline]
@@ -127,7 +125,7 @@ He frowned, and read them again.[linebreak]
 
 
 Where was ‘report filing error’?[linebreak]
-[function "hardinstant"]
+
 He closed the program, just to reopen it a moment later. He selected the report again and opened the actions menu.[linebreak]
 
 [@use "instant3"][linebreak]
