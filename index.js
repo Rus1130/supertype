@@ -1447,18 +1447,20 @@ export class SuperType {
             });
         }
 
-        const controlsCheck = (value) => {
-            return (this.allowedControls.has(value) || this.allowedControls.has("all"));
-        }
-
         this.targetParent.addEventListener("keydown", (e) => {
-            if(controlsCheck("pause") && e.key === " ") this.paused() ? this.resume() : this.pause();
+            const controlsCheck = (value, key) => {
+                return (this.allowedControls.has(value) || this.allowedControls.has("all")) && e.key === key;
+            }
 
-            if(controlsCheck("instant") && e.key === "i") this.state.userInstantOverride = !this.state.userInstantOverride;
+            if(controlsCheck("pause", " ")) {
+                this.paused() ? this.resume() : this.pause();
+            }
 
-            if(controlsCheck("fastforward") && e.key === "ArrowRight") this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
+            if(controlsCheck("instant", "i")) this.state.userInstantOverride = !this.state.userInstantOverride;
 
-            if(controlsCheck("reset") && e.key === "r"){
+            if(controlsCheck("fastforward", "ArrowRight")) this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
+
+            if(controlsCheck("reset", "r")){
                 this.target.innerHTML = "";
                 this.resetSpanTextStyle();
                 this.start(this.state.page)
