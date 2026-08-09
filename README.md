@@ -1,5 +1,7 @@
 # supertype
 SuperType is an easy way to add a typewriter effect to your webpage. Just type your text in a `.st` file, and it will be rendered on your webpage with a typewriter effect. You can also add tags to change the speed, color, and other properties of the typewriter. I recommend using this [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension for VSCode to be able to see it effectively.
+## Why?
+I created this because I have a personal problem where I tend to skip ahead in texts and spoil myself to later parts. I wanted a way to create texts without the ability to skip ahead. Later inspirations were the text effects of Undertale and Deltarune.
 ## Examples
 Look at `example.st` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
 
