@@ -133,8 +133,6 @@
 
                 element.style.animationDuration = `${duration}s`;
 
-                // Negative delay makes each character start at a
-                // different point in the sine wave.
                 element.style.animationDelay =
                     `${-duration * (index / count)}s`;
 
@@ -168,7 +166,7 @@
         }
     })
 
-    await tw.load("example.st").then(() => {
+    await tw.load("test2.st").then(() => {
         tw.allowControls("all");
         tw.start();
     })
