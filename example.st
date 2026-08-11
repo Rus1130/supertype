@@ -7,6 +7,7 @@ typewriter: {
         ",": 500
     }
 }
+
 [@import]
     importExample.st
 [@import end]
@@ -60,19 +61,15 @@ wow look! its a page! cool![sleep 10000] yeah ur stuck here bud. gotta reload
 *bold*[newline]
 -strikethrough-[newline]
 _underline_[newline]
-*mu*ltiple[linebreak]
+*_mu*lt-i_/p-l/e[linebreak]
 
 [glitch 10][newline]
 [glitch 10 keep][newline]
 [unscramble "unscramble!" 1000][newline]
 [unscramble "unscramble!" 1000 2000][newline]
-
 [jitter "oooh wiggly" 10][newline]
-
 [jitter "its all at the same time for the price of 1 character delay!" 10 keep][newline]
-
 [jitter "it types it, but they jitter the same" 10 shared][newline]
-
 [function "jitterlerp" "this is a custom function that lerps!" 1 20][linebreak]
 
 [mixin "cool mixin"]

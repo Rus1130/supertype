@@ -129,6 +129,7 @@
  
                 const original = engine.renderCharacter.bind(engine);
  
+                // patch
                 engine.renderCharacter = function(text, style) {
                     if (engine._sineQueue.length === 0) {
                         return original(text, style);
@@ -161,7 +162,7 @@
         }
     })
 
-    await tw.load("test2.st").then(() => {
+    await tw.load("example.st").then(() => {
         tw.allowControls("all");
         tw.start();
     })
