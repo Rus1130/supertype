@@ -956,6 +956,32 @@ class UnscrambleTag extends Tag {
         num1.check("number");
         if (num2 !== undefined) num2.check("number");
 
+        if (token.expanded !== true) {
+            const tokens = [];
+
+            for (const ch of value.value) {
+                const tk = {
+                    type: "tag",
+                    name: "unscramble",
+                    expanded: true,
+                    args: [
+                        new TagArgument("string", ch),
+                        new TagArgument("number", num1.value)
+                    ],
+                    style: token.style,
+                };
+
+                if (num2 !== undefined) tk.args.push(new TagArgument("number", num2.value));
+
+                tokens.push(tk);
+            }
+
+            engine.insertTokens(tokens);
+
+            return false;
+        }
+
+        // Per-character setup.
         const id = Math.random().toString(36).substr(2, 9);
 
         const min = num1.value;
@@ -972,7 +998,7 @@ class UnscrambleTag extends Tag {
 
         token.unscrambleID = id;
 
-        engine.addRenderTime(max);
+        engine.addRenderTime(engine.fetchDelay(value.value));
     }
 
     static onRender(engine, token) {
@@ -995,9 +1021,14 @@ class UnscrambleTag extends Tag {
             })
             .join("");
 
+        // Isolate this character into its own text node - otherwise it
+        // gets appended into the previous character's node (same style),
+        // and unscrambleLoop overwriting one entry's node.data would wipe
+        // out its neighbors.
+        engine.resetSpanTextStyle();
         engine.renderCharacter(text, token.style);
-
         unscramble.textNode = engine.state.currentText;
+        engine.resetSpanTextStyle();
     }
 }
 
@@ -1125,303 +1156,6 @@ class ForceScrollTag extends Tag {
     }
 }
 
-/*
-class TableTag extends Tag {
-    static tagName = "table";
-
-    static tables = {};
-
-    static getRenderedWidth(tokens) {
-        let width = 0;
-
-        for (const token of tokens) {
-            switch (token.type) {
-                case "character":
-                    width++;
-                    break;
-
-                case "tag":
-                    switch (token.name) {
-                        case "tab":
-                        case "glitch":
-                            width += token.args[0].value;
-                            break;
-
-                        case "jitter":
-                            width += token.args[0].value.length;
-                            break;
-
-                        // Tags that occupy no horizontal space.
-                        case "color":
-                        case "background":
-                        case "resetcolor":
-                        case "resetbackground":
-                        case "invert":
-                        case "speed":
-                        case "speeddefault":
-                        case "sleep":
-                        case "newline":
-                        case "linebreak":
-                        case "function":
-                        case "custom":
-                        case "customremove":
-                        case "removelast":
-                        case "gopage":
-                            break;
-
-                        default:
-                            // Unknown tags are assumed to have no width.
-                            break;
-                    }
-                    break;
-            }
-        }
-
-        return width;
-    }
-
-    static extractBlock(rawArgs, content, ctx) {
-        let [colCount, vSeparator, hSeparator, rowAlign] = rawArgs;
-
-        colCount = TagArgument.parse(colCount);
-
-        if (vSeparator !== undefined) {
-            vSeparator = TagArgument.parse(vSeparator);
-        }
-
-        if (hSeparator !== undefined) {
-            hSeparator = TagArgument.parse(hSeparator);
-        }
-
-        if (rowAlign === undefined) {
-            rowAlign = new TagArgument("specific", "left");
-        } else {
-            rowAlign = TagArgument.parse(rowAlign);
-        }
-
-        colCount.check("number");
-        if (vSeparator) vSeparator.check("string");
-        if (hSeparator) hSeparator.check("string");
-        rowAlign.checkSpecific("left", "center", "right");
-
-        const tokens = ctx.engine.tokenize(content);
-
-        const rows = [];
-        let currentRow = [];
-
-        for (const token of tokens) {
-            if (token.type === "tag" && token.name === "row") {
-                if (currentRow.length > 0) {
-                    rows.push(currentRow);
-                    currentRow = [];
-                }
-            } else {
-                currentRow.push(token);
-            }
-        }
-
-        const table = [];
-
-        const rowCount = rows.length / colCount.value;
-
-        for (let row = 0; row < rowCount; row++) {
-            let rowTokens = [];
-
-            for (let col = 0; col < colCount.value; col++) {
-                const index = row + col * rowCount;
-                rowTokens.push(rows[index]);
-            }
-
-            // find the longest row in rowTokens
-            let longestRowLength = 0;
-
-            for (const row of rowTokens) {
-                const width = TableTag.getRenderedWidth(row);
-
-                if (width > longestRowLength) {
-                    longestRowLength = width;
-                }
-            }
-
-            rowTokens.forEach(row => {
-                const padding = longestRowLength - TableTag.getRenderedWidth(row);
-
-                if (padding <= 0) return;
-
-                let left = 0;
-                let right = 0;
-
-                switch (rowAlign.value) {
-                    case "left":
-                        right = padding + 1;
-                        break;
-
-                    case "right":
-                        left = padding + 1;
-                        break;
-
-                    case "center":
-                        left = Math.floor((padding + 1) / 2);
-                        right = Math.ceil((padding + 1) / 2);
-                        break;
-                }
-
-                if (left > 0) {
-                    row.unshift({
-                        type: "tag",
-                        name: "tab",
-                        args: [new TagArgument("number", left)],
-                        style: {}
-                    });
-                }
-
-                if (right > 0) {
-                    row.push({
-                        type: "tag",
-                        name: "tab",
-                        args: [new TagArgument("number", right)],
-                        style: {}
-                    });
-                }
-            });
-
-            table.push(rowTokens);
-        }
-
-        const output = [];
-
-        for (let row = 0; row < table.length; row++) {
-
-            // Render one row
-            for (let col = 0; col < table[row].length; col++) {
-                output.push(...table[row][col]);
-
-                // Vertical separator between columns
-                if (col < table[row].length - 1 && vSeparator?.value.length > 0) {
-                    for (const ch of vSeparator.value) {
-                        output.push({
-                            type: "character",
-                            value: ch,
-                            style: {}
-                        });
-                    }
-                }
-            }
-
-            // Last row doesn't get a separator afterwards
-            if (row === table.length - 1) break;
-
-            // Newline after the row
-            output.push({
-                type: "tag",
-                name: "newline",
-                args: [],
-                style: {}
-            });
-
-            // Horizontal separator
-            if (hSeparator?.value.length > 0) {
-                for (let col = 0; col < table[row].length; col++) {
-
-                    const cell = table[row][col];
-
-                    const width = TableTag.getRenderedWidth(cell);
-
-                    output.push(...Array.from(hSeparator.value.repeat(width), ch => ({
-                        type: "character",
-                        value: ch,
-                        style: {}
-                    })));
-
-                    // Vertical separator in the horizontal rule
-                    if (col < table[row].length - 1 && vSeparator?.value.length > 0) {
-                        for (const ch of vSeparator.value) {
-                            output.push({
-                                type: "tag",
-                                name: "tab",
-                                args: [new TagArgument("number", 1)],
-                                style: {}
-                            })
-                            output.push({
-                                type: "character",
-                                value: ch,
-                                style: {}
-                            });
-                            output.push({
-                                type: "tag",
-                                name: "tab",
-                                args: [new TagArgument("number", 1)],
-                                style: {}
-                            })
-                        }
-                    }
-                }
-
-                output.push({
-                    type: "tag",
-                    name: "newline",
-                    args: [],
-                    style: {}
-                });
-            }
-        }
-
-        const id = `table-${Math.random().toString(36).substr(2, 9)}`;
-
-        TableTag.tables[id] = output;
-
-        ctx.engine.insertTokens([
-            {
-                type: "tag",
-                name: "table",
-                args: [
-                    colCount,
-                    vSeparator,
-                    hSeparator,
-                    rowAlign
-                ],
-                id: id
-            }
-        ]);
-    }
-
-    static onUse(engine, token) {
-        const [colCount, vSeparator, hSeparator, rowAlign] = token.args;
-
-        if (colCount === undefined) {
-            throw new Error("Missing table column count");
-        }
-
-        colCount.check("number");
-        if (vSeparator !== undefined) vSeparator.check("string");
-        if (hSeparator !== undefined) hSeparator.check("string");
-        if (rowAlign !== undefined) rowAlign.checkSpecific("left", "center", "right");
-
-        const table = TableTag.tables[token.id];
-
-        if(table === undefined) throw new Error(`Table not found: ${token.id}`);
-
-        engine.insertToken({
-            type: "tag",
-            name: "instant",
-            args: []
-        })
-        engine.insertTokens(table);
-        engine.insertToken({
-            type: "tag",
-            name: "instant",
-            args: [new TagArgument("specific", "off")]
-        });
-
-        engine.addRenderTime(engine.state.charDelay);
-    }
-}
-class RowTag extends Tag {
-    static tagName = "row";
-
-    static onUse(engine, token) {}
-}
-*/
 export class SuperType {
     static MAX_CHARACTERS_PER_FRAME = 200;
 

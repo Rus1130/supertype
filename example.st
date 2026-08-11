@@ -63,6 +63,8 @@ _underline_[newline]
 
 [glitch 10][newline]
 [glitch 10 keep][newline]
+[unscramble "unscramble!" 1000][newline]
+[unscramble "unscramble!" 1000 2000][newline]
 
 [jitter "oooh wiggly" 10][newline]
 
