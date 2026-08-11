@@ -1376,7 +1376,7 @@ export class SuperType {
 
             rawMode: false,
 
-            accuracy: 1
+            accuracy: 1,
         }
     }
 
