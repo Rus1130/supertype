@@ -13,8 +13,6 @@ typewriter: {
 
 [sleep 100]
 
-
-
 WOW! this is normal text![newline]
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]

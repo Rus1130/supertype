@@ -651,10 +651,7 @@ class GopageTag extends Tag {
         button.addEventListener("click", () => {
             if (keep === false) {
                 engine.target.innerHTML = "";
-
                 engine.resetSpanTextStyle();
-
-                engine.state.glitches = [];
             }
             engine.start(pageName.value);
         });
@@ -908,7 +905,7 @@ class JitterTag extends Tag {
 
             return false;
         } else if (third.equalsSpecific("shared")) {
-            const sharedID = `jitter-${Math.random().toString(36).substr(2, 9)}`;
+            const sharedID = Math.random().toString(36).substr(2, 9);
             const tokens = [];
 
             for (const ch of value.value) {
@@ -944,6 +941,108 @@ class JitterTag extends Tag {
             token.style,
             token?.sharedID
         );
+    }
+}
+
+
+class UnscrambleTag extends Tag {
+    static tagName = "unscramble";
+    static unscrambles = {};
+
+    static onUse(engine, token) {
+        const [value, num1, num2] = token.args;
+
+        value.check("string");
+        num1.check("number");
+        if (num2 !== undefined) num2.check("number");
+
+        const id = Math.random().toString(36).substr(2, 9);
+
+        const min = num1.value;
+        const max = num2 === undefined ? min : num2.value;
+
+        UnscrambleTag.unscrambles[id] = {
+            text: value.value,
+            start: performance.now(),
+            maxTime: max,
+            times: value.value.split("").map(() =>
+                min + Math.random() * (max - min)
+            )
+        };
+
+        token.unscrambleID = id;
+
+        engine.addRenderTime(max);
+    }
+
+    static onRender(engine, token) {
+        const unscramble = UnscrambleTag.unscrambles[token.unscrambleID];
+
+        if (!unscramble) return;
+
+        const now = performance.now();
+
+        const text = unscramble.text
+            .split("")
+            .map((char, i) => {
+                if (char === " ") return " ";
+
+                if (now - unscramble.start >= unscramble.times[i]) {
+                    return char;
+                }
+
+                return SuperType.randomCharacter();
+            })
+            .join("");
+
+        engine.renderCharacter(text, token.style);
+
+        unscramble.textNode = engine.state.currentText;
+    }
+}
+
+// 
+/**
+ * @description cannot be used by the user, used to run javascript code
+ *  @example
+ *  engine.insertToken({
+ *      type: "tag",
+ *      name: "payload",
+ *      payload: {
+ *          onuse: () => {
+ *              console.log("on use payload!");
+ *          },
+ *          onrender: () => {
+ *              console.log("on render payload!");
+ *          }
+ *      }
+ *  })
+*/
+class PayloadTag extends Tag {
+    static tagName = "payload";
+
+    static onUse(engine, token) {
+        if(token.payload == undefined) throw new Error("Missing payload");
+        if(token.payload.onuse !== undefined) token.payload.onuse();
+    }
+
+    static onRender(engine, token) {
+        if(token.payload == undefined) throw new Error("Missing payload");
+        if(token.payload.onrender !== undefined) token.payload.onrender();
+    }
+}
+
+class AccuracyTag extends Tag {
+    static tagName = "accuracy";
+
+    static onUse(engine, token) {
+        const value = token.args[0];
+
+        value.check("number");
+
+        if(value.value < 0 || value.value > 1) throw new Error(`Invalid accuracy value: Expected number between 0 and 1, got ${value.value}`);
+
+        engine.state.accuracy = value.value;
     }
 }
 
@@ -1025,6 +1124,7 @@ class ForceScrollTag extends Tag {
         engine.state.scrollCount = SuperType.defaultScrollCount;
     }
 }
+
 /*
 class TableTag extends Tag {
     static tagName = "table";
@@ -1392,6 +1492,41 @@ export class SuperType {
         requestAnimationFrame(this.jitterLoop);
     }
 
+    unscrambleLoop = () => {
+        const now = performance.now();
+
+        for (const [id, unscramble] of Object.entries(UnscrambleTag.unscrambles)) {
+            if (!unscramble.textNode) continue;
+
+            if (now - unscramble.start >= unscramble.maxTime) {
+                unscramble.textNode.data = unscramble.text;
+                delete UnscrambleTag.unscrambles[id];
+                continue;
+            }
+
+            unscramble.textNode.data = unscramble.text
+                .split("")
+                .map((ch, i) => {
+                    if (ch === " ") return " ";
+                    if (now - unscramble.start >= unscramble.times[i]) return ch;
+                    return SuperType.randomCharacter();
+                })
+                .join("");
+        }
+
+        requestAnimationFrame(this.unscrambleLoop);
+    }
+
+    clearLoops() {
+        this.state.glitches = [];
+        this.state.jitters = [];
+        this.state.unscrambles = [];
+
+        GlitchTag.glitches = {};
+        JitterTag.jitters = {};
+        UnscrambleTag.unscrambles = {};
+    }
+
     /**
      * 
      * @param {HTMLElement} target 
@@ -1404,6 +1539,8 @@ export class SuperType {
             root: []
         };
         this.mixins = {};
+
+        this.startCount = 0;
 
         this.allowedControls = new Set();
         this.functions = new Map();
@@ -1475,8 +1612,11 @@ export class SuperType {
             nextTime: performance.now(),
             paused: false,
             page: "root",
+
             glitches: [],
             jitters: [],
+            unscrambles: [],
+
             scrollCount: 0,
             lineWidth: 0,
             inWord: false,
@@ -1500,7 +1640,9 @@ export class SuperType {
 
             ignoreCustomDelays: false,
 
-            rawMode: false
+            rawMode: false,
+
+            accuracy: 1
         }
     }
 
@@ -1562,8 +1704,7 @@ export class SuperType {
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
 
-        this.state.glitches = [];
-        this.state.jitters = [];
+        this.clearLoops();
 
         this.state.charDelay = +(new Number(this.header.charDelay))
         this.state.newlineDelay = +(new Number(this.header.newlineDelay))
@@ -1580,8 +1721,12 @@ export class SuperType {
         this.fragment = null;
 
         requestAnimationFrame(this.render);
-        requestAnimationFrame(this.glitchLoop);
-        requestAnimationFrame(this.jitterLoop);
+        if(this.startCount === 0){
+            requestAnimationFrame(this.glitchLoop);
+            requestAnimationFrame(this.jitterLoop);
+            requestAnimationFrame(this.unscrambleLoop);
+        }
+        this.startCount++;
     }
 
     /**
@@ -1960,6 +2105,16 @@ export class SuperType {
     }
 
     renderCharacter(text, style) {
+        if(this.state.accuracy < 1){
+            for(let i = 0; i < text.length; i++){
+                // get a random number between 0 and 1, and if it's greater than the accuracy, replace the character with a random character
+                if(Math.random() > this.state.accuracy){
+                    text = text.substring(0, i) + SuperType.randomCharacter() + text.substring(i + 1);
+                }
+            }
+        }
+
+
         const sameStyle =
             this.state.currentStyle &&
             this.state.currentStyle.bold === style.bold &&
@@ -2283,6 +2438,9 @@ for (const TagClass of [
     ImportTag,
     ResetColorsTag,
     ForceScrollTag,
+    UnscrambleTag,
+    AccuracyTag,
+    PayloadTag,
 ]) {
     SuperType.registerTag(TagClass);
 }

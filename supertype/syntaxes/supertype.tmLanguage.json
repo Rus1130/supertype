@@ -55,8 +55,8 @@
         "numbers": {
             "patterns": [
                 {
-                    "name": "constant.numeric.integer.st",
-                    "match": "\\b-?\\d+\\b"
+                    "name": "constant.numeric.number.st",
+                    "match": "\\b-?\\d+(?:\\.\\d+)?\\b"
                 }
             ]
         },
@@ -105,7 +105,7 @@
             "patterns": [
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant|page|ignore|jitter|swap|repeat|resetcolors|forcescroll))\\b",
+                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant|page|ignore|jitter|swap|repeat|resetcolors|forcescroll|accuracy|unscramble))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "tag.st" }

@@ -13,6 +13,7 @@ Look at `example.st` for an example of how to use supertype. Look at `index.html
 ```
   Number : 1
          | 1000
+         | 3.5
 
   String : "hello"
          | "multiple words"
@@ -73,10 +74,23 @@ Controls how text is desplayed.
 | `[mixin end]`                        | Ends a mixin.                                                                                                   |
 | `[@use name<String> ...]`            | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
+### Fun Text Effects
+FUN!
+| Tag                                             | Description                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| `[glitch count<Number>]`                        | Inserts `count` glitching characters.                             |
+| `[glitch count<Number> keep]`                   | Inserts `count` glitching characters as a single group.           |
+| `[jitter text<String> strength<Number>]`        | Inserts `text` with a jittering effect of `strength`.             |
+| `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` all at once. |
+| `[jitter text<String> strength<Number> shared]` | Inserts `text` with a shared jittering effect of `strength`.      |
+| `[accuracy value<Number>]`                      | Sets the accuracy of the typewriter. Values are 0 to 1.           |
+| `[unscramble text<String> ms<Number>]`          | Unscrambles `text` over a minimum of `ms` milliseconds.    |
+| `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
+
 ### Timing
 Modifies character timing.
 | Tag                                        | Description                                                                               |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------|
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
 | `[sleep ms<Number>]`                       | Pauses the typewriter for `ms` milliseconds.                                              |
 | `[speed delay<Number>]`                    | Sets `charDelay` to `delay` milliseconds.                                                 |
 | `[speed delay<Number> override]`           | Sets `charDelay` to `delay` milliseconds and ignores all `customDelays`.                  |
@@ -111,16 +125,11 @@ Change the color of the text and background.
 
 ### Miscellaneous
 Other tags.
-| Tag                                             | Description                                                                                                                                          |
-| ----------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `[glitch count<Number>]`                        | Inserts `count` glitching characters.                                                                                                                |
-| `[glitch count<Number> keep]`                   | Inserts `count` glitching characters as a single group.                                                                                              |
-| `[jitter text<String> strength<Number>]`        | Inserts `text` with a jittering effect of `strength`.                                                                                                |
-| `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` as a single group.                                                                              |
-| `[jitter text<String> strength<Number> shared]` | Inserts `text` with a jittering effect of `strength` as a single group, and shares the jittering effect across all instances of the same `sharedID`. |
-| `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor.                                |
-| `[@import]`                                     | See `imports` section.                                                                                                                               |
-| `[forcescroll]`                                 | Forces the typewriter to scroll.                                                                                                                     |
+| Tag                                             | Description                                                                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
+| `[@import]`                                     | See `imports` section.                                                                                                |
+| `[forcescroll]`                                 | Forces the typewriter to scroll.                                                                                      |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.
