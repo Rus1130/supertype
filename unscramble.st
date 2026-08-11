@@ -9,5 +9,5 @@ typewriter: {
 }
 {{# text<String> timeToResolve<Number> #}}
 {{# text<String> timeToResolveMsMin<Number> timeToResolveMsMax<Number> #}}
-[unscramble "hi there" 1000 2000][newline]
+what the hell [unscramble "hi there" 1000 2000][newline]
 {{# [scramble "hi there" 1000 2000] #}}
