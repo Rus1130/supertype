@@ -44,7 +44,7 @@ lorem ipsum dolor sit amet ur mom[newline]
 not green anymore, but now [bg #339900]green background[bg reset][newline]
 [color #ff0000][bg #339900]red text on green background[newline]
 [swap]swapped the colors![resetcolors][newline]
-[gradient "Gradient!!!!" "90deg, #ff0000, #00ff04"][linebreak]
+[gradient "Gradient!!!!" "90deg, #ff0000, #339900"][linebreak]
 
 [raw]everything is now RAW
     [newline][newline] see how nothing works
