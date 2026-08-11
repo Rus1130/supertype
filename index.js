@@ -1021,15 +1021,205 @@ class UnscrambleTag extends Tag {
             })
             .join("");
 
-        // Isolate this character into its own text node - otherwise it
-        // gets appended into the previous character's node (same style),
-        // and unscrambleLoop overwriting one entry's node.data would wipe
-        // out its neighbors.
+
         engine.resetSpanTextStyle();
         engine.renderCharacter(text, token.style);
         unscramble.textNode = engine.state.currentText;
         engine.resetSpanTextStyle();
     }
+}
+
+class SeparateTag extends Tag {
+    static tagName = "@separate";
+
+    static onUse(engine, token) {
+        let value = true;
+        if(token.args[0] !== undefined && token.args[0].equalsSpecific("off")) value = false;
+
+        engine.state.separateElements = value;
+    }
+} 
+
+class GradientTag extends Tag {
+    static tagName = "gradient";
+
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const [text, css] = args;
+
+        if (text === undefined) throw new Error("Missing gradient text");
+        if (css === undefined) throw new Error("Missing gradient css");
+
+        text.check("string");
+        css.check("string");
+
+        const stops = GradientTag.parseGradient(css.value);
+        const chars = [...text.value];
+
+        ctx.queue.push({
+            type: "tag",
+            name: "payload",
+            payload: {
+                onuse: (engine, token) => {
+                    if (engine.state.gradientColorStack === undefined) engine.state.gradientColorStack = [];
+                    engine.state.gradientColorStack.push(engine.state.currentColor);
+                }
+            }
+        })
+    
+
+        for (let i = 0; i < chars.length; i++) {
+            const t = chars.length === 1 ? 0 : i / (chars.length - 1);
+            const color = GradientTag.sampleGradient(stops, t);
+
+            ctx.queue.push({
+                type: "tag",
+                name: "payload",
+                args: [new TagArgument("color", color)],
+                payload: {
+                    onuse: (engine, token) => {
+                        engine.state.currentColor = token.args[0].value;
+                    }
+                }
+            });
+
+            ctx.queue.push({ type: "character", value: chars[i] });
+        }
+
+        ctx.queue.push({
+            type: "tag",
+            name: "payload",
+            payload: {
+                onuse: (engine, token) => {
+                    const stack = engine.state.gradientColorStack;
+                    if (stack && stack.length) engine.state.currentColor = stack.pop();
+                }
+            }
+        });
+
+        return false;
+    }
+    static parseGradient(css) {
+        const parts = GradientTag.splitTopLevel(css.trim());
+
+        let stopParts = parts;
+
+        // Optional leading angle/direction, e.g. "90deg" or "to right".
+        if (parts.length && /^-?\d+(\.\d+)?(deg|grad|rad|turn)$|^to\s+\w/i.test(parts[0].trim())) {
+            stopParts = parts.slice(1);
+        }
+
+        if (stopParts.length < 2) {
+            throw new Error(`Invalid gradient css: Need at least 2 color stops, got ${stopParts.length}`);
+        }
+
+        const stops = stopParts.map(part => {
+            const trimmed = part.trim();
+            const posMatch = trimmed.match(/^(.*?)(?:\s+(-?\d+(?:\.\d+)?)%)?$/);
+
+            return {
+                color: GradientTag.parseColor(posMatch[1].trim()),
+                position: posMatch[2] !== undefined ? parseFloat(posMatch[2]) / 100 : null
+            };
+        });
+
+        const n = stops.length;
+        stops.forEach((stop, i) => {
+            if (stop.position === null) stop.position = n === 1 ? 0 : i / (n - 1);
+        });
+
+        return stops;
+    }
+
+    static splitTopLevel(str) {
+        const parts = [];
+        let depth = 0;
+        let current = "";
+
+        for (const ch of str) {
+            if (ch === "(") depth++;
+            if (ch === ")") depth--;
+
+            if (ch === "," && depth === 0) {
+                parts.push(current);
+                current = "";
+            } else {
+                current += ch;
+            }
+        }
+
+        if (current.trim() !== "") parts.push(current);
+
+        return parts;
+    }
+
+    static parseColor(str) {
+        if (/^#[0-9a-fA-F]{6}$/.test(str)) {
+            return [
+                parseInt(str.slice(1, 3), 16),
+                parseInt(str.slice(3, 5), 16),
+                parseInt(str.slice(5, 7), 16)
+            ];
+        }
+
+        if (/^#[0-9a-fA-F]{3}$/.test(str)) {
+            return [
+                parseInt(str[1] + str[1], 16),
+                parseInt(str[2] + str[2], 16),
+                parseInt(str[3] + str[3], 16)
+            ];
+        }
+
+        const rgbMatch = str.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+\s*)?\)$/i);
+        if (rgbMatch) {
+            return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
+        }
+
+        const named = GradientTag.namedColors[str.toLowerCase()];
+        if (named) return named;
+
+        throw new Error(`Invalid gradient color: ${str}`);
+    }
+
+    static sampleGradient(stops, t) {
+        t = Math.max(0, Math.min(1, t));
+
+        if (t <= stops[0].position) return GradientTag.rgbToHex(stops[0].color);
+        if (t >= stops[stops.length - 1].position) return GradientTag.rgbToHex(stops[stops.length - 1].color);
+
+        for (let i = 0; i < stops.length - 1; i++) {
+            const a = stops[i];
+            const b = stops[i + 1];
+
+            if (t >= a.position && t <= b.position) {
+                const span = b.position - a.position;
+                const localT = span === 0 ? 0 : (t - a.position) / span;
+
+                return GradientTag.rgbToHex([
+                    Math.round(a.color[0] + (b.color[0] - a.color[0]) * localT),
+                    Math.round(a.color[1] + (b.color[1] - a.color[1]) * localT),
+                    Math.round(a.color[2] + (b.color[2] - a.color[2]) * localT)
+                ]);
+            }
+        }
+
+        return GradientTag.rgbToHex(stops[stops.length - 1].color);
+    }
+
+    static rgbToHex([r, g, b]) {
+        const clamp = v => Math.max(0, Math.min(255, v));
+        return "#" + [clamp(r), clamp(g), clamp(b)].map(v => v.toString(16).padStart(2, "0")).join("");
+    }
+
+    static namedColors = {
+        red: [255, 0, 0], blue: [0, 0, 255], green: [0, 128, 0], yellow: [255, 255, 0],
+        orange: [255, 165, 0], purple: [128, 0, 128], pink: [255, 192, 203], black: [0, 0, 0],
+        white: [255, 255, 255], cyan: [0, 255, 255], magenta: [255, 0, 255], lime: [0, 255, 0],
+        gray: [128, 128, 128], grey: [128, 128, 128], violet: [238, 130, 238], indigo: [75, 0, 130],
+        gold: [255, 215, 0], silver: [192, 192, 192], navy: [0, 0, 128], teal: [0, 128, 128],
+        maroon: [128, 0, 0], olive: [128, 128, 0], coral: [255, 127, 80], salmon: [250, 128, 114],
+        crimson: [220, 20, 60], turquoise: [64, 224, 208], lavender: [230, 230, 250]
+    };
 }
 
 // 
@@ -1040,10 +1230,10 @@ class UnscrambleTag extends Tag {
  *      type: "tag",
  *      name: "payload",
  *      payload: {
- *          onuse: () => {
+ *          onuse: (engine, token) => {
  *              console.log("on use payload!");
  *          },
- *          onrender: () => {
+ *          onrender: (engine, token) => {
  *              console.log("on render payload!");
  *          }
  *      }
@@ -1054,12 +1244,12 @@ class PayloadTag extends Tag {
 
     static onUse(engine, token) {
         if(token.payload == undefined) throw new Error("Missing payload");
-        if(token.payload.onuse !== undefined) token.payload.onuse();
+        if(token.payload.onuse !== undefined) token.payload.onuse(engine, token);
     }
 
     static onRender(engine, token) {
         if(token.payload == undefined) throw new Error("Missing payload");
-        if(token.payload.onrender !== undefined) token.payload.onrender();
+        if(token.payload.onrender !== undefined) token.payload.onrender(engine, token);
     }
 }
 
@@ -1377,6 +1567,7 @@ export class SuperType {
             rawMode: false,
 
             accuracy: 1,
+            separateElements: false
         }
     }
 
@@ -1448,6 +1639,7 @@ export class SuperType {
 
         this.state.scrollLocked = false;
         this.state.pauseLocked = false;
+        this.state.separateElements = false;
 
         this.resetSpanTextStyle();
 
@@ -1858,7 +2050,7 @@ export class SuperType {
             this.state.currentColor === this.state.currentStyle.color &&
             this.state.currentBg === this.state.currentStyle.bg;
 
-        if (!sameStyle) {
+        if ((!sameStyle) || this.state.separateElements === true) {
             const span = document.createElement("span");
 
             this.styleElement(span, style);
@@ -2175,6 +2367,8 @@ for (const TagClass of [
     UnscrambleTag,
     AccuracyTag,
     PayloadTag,
+    GradientTag,
+    SeparateTag,
 ]) {
     SuperType.registerTag(TagClass);
 }

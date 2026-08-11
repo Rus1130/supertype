@@ -114,6 +114,7 @@ Change the color of the text and background.
 | `[raw]`                | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
 | `[raw end]`            | Exits raw mode.                                                                                                                 |
 | `[swap]`               | Swaps the text and background colors.                                                                                           |
+| `[gradient text<String> gradient<String>]` | Creates a gradient effect on `text` using the CSS gradient `gradient`.                                                         |
 
 ### Pages
 | Tag                                       | Description                                                                                                       |
@@ -124,11 +125,13 @@ Change the color of the text and background.
 
 ### Miscellaneous
 Other tags.
-| Tag                                             | Description                                                                                                           |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `[function name<String>]`                       | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
-| `[@import]`                                     | See `imports` section.                                                                                                |
-| `[forcescroll]`                                 | Forces the typewriter to scroll.                                                                                      |
+| Tag                       | Description                                                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `[function name<String>]` | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
+| `[@import]`               | See `imports` section.                                                                                                |
+| `[forcescroll]`           | Forces the typewriter to scroll.                                                                                      |
+| `[@separate]`             | Forces the typewriter to separate elements.                                                                           |
+| `[@separate off]`         | Turns off separate mode.                                                                                              |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.
