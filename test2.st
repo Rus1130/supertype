@@ -12,4 +12,4 @@ typewriter: {
     }
     wordWrap: 110
 }
-wow hi [sleep 1000][speed 1000]/*[gradient "Sky" "90deg, #c8d8fb, #6f6fff"]/*[function "sine" 3 0.2 0.5]
+wow hi [sleep 1000][speed 1000]/*[function "sine" 3 0.6 1][gradient "Sky" "90deg, #c8d8fb, #6f6fff"]/*

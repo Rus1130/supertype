@@ -89,84 +89,79 @@
         },
 
         "sine": function(engine, token) {
-            const cssStyle = document.createElement("style");
-            cssStyle.textContent = `
-                @keyframes typewriter-sine {
-                    from {
-                        transform: translateY(var(--sine-amplitude));
+            if (!SuperType._sineStyleInjected) {
+                const cssStyle = document.createElement("style");
+                cssStyle.textContent = `
+                    @keyframes typewriter-sine {
+                        from { transform: translateY(var(--sine-amplitude)); }
+                        50% { transform: translateY(calc(var(--sine-amplitude) * -1)); }
+                        to { transform: translateY(var(--sine-amplitude)); }
                     }
-
-                    50% {
-                        transform: translateY(calc(var(--sine-amplitude) * -1));
+                    .typewriter-sine {
+                        display: inline-block;
+                        animation-name: typewriter-sine;
+                        animation-timing-function: linear;
+                        animation-iteration-count: infinite;
                     }
-
-                    to {
-                        transform: translateY(var(--sine-amplitude));
-                    }
-                }
-
-                .typewriter-sine {
-                    display: inline-block;
-                    animation-name: typewriter-sine;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-            `;
-
-            document.body.appendChild(cssStyle);
-
-
+                `;
+                document.body.appendChild(cssStyle);
+                SuperType._sineStyleInjected = true;
+            }
+ 
             const [name, lastCharacters, frequency, amplitude] = token.args;
-
             lastCharacters.check("number");
             frequency.check("number");
             amplitude.check("number");
-
+ 
             const count = lastCharacters.value;
             const duration = 1 / frequency.value;
-
+ 
             function applySine(element, index) {
-                element.style.setProperty(
-                    "--sine-amplitude",
-                    `${amplitude.value}px`
-                );
-
+                element.style.setProperty("--sine-amplitude", `${amplitude.value}px`);
                 element.style.animationDuration = `${duration}s`;
-
-                element.style.animationDelay =
-                    `${-duration * (index / count)}s`;
-
+                element.style.animationDelay = `${-duration * (index / count)}s`;
                 element.classList.add("typewriter-sine");
             }
-
-            function update() {
-                const elements = Array.from(engine.target.children)
-                    .slice(-count);
-
-                elements.forEach((element, index) => {
-                    applySine(element, index);
-                });
+ 
+            if (!engine._sinePatched) {
+                engine._sinePatched = true;
+                engine._sineQueue = [];
+ 
+                const original = engine.renderCharacter.bind(engine);
+ 
+                engine.renderCharacter = function(text, style) {
+                    if (engine._sineQueue.length === 0) {
+                        return original(text, style);
+                    }
+ 
+                    for (let i = 0; i < text.length; i++) {
+                        if (engine._sineQueue.length === 0) {
+                            engine.renderCharacter = original;
+                            engine._sinePatched = false;
+                            original(text.slice(i), style);
+                            return;
+                        }
+ 
+                        original(text[i], style);
+ 
+                        const { index } = engine._sineQueue.shift();
+                        applySine(engine.state.currentSpan, index);
+                    }
+ 
+                    if (engine._sineQueue.length === 0) {
+                        engine.renderCharacter = original;
+                        engine._sinePatched = false;
+                    }
+                };
             }
-
-            update();
-
-            if (!engine.sineObservers) {
-                engine.sineObservers = {};
+ 
+            for (let i = 0; i < count; i++) {
+                engine._sineQueue.push({ index: i });
             }
-
-            const observer = new MutationObserver(() => {
-                update();
-            });
-
-            observer.observe(engine.target, {
-                childList: true
-            });
-
-            engine.sineObservers[name] = observer;
         }
     })
 
-    await tw.load("example.st").then(() => {
+    await tw.load("test2.st").then(() => {
         tw.allowControls("all");
         tw.start();
     })
