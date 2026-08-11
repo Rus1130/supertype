@@ -121,7 +121,6 @@ Change the color of the text and background.
 | `[page name<String>]`                     | Creates a page with name `name`.                                                                                  |
 | `[page end]`                              | Closes a page.                                                                                                    |
 | `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                          |
-| `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button, and does reset currently displayed text. |
 
 ### Miscellaneous
 Other tags.
