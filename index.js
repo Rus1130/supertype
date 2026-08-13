@@ -651,7 +651,7 @@ class GopageTag extends Tag {
             }
 
             engine.renderRaw(`<br>${"=".repeat(charCount)}<br>`)
-            engine.start(pageName.value);
+            engine.openPage(pageName.value);
             return;
         }
 
@@ -667,7 +667,7 @@ class GopageTag extends Tag {
                 engine.target.innerHTML = "";
                 engine.resetSpanTextStyle();
             }
-            engine.start(pageName.value);
+            engine.openPage(pageName.value);
         });
 
         engine.appendToTarget(button);
@@ -1555,8 +1555,12 @@ export class SuperType {
         }
 
         this.targetParent.addEventListener("keydown", (e) => {
-            const controlsCheck = (value, key) => {
-                return (this.allowedControls.has(value) || this.allowedControls.has("all")) && e.key === key;
+            // allowCtrl is a special option that allows the user to use ctrl+key or cmd+key to trigger the control, but only if the control is allowed. This is useful for allowing the user to use ctrl+space to pause/resume, for example.
+            const controlsCheck = (value, key, { allowCtrl = false } = {}) => {
+                if (!(this.allowedControls.has(value) || this.allowedControls.has("all"))) return false;
+                if (e.key !== key) return false;
+                if (!allowCtrl && (e.ctrlKey || e.metaKey)) return false;
+                return true;
             }
 
             if(controlsCheck("pause", " ")) {
@@ -1665,7 +1669,7 @@ export class SuperType {
      * @param {String} page page name
      * @returns {void}
      */
-    start(page = "root") {
+    openPage(page = "root") {
         if(this.header.previewMode === true) this.header.instant = true;
 
         this.state.page = page;
@@ -1701,13 +1705,14 @@ export class SuperType {
         this.startCount++;
     }
 
-    begin(){
+    start(){
         if(localStorage.getItem("supertype-reset") !== null){
             const page = localStorage.getItem("supertype-reset");
-            this.start(page);
+            localStorage.removeItem("supertype-reset");
+            this.openPage(page);
             return;
         }
-        this.start();
+        this.openPage();
     }
 
     /**
