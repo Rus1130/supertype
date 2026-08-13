@@ -84,10 +84,6 @@
             engine.insertTokens(tokens);
         },
 
-        "hardinstant": function(engine, token) {
-            tw.state.userInstantOverride = !tw.state.userInstantOverride;
-        },
-
         "sine": function(engine, token) {
             if (!SuperType._sineStyleInjected) {
                 const cssStyle = document.createElement("style");
@@ -162,7 +158,7 @@
         }
     })
 
-    await tw.load("test2.st").then(() => {
+    await tw.load("example.st").then(() => {
         tw.allowControls("all");
         tw.start();
     })
