@@ -1568,10 +1568,9 @@ export class SuperType {
             if(controlsCheck("fastforward", "ArrowRight")) this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
 
             if(controlsCheck("reset", "r")){
-                this.target.innerHTML = "";
-                this.resetSpanTextStyle();
-                console.log(this)
-                this.start(this.state.page)
+                localStorage.setItem("supertype-reset", this.state.page);
+                // reload the page to reset the typewriter
+                location.reload();
             }
         })
 
@@ -1700,6 +1699,15 @@ export class SuperType {
             requestAnimationFrame(this.unscrambleLoop);
         }
         this.startCount++;
+    }
+
+    begin(){
+        if(localStorage.getItem("supertype-reset") !== null){
+            const page = localStorage.getItem("supertype-reset");
+            this.start(page);
+            return;
+        }
+        this.start();
     }
 
     /**
