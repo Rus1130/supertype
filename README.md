@@ -70,8 +70,10 @@ Controls how text is desplayed.
 | `[removelast count<Number>]`         | Removes the last `count` rendered characters from the typewriter.                                               |
 | `[removelast count<Number> keep]`    | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]` | Repeats `str` `count` times.                                                                                    |
-| `[mixin name<Sring>]`                | Starts a mixin with the name `name`. See the Mixins section for more information.                               |
-| `[mixin end]`                        | Ends a mixin.                                                                                                   |
+| `[repeat str<String> count<Number> instant]` | Instantly epeats `str` `count` times.                                                                                   |
+| `[repeat count<Number>] ... [repeat end]` | Repeats the content `count` times.                                                   |
+| `[repeat count<Number> instant] ... [repeat end]` | Instantly repeats the content `count` times.                                                   |
+| `[mixin name<Sring>] ... [mixin end]`                | Creates a mixin with the name `name`. See the Mixins section for more information. |
 | `[@use name<String> ...]`            | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
 ### Fun Text Effects
@@ -83,8 +85,8 @@ FUN!
 | `[jitter text<String> strength<Number>]`        | Inserts `text` with a jittering effect of `strength`.             |
 | `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` all at once. |
 | `[jitter text<String> strength<Number> shared]` | Inserts `text` with a shared jittering effect of `strength`.      |
-| `[accuracy value<Number>]`                      | Sets the accuracy of the typewriter. Values are 0 to 1.           |
-| `[unscramble text<String> ms<Number>]`          | Unscrambles `text` over a minimum of `ms` milliseconds.    |
+| `[accuracy value<Number>]`                      | Sets the accuracy of the typewriter. Value is 0 to 1.           |
+| `[unscramble text<String> ms<Number>]`          | Unscrambles `text` over `ms` milliseconds.    |
 | `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
 
 ### Timing
@@ -111,16 +113,14 @@ Change the color of the text and background.
 | `[bg color<Color>]`    | Sets the background color to `color`.                                                                                           |
 | `[bg reset]`           | Resets the background color to the default.                                                                                     |
 | `[resetcolors]`        | Resets the text and background colors to the default.                                                                           |
-| `[raw]`                | Enables mode, which ignores all tags and formatting. Color and background are not effected, but cannot be changed inside of it. |
-| `[raw end]`            | Exits raw mode.                                                                                                                 |
+| `[raw] ... [raw end]` | Renders the text and tags inside the tags without any styling.                                                                           |
 | `[swap]`               | Swaps the text and background colors.                                                                                           |
 | `[gradient text<String> gradient<String>]` | Creates a gradient effect on `text` using the CSS gradient `gradient`.                                                         |
 
 ### Pages
 | Tag                                       | Description                                                                                                       |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `[page name<String>]`                     | Creates a page with name `name`.                                                                                  |
-| `[page end]`                              | Closes a page.                                                                                                    |
+| `[page name<String>] ... [page end]`      | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.        |
 | `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                          |
 
 ### Miscellaneous
@@ -129,9 +129,11 @@ Other tags.
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `[function name<String>]` | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
 | `[@import]`               | See `imports` section.                                                                                                |
-| `[forcescroll]`           | Forces the typewriter to scroll.                                                                                      |
-| `[@separate]`             | Forces the typewriter to separate elements.                                                                           |
-| `[@separate off]`         | Turns off separate mode.                                                                                              |
+| `[@forcescroll]`           | Forces the typewriter to scroll.                                                                                      |
+| `[@forceseparate]`             | Forces the typewriter to separate elements.                                                                           |
+| `[@forceseparate off]`         | Turns off separate mode.                                                                                              |
+| `[@forceinstant]`           | Forces the typewriter to render instantly.                                                                           |
+| `[@forceinstant off]`         | Turns off force instant mode.                                                                                              |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.

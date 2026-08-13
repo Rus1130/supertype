@@ -105,7 +105,7 @@
             "patterns": [
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant|page|ignore|jitter|swap|repeat|resetcolors|forcescroll|accuracy|unscramble|gradient))\\b",
+                    "begin": "(?<!\\\\)\\[((?:removelast|custom|customremove|function|tab|gopage|color|bg|speed|speeddefault|newline|linebreak|sleep|glitch|instant|page|ignore|jitter|swap|repeat|resetcolors|accuracy|unscramble|gradient))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "tag.st" }
@@ -126,7 +126,7 @@
                 },
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:@use|@import|@separate))\\b",
+                    "begin": "(?<!\\\\)\\[((?:@use|@import|@forceinstant|@forcescroll|@forceseparate))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "attag.tag.st" }

@@ -738,11 +738,27 @@ class SpeedDefaultTag extends Tag {
 class RepeatTag extends Tag {
     static tagName = "repeat";
 
+    static extractBlock(rawArgs, content, ctx) {
+        const [count, instant] = rawArgs.map(arg => TagArgument.parse(arg));
+
+        count.check("number");
+        if(instant !== undefined) instant.checkSpecific("instant");
+
+        const tokens = ctx.engine.tokenize(content);
+
+        let result = "";
+
+        if (instant !== undefined) result += "[@forceinstant]";
+
+        result += content.repeat(count.value);
+
+        if (instant !== undefined) result += "[@forceinstant off]";
+
+        return result;
+    }
+
     static onUse(engine, token) {
         const [value, count, instant] = token.args;
-
-        if (value === undefined) throw new Error("Missing repeat value");
-        if (count === undefined) throw new Error("Missing repeat count");
 
         value.check("string");
         count.check("number");
@@ -763,6 +779,20 @@ class RepeatTag extends Tag {
 
     }
 }
+
+class ForceInstantTag extends Tag {
+    static tagName = "@forceinstant";
+
+    static onUse(engine, token) {
+        let instant = token.args[0];
+        if (instant === undefined) return engine.state.userInstantOverride = true;
+
+        instant.checkSpecific("off");
+
+        engine.state.userInstantOverride = false;
+    }
+}
+
 
 class NewlineTag extends Tag {
     static tagName = "newline";
@@ -1030,7 +1060,7 @@ class UnscrambleTag extends Tag {
 }
 
 class SeparateTag extends Tag {
-    static tagName = "@separate";
+    static tagName = "@forceseparate";
 
     static onUse(engine, token) {
         let value = true;
@@ -2369,6 +2399,7 @@ for (const TagClass of [
     PayloadTag,
     GradientTag,
     SeparateTag,
+    ForceInstantTag
 ]) {
     SuperType.registerTag(TagClass);
 }
