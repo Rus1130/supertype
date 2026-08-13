@@ -248,6 +248,20 @@ export class Tag {
      * @returns {string}
      */
     static routeToPage(engine, token, index) {}
+
+    /**
+     * Optional: a regex source string constraining what the raw argument
+     * text of a *block-opening* use of this tag may look like. If the args
+     * after `[name ...]` don't match this pattern, runExtractBlockHooks
+     * won't treat that occurrence as a block opener at all - it's left
+     * alone for normal tokenize()/onUse() handling instead.
+     *
+     * Only needed for tags whose name is reused for both an inline,
+     * self-contained form AND a block form (see RepeatTag).
+     *
+     * @type {string | null}
+     */
+    static blockOpenArgsPattern = null;
 }
 
 class UseTag extends Tag {
@@ -737,6 +751,8 @@ class SpeedDefaultTag extends Tag {
 
 class RepeatTag extends Tag {
     static tagName = "repeat";
+
+    static blockOpenArgsPattern = String.raw`-?\d+(?:\.\d+)?(?:\s+instant)?`;
 
     static extractBlock(rawArgs, content, ctx) {
         const [count, instant] = rawArgs.map(arg => TagArgument.parse(arg));
@@ -1554,6 +1570,7 @@ export class SuperType {
             if(controlsCheck("reset", "r")){
                 this.target.innerHTML = "";
                 this.resetSpanTextStyle();
+                console.log(this)
                 this.start(this.state.page)
             }
         })
@@ -1705,7 +1722,8 @@ export class SuperType {
         for (const [name, TagClass] of SuperType.tags) {
             if (!Object.hasOwn(TagClass, "extractBlock")) continue;
 
-            const re = new RegExp(`\\[${name}(?:\\s+([^\\]]*))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
+            const argsPattern = TagClass.blockOpenArgsPattern ?? "[^\\]]*";
+            const re = new RegExp(`\\[${name}(?:\\s+(${argsPattern}))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
 
             let match;
             re.lastIndex = 0;
@@ -1717,9 +1735,6 @@ export class SuperType {
                 const replacement = (await TagClass.extractBlock(rawArgs, content, { engine: this })) ?? "";
 
                 body = body.slice(0, match.index) + replacement + body.slice(match.index + fullMatch.length);
-
-                // resume scanning right after the spliced-in replacement,
-                // on the now-updated body string
                 re.lastIndex = match.index + replacement.length;
             }
         }

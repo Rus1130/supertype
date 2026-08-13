@@ -12,10 +12,10 @@ typewriter: {
     }
     wordWrap: 110
 }
-[repeat 2 instant]
-what [newline] [repeat "wow" 2]the sigma
-[repeat end]
+[repeat "repeat" 3][newline]
+[repeat 3]
+    I can repeat /so many/ things![newline]
+[repeat end][linebreak]
 
-{{# [repeat "hi" 2] #}}
 
 {{# wow hi [sleep 1000][speed 1000]/*[function "sine" 3 0.6 1][gradient "Sky" "90deg, #c8d8fb, #6f6fff"]/* #}}
