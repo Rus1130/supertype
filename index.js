@@ -475,16 +475,16 @@ class RemoveLastTag extends Tag {
     static tagName = "removelast";
 
     static onUse(engine, token) {
-        const [number, keep] = token.args;
+        const [number, group] = token.args;
 
         if (number === undefined) throw new Error("Missing removelast value");
 
         number.check("number");
 
-        if (keep !== undefined) keep.checkSpecific("keep");
+        if (group !== undefined) group.checkSpecific("group");
 
         // expand into one-character removals, animated one at a time
-        if (keep === undefined) {
+        if (group === undefined) {
             const tokens = [];
 
             for (let i = 0; i < number.value; i++) {
@@ -493,7 +493,7 @@ class RemoveLastTag extends Tag {
                     name: "removelast",
                     args: [
                         new TagArgument("number", 1),
-                        new TagArgument("specific", "keep")
+                        new TagArgument("specific", "group")
                     ],
                     style: token.style
                 });
@@ -632,8 +632,8 @@ class GopageTag extends Tag {
         if (text === undefined) throw new Error("Missing button text");
         text.check("string");
 
-        let keep = token.args[2];
-        if (keep !== undefined) keep.checkSpecific("keep");
+        let group = token.args[2];
+        if (group !== undefined) group.checkSpecific("group");
     }
 
     static onRender(engine, token) {
@@ -656,14 +656,14 @@ class GopageTag extends Tag {
         }
 
         const text = token.args[1];
-        const keep = token.args[2] !== undefined;
+        const group = token.args[2] !== undefined;
 
         let button = document.createElement("div");
         button.classList.add("button");
         button.textContent = "▌" + text.value;
 
         button.addEventListener("click", () => {
-            if (keep === false) {
+            if (group === false) {
                 engine.target.innerHTML = "";
                 engine.resetSpanTextStyle();
             }
@@ -866,7 +866,7 @@ class GlitchTag extends Tag {
 
     static onUse(engine, token) {
         let value = token.args[0];
-        let keep = token.args[1];
+        let group = token.args[1];
 
         if (value === undefined) {
             throw new Error("Missing glitch value");
@@ -874,12 +874,12 @@ class GlitchTag extends Tag {
 
         value.check("number");
 
-        if (keep !== undefined) {
-            keep.checkSpecific("keep");
+        if (group !== undefined) {
+            group.checkSpecific("group");
         }
 
-        // expand temporary glitches into keep glitches
-        if (keep === undefined) {
+        // expand temporary glitches into group glitches
+        if (group === undefined) {
             const tokens = [];
 
             for (let i = 0; i < value.value; i++) {
@@ -888,7 +888,7 @@ class GlitchTag extends Tag {
                     name: "glitch",
                     args: [
                         new TagArgument("number", 1),
-                        new TagArgument("specific", "keep")
+                        new TagArgument("specific", "group")
                     ],
                     style: token.style
                 });
@@ -927,10 +927,10 @@ class JitterTag extends Tag {
         value.check("string");
         strength.check("number");
 
-        if (third !== undefined) third.checkSpecific("keep", "shared");
+        if (third !== undefined) third.checkSpecific("group", "shared");
         
 
-        // Expand into one-character keep tags.
+        // Expand into one-character group tags.
         if (third === undefined) {
             const tokens = [];
 
@@ -941,7 +941,7 @@ class JitterTag extends Tag {
                     args: [
                         new TagArgument("string", ch),
                         new TagArgument("number", strength.value),
-                        new TagArgument("specific", "keep")
+                        new TagArgument("specific", "group")
                     ],
                     style: token.style,
                 });
@@ -962,7 +962,7 @@ class JitterTag extends Tag {
                     args: [
                         new TagArgument("string", ch),
                         new TagArgument("number", strength.value),
-                        new TagArgument("specific", "keep")
+                        new TagArgument("specific", "group")
                     ],
                     style: token.style,
                 });
@@ -1401,7 +1401,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "keep", "end", "instant", "off", "shared", "fill"];
+    static specificTypes = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill"];
 
     static defaultScrollCount = 6;
 

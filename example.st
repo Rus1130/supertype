@@ -23,7 +23,7 @@ i just used a linebreak there. smirk[newline]
 [tab 4]tabbed![newline]
 [tab 4 fill]tabbed with background color![newline]
 [swap]
-wowwwww[removelast 7 keep]bet ya didnt see that[newline]
+wowwwww[removelast 7 group]bet ya didnt see that[newline]
 type and delete[removelast 15][newline]
 time to sleep... [sleep 2000]sleepy...[newline]
 [speed 1]SO FAST!!!![speeddefault] back to normal speed.[newline]
@@ -67,11 +67,11 @@ _underline_[newline]
 *_mu*lt-i_/p-l/e[linebreak]
 
 [glitch 10][newline]
-[glitch 10 keep][newline]
+[glitch 10 group][newline] {{# works #}}
 [unscramble "unscramble!" 1000][newline]
 [unscramble "unscramble!" 1000 2000][newline]
-[jitter "oooh wiggly" 10][newline]
-[jitter "its all at the same time for the price of 1 character delay!" 10 keep][newline]
+[jitter "oooh wiggly" 10][newline] 
+[jitter "its all at the same time for the price of 1 character delay!" 10 group][newline] {{# works #}}
 [jitter "it types it, but they jitter the same" 10 shared][newline]
 [function "jitterlerp" "this is a custom function that lerps!" 1 20][linebreak]
 

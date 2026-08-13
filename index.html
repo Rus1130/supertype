@@ -144,7 +144,7 @@
                         const { index } = engine._sineQueue.shift();
                         applySine(engine.state.currentSpan, index);
                     }
- 
+                    
                     if (engine._sineQueue.length === 0) {
                         engine.renderCharacter = original;
                         engine._sinePatched = false;

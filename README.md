@@ -25,14 +25,10 @@ Look at `example.st` for an example of how to use supertype. Look at `index.html
          | 255,0,0
 
 
-Specific : override
-         | reset
-         | default
-         | keep
-         | end
+Specific : group
          | instant
-         | on
-         | off
+         | end
+         etc...
 ```
 
 ## Header
@@ -68,7 +64,7 @@ Controls how text is desplayed.
 | `[tab count<Number>]`                | Inserts `count` spaces.                                                                                         |
 | `[tab count<Number> fill]`           | Inserts `count` spaces. The spaces will be the background color.                                                |
 | `[removelast count<Number>]`         | Removes the last `count` rendered characters from the typewriter.                                               |
-| `[removelast count<Number> keep]`    | Removes the last `count` rendered characters from the typewriter as a single group.                             |
+| `[removelast count<Number> group]`    | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]` | Repeats `str` `count` times.                                                                                    |
 | `[repeat str<String> count<Number> instant]` | Instantly epeats `str` `count` times.                                                                                   |
 | `[repeat count<Number>] ... [repeat end]` | Repeats the content `count` times.                                                   |
@@ -81,9 +77,9 @@ FUN!
 | Tag                                             | Description                                                       |
 | ----------------------------------------------- | ----------------------------------------------------------------- |
 | `[glitch count<Number>]`                        | Inserts `count` glitching characters.                             |
-| `[glitch count<Number> keep]`                   | Inserts `count` glitching characters as a single group.           |
+| `[glitch count<Number> group]`                   | Inserts `count` glitching characters as a single group.           |
 | `[jitter text<String> strength<Number>]`        | Inserts `text` with a jittering effect of `strength`.             |
-| `[jitter text<String> strength<Number> keep]`   | Inserts `text` with a jittering effect of `strength` all at once. |
+| `[jitter text<String> strength<Number> group]`   | Inserts `text` with a jittering effect of `strength` all at once. |
 | `[jitter text<String> strength<Number> shared]` | Inserts `text` with a shared jittering effect of `strength`.      |
 | `[accuracy value<Number>]`                      | Sets the accuracy of the typewriter. Value is 0 to 1.           |
 | `[unscramble text<String> ms<Number>]`          | Unscrambles `text` over `ms` milliseconds.    |
