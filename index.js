@@ -264,6 +264,14 @@ export class Tag {
     static blockOpenArgsPattern = null;
 }
 
+class StartTag extends Tag {
+    static tagName = "@start";
+
+    static onTokenization(rawArgs, ctx) {
+        ctx.engine.state.token = ctx.index;
+    }
+}
+
 class UseTag extends Tag {
     static tagName = "@use";
 
@@ -474,36 +482,37 @@ class InstantTag extends Tag {
 class RemoveLastTag extends Tag {
     static tagName = "removelast";
 
-    static onUse(engine, token) {
-        const [number, group] = token.args;
+    // See JitterTag for why this expansion must happen once at tokenize
+    // time rather than every time onUse fires.
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const [number, group] = args;
 
         if (number === undefined) throw new Error("Missing removelast value");
 
         number.check("number");
 
-        if (group !== undefined) group.checkSpecific("group");
-
-        // expand into one-character removals, animated one at a time
-        if (group === undefined) {
-            const tokens = [];
-
-            for (let i = 0; i < number.value; i++) {
-                tokens.push({
-                    type: "tag",
-                    name: "removelast",
-                    args: [
-                        new TagArgument("number", 1),
-                        new TagArgument("specific", "group")
-                    ],
-                    style: token.style
-                });
-            }
-
-            engine.insertTokens(tokens);
-
-            return false;
+        if (group !== undefined) {
+            group.checkSpecific("group");
+            return args;
         }
 
+        // expand into one-character removals, animated one at a time
+        for (let i = 0; i < number.value; i++) {
+            ctx.queue.push({
+                type: "tag",
+                name: "removelast",
+                args: [
+                    new TagArgument("number", 1),
+                    new TagArgument("specific", "group")
+                ],
+            });
+        }
+
+        return false;
+    }
+
+    static onUse(engine, token) {
         engine.addRenderTime(engine.state.charDelay);
     }
 
@@ -773,26 +782,37 @@ class RepeatTag extends Tag {
         return result;
     }
 
-    static onUse(engine, token) {
-        const [value, count, instant] = token.args;
+    // See JitterTag for why the non-instant expansion below must happen
+    // once at tokenize time rather than every time onUse fires.
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const [value, count, instant] = args;
 
         value.check("string");
         count.check("number");
 
-        if(instant !== undefined) instant.checkSpecific("instant");
+        if (instant !== undefined) instant.checkSpecific("instant");
 
-        if(instant === undefined || instant.value === false){
+        if (instant === undefined || instant.value === false) {
             for (let i = 0; i < count.value; i++) {
-                engine.insertToken({
+                ctx.queue.push({
                     type: "character",
-                    value: value.value,
-                    style: token.style
+                    value: value.value
                 });
             }
-        } else {
-            engine.renderCharacter(value.value.repeat(count.value), token.style);
+
+            return false;
         }
 
+        return args;
+    }
+
+    static onUse(engine, token) {
+        // Only reached for the "instant" form now - the non-instant form is
+        // expanded once at tokenize time (see onTokenization above).
+        const [value, count] = token.args;
+
+        engine.renderCharacter(value.value.repeat(count.value), token.style);
     }
 }
 
@@ -864,9 +884,13 @@ class SleepTag extends Tag {
 class GlitchTag extends Tag {
     static tagName = "glitch";
 
-    static onUse(engine, token) {
-        let value = token.args[0];
-        let group = token.args[1];
+    // See JitterTag for why this expansion must happen once at tokenize
+    // time rather than every time onUse fires.
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+
+        let value = args[0];
+        let group = args[1];
 
         if (value === undefined) {
             throw new Error("Missing glitch value");
@@ -876,29 +900,25 @@ class GlitchTag extends Tag {
 
         if (group !== undefined) {
             group.checkSpecific("group");
+            return args;
         }
 
         // expand temporary glitches into group glitches
-        if (group === undefined) {
-            const tokens = [];
-
-            for (let i = 0; i < value.value; i++) {
-                tokens.push({
-                    type: "tag",
-                    name: "glitch",
-                    args: [
-                        new TagArgument("number", 1),
-                        new TagArgument("specific", "group")
-                    ],
-                    style: token.style
-                });
-            }
-
-            engine.insertTokens(tokens);
-
-            return false; // this token itself renders nothing; the spliced tokens will
+        for (let i = 0; i < value.value; i++) {
+            ctx.queue.push({
+                type: "tag",
+                name: "glitch",
+                args: [
+                    new TagArgument("number", 1),
+                    new TagArgument("specific", "group")
+                ],
+            });
         }
 
+        return false;
+    }
+
+    static onUse(engine, token) {
         engine.addRenderTime(engine.state.charDelay);
     }
 
@@ -916,10 +936,21 @@ class JitterTag extends Tag {
 
     static jitters = {};
 
-    static onUse(engine, token) {
-        const value = token.args[0];
-        const strength = token.args[1];
-        let third = token.args[2];
+    // Expansion into one-character group tags happens here, at tokenize
+    // time, which runs exactly once per occurrence of the tag in the body.
+    // It must NOT happen in onUse: onUse fires every time process() reaches
+    // this token, and openPage() resets state.token back to 0 every time a
+    // page is (re)opened - so an onUse-driven expansion would splice in a
+    // fresh batch of characters in front of the previous batch on every
+    // revisit, permanently growing the page's token array and rendering
+    // duplicated text (e.g. "jittery!" becoming "jitteryjitteryjittery!"
+    // after a few visits).
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+
+        const value = args[0];
+        const strength = args[1];
+        let third = args[2];
 
         if (value === undefined) throw new Error("Missing jitter value");
         if (strength === undefined) throw new Error("Missing jitter strength");
@@ -928,50 +959,38 @@ class JitterTag extends Tag {
         strength.check("number");
 
         if (third !== undefined) third.checkSpecific("group", "shared");
-        
 
-        // Expand into one-character group tags.
-        if (third === undefined) {
-            const tokens = [];
-
-            for (const ch of value.value) {
-                tokens.push({
-                    type: "tag",
-                    name: "jitter",
-                    args: [
-                        new TagArgument("string", ch),
-                        new TagArgument("number", strength.value),
-                        new TagArgument("specific", "group")
-                    ],
-                    style: token.style,
-                });
-            }
-
-            engine.insertTokens(tokens);
-
-            return false;
-        } else if (third.equalsSpecific("shared")) {
-            const sharedID = Math.random().toString(36).substr(2, 9);
-            const tokens = [];
-
-            for (const ch of value.value) {
-                tokens.push({
-                    type: "tag",
-                    name: "jitter",
-                    sharedID,
-                    args: [
-                        new TagArgument("string", ch),
-                        new TagArgument("number", strength.value),
-                        new TagArgument("specific", "group")
-                    ],
-                    style: token.style,
-                });
-            }
-
-            engine.insertTokens(tokens);
-
-            return false;
+        // Already a single-character token (produced by the expansion
+        // below) - nothing further to expand, push it as-is.
+        if (third !== undefined && third.equalsSpecific("group")) {
+            return args;
         }
+
+        const sharedID = third !== undefined && third.equalsSpecific("shared")
+            ? Math.random().toString(36).substr(2, 9)
+            : undefined;
+
+        for (const ch of value.value) {
+            const tagToken = {
+                type: "tag",
+                name: "jitter",
+                args: [
+                    new TagArgument("string", ch),
+                    new TagArgument("number", strength.value),
+                    new TagArgument("specific", "group")
+                ],
+            };
+
+            if (sharedID !== undefined) tagToken.sharedID = sharedID;
+
+            ctx.queue.push(tagToken);
+        }
+
+        return false;
+    }
+
+    static onUse(engine, token) {
+        const value = token.args[0];
 
         // Render this character with the normal typewriter delay.
         engine.addRenderTime(engine.fetchDelay(value.value));
@@ -995,37 +1014,43 @@ class UnscrambleTag extends Tag {
     static tagName = "unscramble";
     static unscrambles = {};
 
+    // See JitterTag for why this expansion must happen once at tokenize
+    // time rather than every time onUse fires.
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const [value, num1, num2] = args;
+
+        if (value === undefined) throw new Error("Missing unscramble value");
+        if (num1 === undefined) throw new Error("Missing unscramble min time");
+
+        value.check("string");
+        num1.check("number");
+        if (num2 !== undefined) num2.check("number");
+
+        for (const ch of value.value) {
+            const tk = {
+                type: "tag",
+                name: "unscramble",
+                args: [
+                    new TagArgument("string", ch),
+                    new TagArgument("number", num1.value)
+                ],
+            };
+
+            if (num2 !== undefined) tk.args.push(new TagArgument("number", num2.value));
+
+            ctx.queue.push(tk);
+        }
+
+        return false;
+    }
+
     static onUse(engine, token) {
         const [value, num1, num2] = token.args;
 
         value.check("string");
         num1.check("number");
         if (num2 !== undefined) num2.check("number");
-
-        if (token.expanded !== true) {
-            const tokens = [];
-
-            for (const ch of value.value) {
-                const tk = {
-                    type: "tag",
-                    name: "unscramble",
-                    expanded: true,
-                    args: [
-                        new TagArgument("string", ch),
-                        new TagArgument("number", num1.value)
-                    ],
-                    style: token.style,
-                };
-
-                if (num2 !== undefined) tk.args.push(new TagArgument("number", num2.value));
-
-                tokens.push(tk);
-            }
-
-            engine.insertTokens(tokens);
-
-            return false;
-        }
 
         // Per-character setup.
         const id = Math.random().toString(36).substr(2, 9);
@@ -1441,7 +1466,7 @@ export class SuperType {
             text.data = SuperType.randomCharacter();
         }
 
-        requestAnimationFrame(this.glitchLoop);
+        this._glitchFrame = requestAnimationFrame(this.glitchLoop);
     }
 
     jitterLoop = () => {
@@ -1459,7 +1484,7 @@ export class SuperType {
             //jitter.textNode.parentElement.style.transform = `translate(${(Math.random() * 2 - 1) * (jitter.strength / 10)}px, ${(Math.random() * 2 - 1) * (jitter.strength / 10)}px)`;
         }
 
-        requestAnimationFrame(this.jitterLoop);
+        this._jitterFrame = requestAnimationFrame(this.jitterLoop);
     }
 
     unscrambleLoop = () => {
@@ -1484,7 +1509,7 @@ export class SuperType {
                 .join("");
         }
 
-        requestAnimationFrame(this.unscrambleLoop);
+        this._unscrambleFrame = requestAnimationFrame(this.unscrambleLoop);
     }
 
     clearLoops() {
@@ -1495,6 +1520,58 @@ export class SuperType {
         GlitchTag.glitches = {};
         JitterTag.jitters = {};
         UnscrambleTag.unscrambles = {};
+    }
+
+    /**
+     * Fully tears down this instance: cancels all running rAF loops,
+     * removes its DOM and event listeners, and clears any jitter/glitch/
+     * unscramble bookkeeping it registered. Call this (or just construct a
+     * new SuperType on the same target, which calls this automatically)
+     * before discarding an instance - otherwise its animation loops keep
+     * running forever and its DOM is never removed, causing effects like
+     * jitter to visibly duplicate every time a new page/instance is opened
+     * on top of it.
+     */
+    destroy() {
+        cancelAnimationFrame(this._renderFrame);
+        cancelAnimationFrame(this._glitchFrame);
+        cancelAnimationFrame(this._jitterFrame);
+        cancelAnimationFrame(this._unscrambleFrame);
+
+        this.clearLoops();
+
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+
+        if (this._keydownHandler) {
+            this.targetParent.removeEventListener("keydown", this._keydownHandler);
+        }
+
+        if (this._wheelHandler) {
+            this.targetParent.removeEventListener("wheel", this._wheelHandler);
+        }
+
+        if (this.target && this.target.parentNode) {
+            this.target.remove();
+        }
+
+        if (this.targetParent && this.targetParent.__superTypeInstance === this) {
+            delete this.targetParent.__superTypeInstance;
+        }
+    }
+
+    setResetTarget(page){
+        localStorage.setItem("supertype-reset-target", page);
+    }
+
+    getResetTarget(){
+        const target = localStorage.getItem("supertype-reset-target");
+        return target;
+    }
+
+    removeResetTarget(){
+        localStorage.removeItem("supertype-reset-target");
     }
 
     /**
@@ -1523,6 +1600,17 @@ export class SuperType {
             this.functions.set(name, func);
         }
 
+        // If a SuperType instance is already attached to this target (e.g. a
+        // previous "page" that was opened by constructing a new SuperType on
+        // the same container), tear it down first. Without this, the old
+        // instance's DOM never gets removed and its render/jitter/glitch
+        // rAF loops and event listeners keep running forever, stacking
+        // visibly with every new instance (e.g. jitter text duplicating on
+        // every new page).
+        if (target.__superTypeInstance) {
+            target.__superTypeInstance.destroy();
+        }
+
         const div = document.createElement("div");
         div.classList.add("supertype");
         target.appendChild(div);
@@ -1530,6 +1618,7 @@ export class SuperType {
         this.targetParent = target;
         this.target = div;
         this.fileName = null;
+        target.__superTypeInstance = this;
 
         // Cached layout measurements used by word-wrap. Both are invalidated
         // (set back to null) only when the layout could actually have
@@ -1554,7 +1643,7 @@ export class SuperType {
             });
         }
 
-        this.targetParent.addEventListener("keydown", (e) => {
+        this._keydownHandler = (e) => {
             // allowCtrl is a special option that allows the user to use ctrl+key or cmd+key to trigger the control, but only if the control is allowed. This is useful for allowing the user to use ctrl+space to pause/resume, for example.
             const controlsCheck = (value, key, { allowCtrl = false } = {}) => {
                 if (!(this.allowedControls.has(value) || this.allowedControls.has("all"))) return false;
@@ -1572,11 +1661,12 @@ export class SuperType {
             if(controlsCheck("fastforward", "ArrowRight")) this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
 
             if(controlsCheck("reset", "r")){
-                localStorage.setItem("supertype-reset", this.state.page);
-                // reload the page to reset the typewriter
+                this.setResetTarget(this.state.page);
                 location.reload();
             }
-        })
+        };
+
+        this.targetParent.addEventListener("keydown", this._keydownHandler)
 
         this.target.style.whiteSpace = "pre-wrap";
 
@@ -1696,19 +1786,19 @@ export class SuperType {
 
         this.fragment = null;
 
-        requestAnimationFrame(this.render);
+        this._renderFrame = requestAnimationFrame(this.render);
         if(this.startCount === 0){
-            requestAnimationFrame(this.glitchLoop);
-            requestAnimationFrame(this.jitterLoop);
-            requestAnimationFrame(this.unscrambleLoop);
+            this._glitchFrame = requestAnimationFrame(this.glitchLoop);
+            this._jitterFrame = requestAnimationFrame(this.jitterLoop);
+            this._unscrambleFrame = requestAnimationFrame(this.unscrambleLoop);
         }
         this.startCount++;
     }
 
     start(){
-        if(localStorage.getItem("supertype-reset") !== null){
-            const page = localStorage.getItem("supertype-reset");
-            localStorage.removeItem("supertype-reset");
+        if(this.getResetTarget() !== null){
+            const page = this.getResetTarget();
+            this.removeResetTarget();
             this.openPage(page);
             return;
         }
@@ -1796,7 +1886,7 @@ export class SuperType {
             i++;
         }
 
-        this.targetParent.addEventListener("wheel", (e) => {
+        this._wheelHandler = (e) => {
             // allow the user to scroll
             if(this.state.scrollLocked == true) return;
 
@@ -1804,7 +1894,9 @@ export class SuperType {
                 top: (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY),
                 behavior: "instant"
             });
-        });
+        };
+
+        this.targetParent.addEventListener("wheel", this._wheelHandler);
 
         // throw error if it doesnt have typewriter { ... }
         if (depth !== 0) {
@@ -1929,7 +2021,7 @@ export class SuperType {
 
     render = (now) => {
         if (this.state.paused) {
-            requestAnimationFrame(this.render);
+            this._renderFrame = requestAnimationFrame(this.render);
             return;
         }
 
@@ -1971,7 +2063,7 @@ export class SuperType {
             }
         }
 
-        requestAnimationFrame(this.render);
+        this._renderFrame = requestAnimationFrame(this.render);
     }
 
     addRenderTime(ms){
@@ -2427,7 +2519,8 @@ for (const TagClass of [
     PayloadTag,
     GradientTag,
     SeparateTag,
-    ForceInstantTag
+    ForceInstantTag,
+    StartTag
 ]) {
     SuperType.registerTag(TagClass);
 }

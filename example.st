@@ -12,8 +12,6 @@ typewriter: {
     importExample.st
 [@import end]
 
-[sleep 100]
-
 WOW! this is normal text![newline]
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
@@ -48,7 +46,7 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 [color #ff0000][bg #339900]red text on green background[newline]
 [swap]swapped the colors![resetcolors][newline]
 [gradient "Gradient!!!!" "90deg, #ff0000, #339900"][linebreak]
-
+[@start]
 [raw]everything is now RAW
     [newline][newline] see how nothing works
 even ne/wlines /that are present in the file are here, super
