@@ -6,14 +6,16 @@ typewriter: {
     customDelays: {
         ",": 500
     }
-    instant: true
 }
 
 [@import]
     importExample.st
 [@import end]
 
+
+
 WOW! this is normal text![newline]
+
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
 Normal text, but different, because delay, see? cool[linebreak]
@@ -32,7 +34,6 @@ periods are gonna be super slow now[custom "." 1000]... see?[newline]
 [repeat 3]
     I can repeat /so many/ things![newline]
 [repeat end][linebreak]
-[@forcepage "b"]
 [instant]
 INSTANT![newline]
 INSTANT![newline]

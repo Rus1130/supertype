@@ -267,6 +267,9 @@ export class Tag {
 class StartTag extends Tag {
     static tagName = "@start";
 
+    // No runtime effect - the entry point it marks is resolved once, at
+    // load-time, into engine.startIndex (see load()), and openPage() reads
+    // that instead of always starting at 0.
     static onUse(engine, token) {}
 }
 
@@ -639,8 +642,8 @@ class GopageTag extends Tag {
         if (text === undefined) throw new Error("Missing button text");
         text.check("string");
 
-        let group = token.args[2];
-        if (group !== undefined) group.checkSpecific("group");
+        let keep = token.args[2];
+        if (keep !== undefined) keep.checkSpecific("keep");
     }
 
     static onRender(engine, token) {
@@ -663,15 +666,15 @@ class GopageTag extends Tag {
         }
 
         const text = token.args[1];
-        const group = token.args[2] !== undefined;
+        const keep = token.args[2] !== undefined;
 
         let button = document.createElement("div");
         button.classList.add("button");
         button.textContent = "▌" + text.value;
 
         button.addEventListener("click", () => {
-            if (group === false) {
-                engine.target.innerHTML = "";
+            if (keep === false) {
+                engine.clearTargetHTML();
                 engine.resetSpanTextStyle();
             }
             engine.openPage(pageName.value);
@@ -685,12 +688,14 @@ class ForcePageTag extends Tag {
     static tagName = "@forcepage";
 
     static onUse(engine, token) {
-        const pageName = token.args[0];
+        const [pageName, keep] = token.args;
 
         pageName.check("string");
+        if(keep !== undefined) keep.checkSpecific("keep");
 
         if (engine.pages[pageName.value] === undefined) throw new Error(`Page not found: ${pageName.value}`);
 
+        if(keep === undefined) engine.clearTargetHTML();
         engine.openPage(pageName.value);
     }
 }
@@ -1438,7 +1443,7 @@ export class SuperType {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
 
-    static specificTypes = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill"];
+    static specificTypes = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill", "keep"];
 
     static defaultScrollCount = 6;
 
@@ -2049,16 +2054,23 @@ export class SuperType {
         let processed = 0;
 
         try {
-            while (now >= this.state.nextTime && (processed < SuperType.MAX_CHARACTERS_PER_FRAME || (this.state.userInstantOverride || this.header.instant))) {
+            while (now >= this.state.nextTime && (
+                processed < SuperType.MAX_CHARACTERS_PER_FRAME ||
+                (this.state.userInstantOverride || this.header.instant)
+            )) {
                 const token = this.pages[this.state.page][this.state.token++];
 
                 if (!token) {
                     this.state.scrollLocked = false;
                     this.state.pauseLocked = true;
                     this.pause();
-                    if (this.header.backToTop === true) requestAnimationFrame(() => {
-                        this.scrollWindow(0);
-                    });
+
+                    if (this.header.backToTop === true) {
+                        requestAnimationFrame(() => {
+                            this.scrollWindow(0);
+                        });
+                    }
+
                     break;
                 }
 
@@ -2066,7 +2078,14 @@ export class SuperType {
                 processed++;
             }
         } catch (err) {
-            console.error("SuperType: error processing token, skipping it\n", err);
+            const token = this.pages[this.state.page][this.state.token - 1];
+            console.error(
+                this.formatTokenError(
+                    err,
+                    token,
+                    this.state.token - 1
+                )
+            );
         } finally {
             if (fragment.childNodes.length) {
                 this.target.appendChild(fragment);
@@ -2358,11 +2377,22 @@ export class SuperType {
 
         let inDoubleString = false;
 
+        // Tracks the body offset the token currently being scanned started
+        // at, so every token can be traced back to a line/column for error
+        // reporting (see resolvePosition() / formatTokenError()).
+        let tokenStart = 0;
+        const push = (tok) => {
+            tok.pos = tokenStart;
+            queue.push(tok);
+        };
+
         while (i < body.length) {
+            tokenStart = i;
+
             // escaped characters
             if (body[i] === "\\" && this.state.rawMode === false) {
                 if (i + 1 < body.length) {
-                    queue.push({
+                    push({
                         type: "character",
                         value: body[i + 1]
                     });
@@ -2376,7 +2406,7 @@ export class SuperType {
             if (this.state.rawMode === false) {
                 if (body[i] === '"') {
                     inDoubleString = !inDoubleString;
-                    queue.push({
+                    push({
                         type: "character",
                         value: '"'
                     });
@@ -2404,7 +2434,7 @@ export class SuperType {
                         });
 
                         if (result !== false) {
-                            queue.push({ type: "tag", name, args: result });
+                            push({ type: "tag", name, args: result });
                         }
 
                         i = end + 1;
@@ -2414,7 +2444,7 @@ export class SuperType {
             }
             if (body[i] === "\n") {
                 if (this.state.rawMode) {
-                    queue.push({
+                    push({
                         type: "tag",
                         name: "newline",
                         args: [new TagArgument("specific", "instant")]
@@ -2437,7 +2467,7 @@ export class SuperType {
             }
 
             if(body[i] === "*") {
-                queue.push({
+                push({
                     type: this.state.rawMode ? "character" : "style",
                     value: this.state.rawMode ? "*" : "bold"
                 });
@@ -2447,7 +2477,7 @@ export class SuperType {
             }
 
             if(body[i] === "_") {
-                queue.push({
+                push({
                     type: this.state.rawMode ? "character" : "style",
                     value: this.state.rawMode ? "_" : "underline"
                 });
@@ -2457,7 +2487,7 @@ export class SuperType {
             }
 
             if(body[i] === "-") {
-                queue.push({
+                push({
                     type: this.state.rawMode ? "character" : "style",
                     value: this.state.rawMode ? "-" : "strikethrough"
                 });
@@ -2467,7 +2497,7 @@ export class SuperType {
             }
 
             if(body[i] === "/") {
-                queue.push({
+                push({
                     type: this.state.rawMode ? "character" : "style",
                     value: this.state.rawMode ? "/" : "italic"
                 });
@@ -2478,7 +2508,7 @@ export class SuperType {
 
 
 
-            queue.push({
+            push({
                 type: "character",
                 value: body[i]
             });
@@ -2487,6 +2517,63 @@ export class SuperType {
         }
 
         return queue;
+    }
+
+    clearTargetHTML(){
+        this.target.innerHTML = "";
+    }
+
+    /**
+     * Resolves a body character offset (as stashed on tokens by tokenize()
+     * via `token.pos`) into a 1-indexed { line, column }.
+     * @param {number} pos
+     * @returns {{line: number, column: number} | null}
+     */
+    resolvePosition(pos) {
+        if (typeof pos !== "number" || !this.body) return null;
+
+        const before = this.body.slice(0, pos);
+        const lines = before.split("\n");
+
+        return {
+            line: lines.length,
+            column: lines[lines.length - 1].length + 1
+        };
+    }
+
+    /**
+     * Builds a pretty, multi-line error report for a token that threw
+     * during render()/process(), including its source line/column when
+     * available.
+     * @param {Error} err
+     * @param {object | null} token
+     * @param {number | null} tokenIndex
+     * @returns {string}
+     */
+    formatTokenError(err, token, tokenIndex) {
+        const pos = token ? this.resolvePosition(token.pos) : null;
+
+
+        const lines = [
+            "",
+            "┌─ SuperType error ─────────────────────────────────",
+            `│ ${err.message}`,
+            `|`,
+            `| File : ${this.fileName}.st`,
+            `| Page : ${this.state.page}`,
+            `| Tag  : ${token.name ?? "unknown"}`
+        ];
+
+        if(pos){
+            const sourceLine = this.body.split("\n")[pos.line - 1] ?? "";
+            lines.push(
+                `| Raw  : ${sourceLine}`,
+            )
+        }
+
+        lines.push("└───────────────────────────────────────────────────");
+
+        return lines.join("\n");
     }
 
     async fetch(path) {
