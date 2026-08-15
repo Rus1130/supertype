@@ -122,17 +122,18 @@ Change the color of the text and background.
 
 ### Miscellaneous
 Other tags.
-| Tag                              | Description                                                                                                           |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `[function name<String>]`        | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
-| `[@import]`                      | See `imports` section.                                                                                                |
-| `[@forcescroll]`                 | Forces the typewriter to scroll.                                                                                      |
-| `[@forceseparate]`               | Forces the typewriter to separate elements.                                                                           |
-| `[@forceseparate off]`           | Turns off separate mode.                                                                                              |
-| `[@forceinstant]`                | Forces the typewriter to render instantly.                                                                            |
-| `[@forceinstant off]`            | Turns off force instant mode.                                                                                         |
-| `[@forcepage page<String>]`      | Forces the typewriter to open the page with the name `page`.                                                          |
-| `[@forcepage page<String> keep]` | Forces the typewriter to open the page with the name `page`. It will not reset the current screen.                    |
+| Tag                         | Description                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `[function name<String>]`   | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
+| `[@import]`                 | See `imports` section.                                                                                                |
+| `[$scroll]`                 | Forces the typewriter to scroll.                                                                                      |
+| `[$separate]`               | Forces the typewriter to separate elements.                                                                           |
+| `[$separate off]`           | Turns off separate mode.                                                                                              |
+| `[$instant]`                | Forces the typewriter to render instantly.                                                                            |
+| `[$instant off]`            | Turns off force instant mode.                                                                                         |
+| `[$page page<String>]`      | Forces the typewriter to open the page with the name `page`.                                                          |
+| `[$page page<String> keep]` | Forces the typewriter to open the page with the name `page`. It will not reset the current screen.                    |
+| `[$start]`                  | Forces the typewriter to start from where the tag is. If inside of a page, the page will start wherever the tag is.   |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.

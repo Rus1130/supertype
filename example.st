@@ -12,10 +12,7 @@ typewriter: {
     importExample.st
 [@import end]
 
-
-
 WOW! this is normal text![newline]
-
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
 Normal text, but different, because delay, see? cool[linebreak]

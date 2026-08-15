@@ -264,8 +264,8 @@ export class Tag {
     static blockOpenArgsPattern = null;
 }
 
-class StartTag extends Tag {
-    static tagName = "@start";
+class ForceStartTag extends Tag {
+    static tagName = "$start";
 
     // No runtime effect - the entry point it marks is resolved once, at
     // load-time, into engine.startIndex (see load()), and openPage() reads
@@ -685,7 +685,7 @@ class GopageTag extends Tag {
 }
 
 class ForcePageTag extends Tag {
-    static tagName = "@forcepage";
+    static tagName = "$page";
 
     static onUse(engine, token) {
         const [pageName, keep] = token.args;
@@ -834,7 +834,7 @@ class RepeatTag extends Tag {
 }
 
 class ForceInstantTag extends Tag {
-    static tagName = "@forceinstant";
+    static tagName = "$instant";
 
     static onUse(engine, token) {
         let instant = token.args[0];
@@ -1117,8 +1117,8 @@ class UnscrambleTag extends Tag {
     }
 }
 
-class SeparateTag extends Tag {
-    static tagName = "@forceseparate";
+class ForceSeparateTag extends Tag {
+    static tagName = "$separate";
 
     static onUse(engine, token) {
         let value = true;
@@ -1427,7 +1427,7 @@ class SwapTag extends Tag {
 }
 
 class ForceScrollTag extends Tag {
-    static tagName = "forcescroll";
+    static tagName = "$scroll";
 
     static onUse(engine, token) {
         engine.state.scrollCount = SuperType.defaultScrollCount;
@@ -2618,15 +2618,15 @@ for (const TagClass of [
     RepeatTag,
     ImportTag,
     ResetColorsTag,
-    ForceScrollTag,
     UnscrambleTag,
     AccuracyTag,
     PayloadTag,
     GradientTag,
-    SeparateTag,
+    ForceSeparateTag,
     ForceInstantTag,
-    StartTag,
-    ForcePageTag
+    ForceStartTag,
+    ForcePageTag,
+    ForceScrollTag,
 ]) {
     SuperType.registerTag(TagClass);
 }

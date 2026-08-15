@@ -126,10 +126,30 @@
                 },
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:@use|@import|@forceinstant|@forcescroll|@forceseparate|@start|@forcepage))\\b",
+                    "begin": "(?<!\\\\)\\[((?:@use|@import))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "attag.tag.st" }
+                    },
+                    "end": "(?<!\\\\)\\]",
+                    "endCaptures": {
+                        "0": { "name": "tag.st" }
+                    },
+                    "patterns": [
+                        { "include": "#strings" },
+                        { "include": "#specifics" },
+                        { "include": "#colors" },
+                        { "include": "#numbers" },
+                        { "include": "#booleans" },
+                        { "include": "#escapes" }
+                    ]
+                },
+                {
+                    "name": "tag.st",
+                    "begin": "(?<!\\\\)\\[((?:\\$instant|\\$scroll|\\$separate|\\$page|\\$start))\\b",
+                    "beginCaptures": {
+                        "0": { "name": "tag.st" },
+                        "1": { "name": "dollar.tag.st" }
                     },
                     "end": "(?<!\\\\)\\]",
                     "endCaptures": {

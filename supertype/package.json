@@ -25,6 +25,13 @@
             "editor.tokenColorCustomizations": {
                 "textMateRules": [
                     {
+                        "scope": "dollar.tag.st",
+                        "settings": {
+                            "foreground": "#a982e0",
+                            "fontStyle": ""
+                        }
+                    },
+                    {
                         "scope": "attag.tag.st",
                         "settings": {
                             "foreground": "#46e891",
