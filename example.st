@@ -12,17 +12,6 @@ typewriter: {
     importExample.st
 [@import end]
 
-[$scroll]
-[$separate]
-[$separate off]
-[$instant]
-[$instant off]
-[$page "hi"]
-[$page "hi" keep]
-[$start]
-
-[speed none]
-
 [instant]wow[instant off][newline]
 [instant on]wow[instant off][newline]
 
