@@ -1146,7 +1146,7 @@ class GradientTag extends Tag {
 
         ctx.queue.push({
             type: "tag",
-            name: "payload",
+            name: "!payload",
             payload: {
                 onuse: (engine, token) => {
                     if (engine.state.gradientColorStack === undefined) engine.state.gradientColorStack = [];
@@ -1162,7 +1162,7 @@ class GradientTag extends Tag {
 
             ctx.queue.push({
                 type: "tag",
-                name: "payload",
+                name: "!payload",
                 args: [new TagArgument("color", color)],
                 payload: {
                     onuse: (engine, token) => {
@@ -1176,7 +1176,7 @@ class GradientTag extends Tag {
 
         ctx.queue.push({
             type: "tag",
-            name: "payload",
+            name: "!payload",
             payload: {
                 onuse: (engine, token) => {
                     const stack = engine.state.gradientColorStack;
@@ -1316,7 +1316,7 @@ class GradientTag extends Tag {
  *  @example
  *  engine.insertToken({
  *      type: "tag",
- *      name: "payload",
+ *      name: "!payload",
  *      payload: {
  *          onuse: (engine, token) => {
  *              console.log("on use payload!");
@@ -1328,7 +1328,7 @@ class GradientTag extends Tag {
  *  })
 */
 class PayloadTag extends Tag {
-    static tagName = "payload";
+    static tagName = "!payload";
 
     static onUse(engine, token) {
         if(token.payload == undefined) throw new Error("Missing payload");
