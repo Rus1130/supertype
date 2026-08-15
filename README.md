@@ -8,6 +8,8 @@ Look at `example.st` for an example of how to use supertype. Look at `index.html
 ## Terms
 - Wrapped tag: `[tagName] ... [tagname end]`
 - Root (context): the main content of the `.st` file; all text and tags outside of pages and mixins.
+- `[@tag]`: at tag
+- `[$tag]`: force(d) tag, or dollar tag
 
 ## Types
 ```
@@ -28,11 +30,25 @@ Look at `example.st` for an example of how to use supertype. Look at `index.html
 Specific : group
          | instant
          | end
-         etc...
+           etc...
+         | I/O
+           This specific type means that the tag accepts both the on and off specific. If no specific is present, it will default to on.
 ```
 
+## None
+`none` is a specific that is a universal stand-in for "no argument was passed". For example, if you use the tag `[speed none]`, the typewriter will understand it as:
+```js
+{
+    type: "tag",
+    name: "speed",
+    args: [undefined]
+}
+```
+
+And so, it will error, as no first argument was passed.
+
 ## Header
-`|` is used to show value defaults. For example, `Number | 1000` means that if you do not include a value for that specific `Number`, it will default to `1000`.
+`|` is used to show value defaults. For example, `Number | 1000` means that if you do not include a value for that specific `Number`, it will default to `1000`. If there is no `|`, that line is required.
 ```
 typewriter: {
     charDelay: Number
@@ -66,24 +82,11 @@ Controls how text is desplayed.
 | `[removelast count<Number>]`                      | Removes the last `count` rendered characters from the typewriter.                                               |
 | `[removelast count<Number> group]`                | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]`              | Repeats `str` `count` times.                                                                                    |
-| `[repeat str<String> count<Number> instant]`      | Instantly epeats `str` `count` times.                                                                           |
+| `[repeat str<String> count<Number> instant]`      | Instantly repeats `str` `count` times.                                                                          |
 | `[repeat count<Number>] ... [repeat end]`         | Repeats the content `count` times.                                                                              |
 | `[repeat count<Number> instant] ... [repeat end]` | Instantly repeats the content `count` times.                                                                    |
-| `[mixin name<Sring>] ... [mixin end]`             | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
+| `[mixin name<String>] ... [mixin end]`            | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
 | `[@use name<String> ...]`                         | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
-
-### Fun Text Effects
-FUN!
-| Tag                                                             | Description                                                                             |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `[glitch count<Number>]`                                        | Inserts `count` glitching characters.                                                   |
-| `[glitch count<Number> group]`                                  | Inserts `count` glitching characters as a single group.                                 |
-| `[jitter text<String> strength<Number>]`                        | Inserts `text` with a jittering effect of `strength`.                                   |
-| `[jitter text<String> strength<Number> group]`                  | Inserts `text` with a jittering effect of `strength` all at once.                       |
-| `[jitter text<String> strength<Number> shared]`                 | Inserts `text` with a shared jittering effect of `strength`.                            |
-| `[accuracy value<Number>]`                                      | Sets the accuracy of the typewriter. Value is 0 to 1.                                   |
-| `[unscramble text<String> ms<Number>]`                          | Unscrambles `text` over `ms` milliseconds.                                              |
-| `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
 
 ### Timing
 Modifies character timing.
@@ -95,10 +98,9 @@ Modifies character timing.
 | `[speeddefault]`                           | Resets `charDelay` to the default value and disables override mode.                       |
 | `[custom character<String> delay<Number>]` | Sets `customDelays[character]` to `delay` milliseconds. Use "\n" to change newline delay. |
 | `[customremove character<String>]`         | Removes `customDelays[character]`.                                                        |
-| `[instant]`                                | Toggles instant mode.                                                                     |
-| `[instant off]`                            | Turns off instant mode.                                                                   |
-| `[ignore]`                                 | Toggles if custom character delays are ignored.                                           |
-| `[ignore off]`                             | Turns off ignore mode.                                                                    |
+| `[instant I/O]`                            | Controls instant mode. All delays are set to 0.                                           |
+| `[$instant I/O]`                           | Controls force instant mode. Same as pressing the instant keybind.                        |
+| `[ignore I/O]`                             | Controls ignore mode. All custom character delays will be ignored.                        |
 
 ### Styling
 Change the color of the text and background.
@@ -119,6 +121,21 @@ Change the color of the text and background.
 | `[page name<String>] ... [page end]`      | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.     |
 | `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                       |
 | `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button. It will not reset the current screen. |
+| `[$page page<String>]`                    | Forces the typewriter to open the page with name `page`.                                                       |
+| `[$page page<String> keep]`               | Forces the typewriter to open the page with name `page`. It will not reset the current screen.                 |
+
+### Fun Text Effects
+FUN!
+| Tag                                                             | Description                                                                             |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `[glitch count<Number>]`                                        | Inserts `count` glitching characters.                                                   |
+| `[glitch count<Number> group]`                                  | Inserts `count` glitching characters all at once.                                       |
+| `[jitter text<String> strength<Number>]`                        | Inserts `text` with a jittering effect of `strength`.                                   |
+| `[jitter text<String> strength<Number> group]`                  | Inserts `text` with a jittering effect of `strength` all at once.                       |
+| `[jitter text<String> strength<Number> shared]`                 | Inserts `text` with a shared jittering effect of `strength`.                            |
+| `[accuracy value<Number>]`                                      | Sets the accuracy of the typewriter. Value is 0 to 1.                                   |
+| `[unscramble text<String> ms<Number>]`                          | Unscrambles `text` over `ms` milliseconds.                                              |
+| `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
 
 ### Miscellaneous
 Other tags.
@@ -126,14 +143,10 @@ Other tags.
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `[function name<String>]`   | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
 | `[@import]`                 | See `imports` section.                                                                                                |
-| `[$scroll]`                 | Forces the typewriter to scroll.                                                                                      |
-| `[$separate]`               | Forces the typewriter to separate elements.                                                                           |
-| `[$separate off]`           | Turns off separate mode.                                                                                              |
-| `[$instant]`                | Forces the typewriter to render instantly.                                                                            |
-| `[$instant off]`            | Turns off force instant mode.                                                                                         |
-| `[$page page<String>]`      | Forces the typewriter to open the page with the name `page`.                                                          |
-| `[$page page<String> keep]` | Forces the typewriter to open the page with the name `page`. It will not reset the current screen.                    |
 | `[$start]`                  | Forces the typewriter to start from where the tag is. If inside of a page, the page will start wherever the tag is.   |
+| `[$scroll]`                 | Forces the typewriter to scroll. There should be zero reason to use this tag, as the typewriter will always scroll automatically. If, for whatever reason, you need to use this tag to make the typewriter scroll, please contact me. |
+
+| `[$separate I/O]`               | Controls force separate mode. Forces the renderer to have each character be it's own element.                         |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.

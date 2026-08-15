@@ -15,7 +15,7 @@
             "patterns": [
                 {
                     "name": "specific.st",
-                    "match": "\\b(reset|override|default|group|end|instant|off|shared|fill|keep)\\b"
+                    "match": "\\b(reset|override|default|group|end|instant|off|shared|fill|keep|on)\\b"
                 },
                 {
                     "name": "none.specific.st",

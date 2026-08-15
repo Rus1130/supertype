@@ -69,7 +69,7 @@ export class TagArgument {
             return undefined;
         }
 
-        if (SuperType.specificTypes.includes(value)) {
+        if (SuperType.SPECIFIC_TYPES.includes(value)) {
             return new TagArgument("specific", value, value);
         }
 
@@ -458,12 +458,11 @@ class IgnoreTag extends Tag {
     static tagName = "ignore";
 
     static onUse(engine, token) {
-        let value = token.args[0];
-        if (value === undefined) return engine.state.ignoreCustomDelays = true;
-
-        value.checkSpecific("off");
-
-        engine.state.ignoreCustomDelays = false;
+        engine.tagIOHandle(token.args[0], () => {
+            engine.state.ignoreCustomDelays = true;
+        }, () => {
+            engine.state.ignoreCustomDelays = false;
+        })
     }
 }
 
@@ -471,12 +470,11 @@ class InstantTag extends Tag {
     static tagName = "instant";
 
     static onUse(engine, token) {
-        let instant = token.args[0];
-        if (instant === undefined) return engine.header.instant = true;
-
-        instant.checkSpecific("off");
-
-        engine.header.instant = false;
+        engine.tagIOHandle(token.args[0], () => {
+            engine.header.instant = true;
+        }, () => {
+            engine.header.instant = false;
+        })
     }
 }
 
@@ -837,12 +835,11 @@ class ForceInstantTag extends Tag {
     static tagName = "$instant";
 
     static onUse(engine, token) {
-        let instant = token.args[0];
-        if (instant === undefined) return engine.state.userInstantOverride = true;
-
-        instant.checkSpecific("off");
-
-        engine.state.userInstantOverride = false;
+        engine.tagIOHandle(token.args[0], () => {
+            engine.state.userInstantOverride = true;
+        }, () => {
+            engine.state.userInstantOverride = false;
+        })
     }
 }
 
@@ -1121,10 +1118,12 @@ class ForceSeparateTag extends Tag {
     static tagName = "$separate";
 
     static onUse(engine, token) {
-        let value = true;
-        if(token.args[0] !== undefined && token.args[0].equalsSpecific("off")) value = false;
 
-        engine.state.separateElements = value;
+        engine.tagIOHandle(token.args[0], () => {
+            engine.state.separateElements = true;
+        }, () => {
+            engine.state.separateElements = false;
+        })
     }
 } 
 
@@ -1436,14 +1435,13 @@ class ForceScrollTag extends Tag {
 
 export class SuperType {
     static MAX_CHARACTERS_PER_FRAME = 200;
+    static SPECIFIC_TYPES = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill", "keep", "on"];
 
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
 
     static randomCharacter() {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
-
-    static specificTypes = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill", "keep"];
 
     static defaultScrollCount = 6;
 
@@ -2429,13 +2427,24 @@ export class SuperType {
                     if (this.state.rawMode !== true || isRawEnd) {
                         const TagClass = SuperType.tags.get(name) ?? Tag;
 
-                        const result = TagClass.onTokenization(parts, {
-                            engine: this, queue, body, index: i
-                        });
+                        try {
+                            const result = TagClass.onTokenization(parts, {
+                                engine: this, queue, body, index: i
+                            });
 
-                        if (result !== false) {
-                            push({ type: "tag", name, args: result });
+                            if (result !== false) {
+                                push({ type: "tag", name, args: result });
+                            }
+                        } catch (err) {
+                            console.error(
+                                this.tokenizationError(
+                                    err,
+                                    { type: "tag", name, args: parts },
+                                    queue.length
+                                )
+                            );
                         }
+
 
                         i = end + 1;
                         continue;
@@ -2542,6 +2551,28 @@ export class SuperType {
     }
 
     /**
+     * Handles a tag that has an on/off state, calling the appropriate function based on the argument. If argument is undefined, it will call the ifOnFunction.
+     * @param {TagArgument | undefined} argument - The argument passed to the tag.
+     * @param {Function} ifOnFunction - The function to call if the argument is "on" or undefined.
+     * @param {Function} ifOffFunction - The function to call if the argument is "off".
+     * @returns {void}
+     */
+    tagIOHandle(argument, ifOnFunction, ifOffFunction){
+        let ifOn = false;
+
+        if(argument === undefined) ifOn = true;
+        else {
+            argument.checkSpecific("on", "off");
+
+            if(argument.equalsSpecific("on")) ifOn = true;
+            else if(argument.equalsSpecific("off")) ifOn = false;
+        }
+
+        if(ifOn) ifOnFunction();
+        else if(!ifOn) ifOffFunction();
+    }
+
+    /**
      * Builds a pretty, multi-line error report for a token that threw
      * during render()/process(), including its source line/column when
      * available.
@@ -2567,7 +2598,41 @@ export class SuperType {
         if(pos){
             const sourceLine = this.body.split("\n")[pos.line - 1] ?? "";
             lines.push(
-                `| Raw  : ${sourceLine}`,
+                `|`,
+                `| Line : ${sourceLine}`,
+            )
+        }
+
+        lines.push("└───────────────────────────────────────────────────");
+
+        return lines.join("\n");
+    }
+
+    /**
+     * @param {Error} err
+     * @param {object | null} token
+     * @param {number | null} tokenIndex
+     * @returns {string}
+     */
+    tokenizationError(err, token, tokenIndex) {
+        const pos = token ? this.resolvePosition(token.pos) : null;
+
+
+        const lines = [
+            "",
+            "┌─ SuperType Tokenization error ────────────────────",
+            `│ ${err.message}`,
+            `|`,
+            `| File : ${this.fileName}.st`,
+            `| Page : ${this.state.page}`,
+            `| Tag  : ${token.name ?? "unknown"}`
+        ];
+
+        if(pos){
+            const sourceLine = this.body.split("\n")[pos.line - 1] ?? "";
+            lines.push(
+                `|`,
+                `| Line : ${sourceLine}`,
             )
         }
 
@@ -2652,7 +2717,7 @@ class Color {
 }
 
 function parseValue(value){
-    if(SuperType.specificTypes.includes(value)) return {type: "specific", value}
+    if(SuperType.SPECIFIC_TYPES.includes(value)) return {type: "specific", value}
 
     if (/^-?\d+(\.\d+)?$/.test(value)) {
         return {type: "number", value: Number(value)};
