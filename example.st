@@ -6,6 +6,7 @@ typewriter: {
     customDelays: {
         ",": 500
     }
+    instant: true
 }
 
 [@import]
@@ -31,7 +32,7 @@ periods are gonna be super slow now[custom "." 1000]... see?[newline]
 [repeat 3]
     I can repeat /so many/ things![newline]
 [repeat end][linebreak]
-
+[@forcepage "b"]
 [instant]
 INSTANT![newline]
 INSTANT![newline]
@@ -46,7 +47,7 @@ not green anymore, but now [bg #339900]green background[bg reset][newline]
 [color #ff0000][bg #339900]red text on green background[newline]
 [swap]swapped the colors![resetcolors][newline]
 [gradient "Gradient!!!!" "90deg, #ff0000, #339900"][linebreak]
-[@start]
+
 [raw]everything is now RAW
     [newline][newline] see how nothing works
 even ne/wlines /that are present in the file are here, super

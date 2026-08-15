@@ -267,9 +267,7 @@ export class Tag {
 class StartTag extends Tag {
     static tagName = "@start";
 
-    static onTokenization(rawArgs, ctx) {
-        ctx.engine.state.token = ctx.index;
-    }
+    static onUse(engine, token) {}
 }
 
 class UseTag extends Tag {
@@ -680,6 +678,20 @@ class GopageTag extends Tag {
         });
 
         engine.appendToTarget(button);
+    }
+}
+
+class ForcePageTag extends Tag {
+    static tagName = "@forcepage";
+
+    static onUse(engine, token) {
+        const pageName = token.args[0];
+
+        pageName.check("string");
+
+        if (engine.pages[pageName.value] === undefined) throw new Error(`Page not found: ${pageName.value}`);
+
+        engine.openPage(pageName.value);
     }
 }
 
@@ -1585,6 +1597,7 @@ export class SuperType {
         this.pages = {
             root: []
         };
+        this.startIndex = {};
         this.mixins = {};
 
         this.startCount = 0;
@@ -1763,7 +1776,7 @@ export class SuperType {
         if(this.header.previewMode === true) this.header.instant = true;
 
         this.state.page = page;
-        this.state.token = 0;
+        this.state.token = this.startIndex[page] ?? 0;
         this.state.paused = false;
         this.state.nextTime = performance.now();
         this.state.tagSpeedOverride = false;
@@ -1995,6 +2008,11 @@ export class SuperType {
                     }
                 }
             }
+        }
+
+        for (let page in this.pages) {
+            const idx = this.pages[page].findIndex(t => t.type === "tag" && t.name === "@start");
+            if (idx !== -1) this.startIndex[page] = idx;
         }
 
         return this;
@@ -2520,7 +2538,8 @@ for (const TagClass of [
     GradientTag,
     SeparateTag,
     ForceInstantTag,
-    StartTag
+    StartTag,
+    ForcePageTag
 ]) {
     SuperType.registerTag(TagClass);
 }
