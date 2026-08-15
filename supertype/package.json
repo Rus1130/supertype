@@ -81,7 +81,7 @@
                     {
                         "scope": "none.specific.st",
                         "settings": {
-                            "foreground": "#c369ff",
+                            "foreground": "#fc7ef4",
                             "fontStyle": "italic"
                         }
                     }
