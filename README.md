@@ -5,8 +5,9 @@ I created this because I have a personal problem where I tend to skip ahead in t
 ## Examples
 Look at `example.st` for an example of how to use supertype. Look at `index.html` for an example of how to use supertype in a webpage.
 
-## Terms
-- Wrapped tag: `[tagName] ... [tagname end]`
+## Things to Know
+- Block tag: `[tagName] ... [tagname end]`
+- `[tagName \]`: Documentation shorthand for block tags.
 - Root (context): the main content of the `.st` file; all text and tags outside of pages and mixins.
 - `[@tag]`: at tag
 - `[$tag]`: force(d) tag, or dollar tag
@@ -83,9 +84,9 @@ Controls how text is desplayed.
 | `[removelast count<Number> group]`                | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]`              | Repeats `str` `count` times.                                                                                    |
 | `[repeat str<String> count<Number> instant]`      | Instantly repeats `str` `count` times.                                                                          |
-| `[repeat count<Number>] ... [repeat end]`         | Repeats the content `count` times.                                                                              |
-| `[repeat count<Number> instant] ... [repeat end]` | Instantly repeats the content `count` times.                                                                    |
-| `[mixin name<String>] ... [mixin end]`            | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
+| `[repeat count<Number> \]`         | Repeats the content `count` times.                                                                              |
+| `[repeat count<Number> instant \]` | Instantly repeats the content `count` times.                                                                    |
+| `[mixin name<String> \]`            | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
 | `[@use name<String> ...]`                         | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
 ### Timing
@@ -111,14 +112,14 @@ Change the color of the text and background.
 | `[bg color<Color>]`                        | Sets the background color to `color`.                                  |
 | `[bg reset]`                               | Resets the background color to the default.                            |
 | `[resetcolors]`                            | Resets the text and background colors to the default.                  |
-| `[raw] ... [raw end]`                      | Renders the content as raw characters.                                 |
+| `[raw \]`                      | Renders the content as raw characters.                                 |
 | `[swap]`                                   | Swaps the text and background colors.                                  |
 | `[gradient text<String> gradient<String>]` | Creates a gradient effect on `text` using the CSS gradient `gradient`. |
 
 ### Pages
 | Tag                                       | Description                                                                                                    |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `[page name<String>] ... [page end]`      | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.     |
+| `[page name<String> \]`      | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.     |
 | `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                       |
 | `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button. It will not reset the current screen. |
 | `[$page page<String>]`                    | Forces the typewriter to open the page with name `page`.                                                       |
@@ -141,8 +142,8 @@ FUN!
 Other tags.
 | Tag                         | Description                                                                                                           |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `[function name<String>]`   | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
-| `[@import]`                 | See `imports` section.                                                                                                |
+| `[function name<String> ...]`   | Calls the JavaScript function with the specified name. JS functions are defined in the `SuperType` class constructor. |
+| `[@import \]`                 | See `imports` section.                                                                                                |
 | `[$start]`                  | Forces the typewriter to start from where the tag is. If inside of a page, the page will start wherever the tag is.   |
 | `[$scroll]`                 | Forces the typewriter to scroll. There should be zero reason to use this tag, as the typewriter will always scroll automatically. If, for whatever reason, you need to use this tag to make the typewriter scroll, please contact me. |
 | `[$separate I/O]`               | Controls force separate mode. Forces the renderer to have each character be it's own element.                         |
@@ -214,7 +215,7 @@ imported root page.
     this is an imported mixin, <String>![newline]
 [mixin end]
 ```
-To import the files, used a wrapped import tag in your main `.st` file. Inside of the tag, include the path to the file you want to import. If you want to import multiple files, separate the paths by newlines.
+To import the files, used a block import tag in your main `.st` file. Inside of the tag, include the path to the file you want to import. If you want to import multiple files, separate the paths by newlines.
 ```
 [@import]
     importExample.st
@@ -223,14 +224,16 @@ To import the files, used a wrapped import tag in your main `.st` file. Inside o
 
 Once imported, the pages and mixins can be used. Page names are prefixed with the file name, so `page` becomes `fileName-page`, including the root context. Mixins are not prefixed. Headers are ignored.
 
-## Comment
+## Comments
 ```
 {{#
 hi
 #}}
+
+{{# whoa #}}
 ```
 
-## Markdown Guide
+## Markdown
 Markdown persists through newlines, but due to limitations of the vscode extension, it will not show as so in `.st` files.
 ```
 *bold*
