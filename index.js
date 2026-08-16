@@ -2014,7 +2014,7 @@ export class SuperType {
         }
 
         for (let page in this.pages) {
-            const idx = this.pages[page].findIndex(t => t.type === "tag" && t.name === "@start");
+            const idx = this.pages[page].findIndex(t => t.type === "tag" && t.name === "$start");
             if (idx !== -1) this.startIndex[page] = idx;
         }
 
