@@ -73,37 +73,7 @@ typewriter: {
 
 ### Text
 Controls how text is desplayed.
-#### newline
-`[newline]` - Creates a new line.
-`[newline instant]` - Creates a new line instantly.
-
-#### linebreak
-`[linebreak]` - Creates two new lines for the timing of 1.
-`[linebreak instant]` - Creates two new lines instantly.
-
-#### tab
-`[tab count<Number>]` - Inserts `count` spaces.
-`[tab count<Number> fill]` - Inserts `count` spaces. The spaces will be the background color.
-
-#### removelast
-`[removelast count<Number>]` - Removes the last `count` rendered characters from the typewriter.
-`[removelast count<Number> group]` - Removes the last `count` rendered characters from the typewriter as a single group.
-
-#### repeat
-`[repeat str<String> count<Number>]` - Repeats `str` `count` times.
-`[repeat str<String> count<Number> instant]` - Instantly repeats `str` `count` times.
-
-`[repeat count<Number> \]` - Repeats the content `count` times.
-`[repeat count<Number> instant \]` - Instantly repeats the content `count` times.
-
-#### mixin
-`[mixin name<String> \]` - Creates a mixin with the name `name`. See the Mixins section for more information.
-
-#### @use
-`[@use name<String> ...]` - Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information.
-
-
-<!-- | Tag                                               | Description                                                                                                     |
+| Tag                                               | Description                                                                                                     |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `[newline]`                                       | Creates a new line. Raw newlines are ignored in .st files.                                                      |
 | `[newline instant]`                               | Creates a new line instantly.                                                                                   |
@@ -114,10 +84,10 @@ Controls how text is desplayed.
 | `[removelast count<Number>]`                      | Removes the last `count` rendered characters from the typewriter.                                               |
 | `[removelast count<Number> group]`                | Removes the last `count` rendered characters from the typewriter as a single group.                             |
 | `[repeat str<String> count<Number>]`              | Repeats `str` `count` times.                                                                                    |
-| <code>[repeat str<String> count<Number> instant]</code>      | Instantly repeats `str` `count` times.                                                                          |
-| <code>[repeat count<Number> \\]</code>         | Repeats the content `count` times.                                                                              |
-| <code>[repeat count<Number> instant \\]</code> | Instantly repeats the content `count` times.                                                                    |
-| <code>[mixin name<String> \\]</code>            | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
+| `[repeat str<String> count<Number> instant]`      | Instantly repeats `str` `count` times.                                                                          |
+| `[repeat count<Number> \]`         | Repeats the content `count` times.                                                                              |
+| `[repeat count<Number> instant \]` | Instantly repeats the content `count` times.                                                                    |
+| `[mixin name<String> \]`            | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
 | `[@use name<String> ...]`                         | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
 
 ### Timing
@@ -177,7 +147,7 @@ Other tags.
 | `[@import \]`                 | See `imports` section.                                                                                                |
 | `[$start]`                  | Forces the typewriter to start from where the tag is. If inside of a page, the page will start wherever the tag is.   |
 | `[$scroll]`                 | Forces the typewriter to scroll. There should be zero reason to use this tag, as the typewriter will always scroll automatically. If, for whatever reason, you need to use this tag to make the typewriter scroll, please contact me. |
-| `[$separate I/O]`               | Controls force separate mode. Forces the renderer to have each character be it's own element.                         | -->
+| `[$separate I/O]`               | Controls force separate mode. Forces the renderer to have each character be it's own element.                         |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.
