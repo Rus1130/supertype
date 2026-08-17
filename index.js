@@ -788,11 +788,11 @@ class RepeatTag extends Tag {
 
         let result = "";
 
-        if (instant !== undefined) result += "[@forceinstant]";
+        if (instant !== undefined) result += "[$instant]";
 
         result += content.repeat(count.value);
 
-        if (instant !== undefined) result += "[@forceinstant off]";
+        if (instant !== undefined) result += "[$instant off]";
 
         return result;
     }

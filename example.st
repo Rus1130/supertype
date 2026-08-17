@@ -12,9 +12,6 @@ typewriter: {
     importExample.st
 [@import end]
 
-[instant]wow[instant off][newline]
-[instant on]wow[instant off][newline]
-
 WOW! this is normal text![newline]
     normally lines cannot start with whitespace.
 newlines dont do anything either![newline]
@@ -28,7 +25,7 @@ wowwwww[removelast 7 group]bet ya didnt see that[newline]
 type and delete[removelast 15][newline]
 time to sleep... [sleep 2000]sleepy...[newline]
 [speed 1]SO FAST!!!![speeddefault] back to normal speed.[newline]
-peri[$start]ods are gonna be super slow now[custom "." 1000]... see?[newline]
+periods are gonna be super slow now[custom "." 1000]... see?[newline]
 [customremove "."]......not anymore![newline]
 [repeat "repeat" 3][newline]
 [repeat 3]
