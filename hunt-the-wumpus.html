@@ -1,0 +1,165 @@
+<style>
+    button:focus, input:focus, select:focus, textarea:focus, [contenteditable]:focus {
+        outline:none;
+    }
+    body {
+        overflow-y: hidden;
+        scrollbar-width: none;
+        background-color: black;
+        color: white;
+        margin-right: 0;
+    }
+    * {
+        font-family: monospace;
+        user-select: none;
+    }
+    .button {
+        margin-bottom: 1px;
+        display: block;
+        cursor: pointer;
+    }
+    .button:hover {
+        background-color: white;
+        color: black;
+    }
+    .hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<head>
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
+    <meta property="og:url" content="">
+    <script src="index.js" type="module"></script>
+</head>
+<body>
+</body>
+<script type="module">
+    import { SuperType, TagArgument } from "./index.js";
+
+    const tw = new SuperType(document.body, {
+        "end": function() {
+            const returnButton = document.createElement("div");
+            returnButton.classList.add("button");
+            returnButton.id = "return";
+            returnButton.textContent = "▌< Return";
+            returnButton.onclick = () => {
+                location.href = 'https://rus1130.github.io/space2313/';
+            };
+            tw.appendToTarget(returnButton);
+            tw.target.style.overflowY = 'scroll';
+            tw.target.classList.add('hide-scrollbar');
+        },
+
+        "jitterlerp": function(engine, token){
+            const [name, text, leftValue, rightValue] = token.args;
+
+            text.check("string")
+            leftValue.check("number")
+            rightValue.check("number")
+
+            const tokens = [];
+
+            for(let i = 0; i < text.value.length; i++){
+                const character = text.value[i];
+
+                // interpolate
+                const strength = leftValue.value + (rightValue.value - leftValue.value) * (i / (text.value.length - 1));
+
+                tokens.push({
+                    type: "tag",
+                    name: "jitter",
+                    style: token.style,
+                    args: [
+                        new TagArgument("string", character),
+                        new TagArgument("number", strength),
+                    ]
+                })
+            }
+
+            engine.insertTokens(tokens);
+        },
+
+        "sine": function(engine, token) {
+            if (!SuperType._sineStyleInjected) {
+                const cssStyle = document.createElement("style");
+                cssStyle.textContent = `
+                    @keyframes typewriter-sine {
+                        from { transform: translateY(var(--sine-amplitude)); }
+                        50% { transform: translateY(calc(var(--sine-amplitude) * -1)); }
+                        to { transform: translateY(var(--sine-amplitude)); }
+                    }
+                    .typewriter-sine {
+                        display: inline-block;
+                        animation-name: typewriter-sine;
+                        animation-timing-function: linear;
+                        animation-iteration-count: infinite;
+                    }
+                `;
+                document.body.appendChild(cssStyle);
+                SuperType._sineStyleInjected = true;
+            }
+ 
+            const [name, lastCharacters, frequency, amplitude] = token.args;
+            lastCharacters.check("number");
+            frequency.check("number");
+            amplitude.check("number");
+ 
+            const count = lastCharacters.value;
+            const duration = 1 / frequency.value;
+ 
+            function applySine(element, index) {
+                element.style.setProperty("--sine-amplitude", `${amplitude.value}px`);
+                element.style.animationDuration = `${duration}s`;
+                element.style.animationDelay = `${-duration * (index / count)}s`;
+                element.classList.add("typewriter-sine");
+            }
+ 
+            if (!engine._sinePatched) {
+                engine._sinePatched = true;
+                engine._sineQueue = [];
+ 
+                const original = engine.renderCharacter.bind(engine);
+ 
+                // patch
+                engine.renderCharacter = function(text, style) {
+                    if (engine._sineQueue.length === 0) {
+                        return original(text, style);
+                    }
+ 
+                    for (let i = 0; i < text.length; i++) {
+                        if (engine._sineQueue.length === 0) {
+                            engine.renderCharacter = original;
+                            engine._sinePatched = false;
+                            original(text.slice(i), style);
+                            return;
+                        }
+ 
+                        original(text[i], style);
+ 
+                        const { index } = engine._sineQueue.shift();
+                        applySine(engine.state.currentSpan, index);
+                    }
+                    
+                    if (engine._sineQueue.length === 0) {
+                        engine.renderCharacter = original;
+                        engine._sinePatched = false;
+                    }
+                };
+            }
+ 
+            for (let i = 0; i < count; i++) {
+                engine._sineQueue.push({ index: i });
+            }
+        }
+    })
+
+    await tw.load("hunt-the-wumpus.st").then(() => {
+        tw.allowControls("all");
+        tw.start();
+    })
+</script>
