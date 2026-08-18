@@ -63,9 +63,10 @@
                 event.stopPropagation();
                 if (event.key === "Enter") {
                     engine.unlockPause();
+                    // it wont render the input for some reason
+                    console.log(inputElement.value)
                     engine.resume();
                     inputElement.disabled = true;
-                    tw.renderRaw(inputElement.value);
                 }
             };
             tw.appendToTarget(inputElement);

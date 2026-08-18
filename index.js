@@ -1724,7 +1724,6 @@ export class SuperType {
             pausedAt: 0,
             nextTime: performance.now(),
             paused: false,
-            freezed: false,
             page: "root",
 
             glitches: [],
@@ -2348,7 +2347,6 @@ export class SuperType {
                 }
             }
         }
-
 
         const sameStyle =
             this.state.currentStyle &&
