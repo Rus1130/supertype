@@ -1,3 +1,10 @@
+class SuperTypeError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "SuperTypeError";
+    }
+}
+
 export class TagArgument {
     constructor(type, value, raw = null) {
         this.type = type;
@@ -33,7 +40,7 @@ export class TagArgument {
      */
     check(...types) {
         if (!types.includes(this.type)) {
-            throw new Error(
+            throw new SuperTypeError(
                 `Invalid argument type: Expected one of ${types.join(", ")}, got ${this.type}`
             );
         }
@@ -44,11 +51,11 @@ export class TagArgument {
      */
     checkSpecific(...values) {
         if (this.type !== "specific") {
-            throw new Error(`Invalid argument type: Expected specific, got ${this.type}`);
+            throw new SuperTypeError(`Invalid argument type: Expected specific, got ${this.type}`);
         }
 
         if (!values.includes(this.value)) {
-            throw new Error(
+            throw new SuperTypeError(
                 `Invalid argument value: Expected one of ${values.join(", ")}, got ${this.value}`
             );
         }
@@ -98,10 +105,10 @@ export class TagArgument {
                 return new TagArgument("color", new Color(r, g, b).toString(), value);
             }
 
-            throw new Error(`Invalid RGB color: ${value}`);
+            throw new SuperTypeError(`Invalid RGB color: ${value}`);
         }
 
-        throw new Error(`Invalid value: ${value}`);
+        throw new SuperTypeError(`Invalid value: ${value}`);
     }
 }
 
@@ -271,12 +278,12 @@ class UseTag extends Tag {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
 
         const nameArg = args[0];
-        if (nameArg === undefined) throw new Error("Missing mixin name");
+        if (nameArg === undefined) throw new SuperTypeError("Missing mixin name");
         nameArg.check("string");
 
         const mixinBody = ctx.engine.mixins[nameArg.value];
         if (mixinBody === undefined) {
-            throw new Error(`Mixin not found: ${nameArg.value}`);
+            throw new SuperTypeError(`Mixin not found: ${nameArg.value}`);
         }
 
         const substitutions = args.slice(1);
@@ -336,7 +343,7 @@ class UseTag extends Tag {
                 const value = substitutions[argIndex];
 
                 if (value === undefined) {
-                    throw new Error(
+                    throw new SuperTypeError(
                         `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
                     );
                 }
@@ -407,12 +414,12 @@ class ImportTag extends Tag {
 
                 for (const [name, tokens] of Object.entries(pages)) {
                     const importName = importedEngine.fileName + "-" + name;
-                    if (ctx.engine.pages[importName] !== undefined) throw new Error(`Duplicate page name in imported file: ${name}`);
+                    if (ctx.engine.pages[importName] !== undefined) throw new SuperTypeError(`Duplicate page name in imported file: ${name}`);
                     ctx.engine.pages[importName] = tokens;
                 }
 
                 for (const [name, tokens] of Object.entries(mixins)) {
-                    if (ctx.engine.mixins[name] !== undefined) throw new Error(`Duplicate mixin name in imported file: ${name}`);
+                    if (ctx.engine.mixins[name] !== undefined) throw new SuperTypeError(`Duplicate mixin name in imported file: ${name}`);
                     ctx.engine.mixins[name] = tokens;
                 }
             })
@@ -471,7 +478,7 @@ class RemoveLastTag extends Tag {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [number, group] = args;
 
-        if (number === undefined) throw new Error("Missing removelast value");
+        if (number === undefined) throw new SuperTypeError("Missing removelast value");
 
         number.check("number");
 
@@ -543,8 +550,8 @@ class CustomTag extends Tag {
         let name = token.args[0];
         let delay = token.args[1];
 
-        if (name === undefined) throw new Error("Missing custom tag name");
-        if (delay === undefined) throw new Error("Missing custom tag delay");
+        if (name === undefined) throw new SuperTypeError("Missing custom tag name");
+        if (delay === undefined) throw new SuperTypeError("Missing custom tag delay");
 
         name.check("string");
         delay.check("number");
@@ -559,7 +566,7 @@ class CustomRemoveTag extends Tag {
 
     static onUse(engine, token) {
         let name = token.args[0];
-        if (name === undefined) throw new Error("Missing custom tag name");
+        if (name === undefined) throw new SuperTypeError("Missing custom tag name");
         name.check("string");
 
         if (engine.header.customDelays[name.value] === undefined) return;
@@ -573,12 +580,12 @@ class FunctionTag extends Tag {
 
     static onUse(engine, token) {
         const funcName = token.args[0];
-        if (funcName === undefined) throw new Error("Missing function name");
+        if (funcName === undefined) throw new SuperTypeError("Missing function name");
         funcName.check("string");
 
         const func = engine.functions.get(funcName.value);
 
-        if (!func) throw new Error(`Function not found: ${funcName.value}`)
+        if (!func) throw new SuperTypeError(`Function not found: ${funcName.value}`)
 
         engine.state.scrollCount = SuperType.defaultScrollCount;
         func(engine, token);
@@ -592,7 +599,7 @@ class TabTag extends Tag {
 
         const [value, fill] = token.args;
 
-        if (value === undefined) throw new Error("Missing tab value");
+        if (value === undefined) throw new SuperTypeError("Missing tab value");
 
         value.check("number");
 
@@ -614,13 +621,13 @@ class GopageTag extends Tag {
 
     static onUse(engine, token) {
         const pageName = token.args[0];
-        if (pageName === undefined) throw new Error("Missing page name");
+        if (pageName === undefined) throw new SuperTypeError("Missing page name");
         pageName.check("string");
 
         if (engine.header.previewMode) return;
 
         const text = token.args[1];
-        if (text === undefined) throw new Error("Missing button text");
+        if (text === undefined) throw new SuperTypeError("Missing button text");
         text.check("string");
 
         let keep = token.args[2];
@@ -630,7 +637,7 @@ class GopageTag extends Tag {
     static onRender(engine, token) {
         const pageName = token.args[0];
 
-        if(engine.pages[pageName.value] === undefined) throw new Error(`Page not found: ${pageName.value}`);
+        if(engine.pages[pageName.value] === undefined) throw new SuperTypeError(`Page not found: ${pageName.value}`);
 
         if (engine.header.previewMode) {
             let charCount = engine.header.wordWrap;
@@ -674,7 +681,7 @@ class ForcePageTag extends Tag {
         pageName.check("string");
         if(keep !== undefined) keep.checkSpecific("keep");
 
-        if (engine.pages[pageName.value] === undefined) throw new Error(`Page not found: ${pageName.value}`);
+        if (engine.pages[pageName.value] === undefined) throw new SuperTypeError(`Page not found: ${pageName.value}`);
 
         if(keep === undefined) engine.clearTargetHTML();
         engine.openPage(pageName.value);
@@ -686,9 +693,9 @@ class ColorTag extends Tag {
 
     static onUse(engine, token) {
         const value = token.args[0];
-        if (value === undefined) throw new Error("Missing color value");
+        if (value === undefined) throw new SuperTypeError("Missing color value");
 
-        if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid color value: Expected color or reset, got ${value.type}`);
+        if (!value.is("color") && !value.equalsSpecific("reset")) throw new SuperTypeError(`Invalid color value: Expected color or reset, got ${value.type}`);
 
         if (value.is("color")) {
             engine.state.currentColor = value.value;
@@ -705,9 +712,9 @@ class BgTag extends Tag {
 
     static onUse(engine, token) {
         const value = token.args[0];
-        if (value === undefined) throw new Error("Missing background color value");
+        if (value === undefined) throw new SuperTypeError("Missing background color value");
 
-        if (!value.is("color") && !value.equalsSpecific("reset")) throw new Error(`Invalid background color value: Expected color or reset, got ${value.type}`);
+        if (!value.is("color") && !value.equalsSpecific("reset")) throw new SuperTypeError(`Invalid background color value: Expected color or reset, got ${value.type}`);
 
         if (value.is("color")) {
             engine.state.currentBg = value.value;
@@ -737,7 +744,7 @@ class SpeedTag extends Tag {
         const value = token.args[0];
         const option = token.args[1];
 
-        if (value === undefined) throw new Error("Missing speed value");
+        if (value === undefined) throw new SuperTypeError("Missing speed value");
 
         value.check("number");
         if (option) option.checkSpecific("override");
@@ -866,7 +873,7 @@ class SleepTag extends Tag {
     static onUse(engine, token) {
         let value = token.args[0];
 
-        if (value === undefined) throw new Error("Missing sleep value");
+        if (value === undefined) throw new SuperTypeError("Missing sleep value");
 
         value.check("number");
         engine.addRenderTime(value.value);
@@ -885,7 +892,7 @@ class GlitchTag extends Tag {
         let group = args[1];
 
         if (value === undefined) {
-            throw new Error("Missing glitch value");
+            throw new SuperTypeError("Missing glitch value");
         }
 
         value.check("number");
@@ -944,8 +951,8 @@ class JitterTag extends Tag {
         const strength = args[1];
         let third = args[2];
 
-        if (value === undefined) throw new Error("Missing jitter value");
-        if (strength === undefined) throw new Error("Missing jitter strength");
+        if (value === undefined) throw new SuperTypeError("Missing jitter value");
+        if (strength === undefined) throw new SuperTypeError("Missing jitter strength");
 
         value.check("string");
         strength.check("number");
@@ -1012,8 +1019,8 @@ class UnscrambleTag extends Tag {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [value, num1, num2] = args;
 
-        if (value === undefined) throw new Error("Missing unscramble value");
-        if (num1 === undefined) throw new Error("Missing unscramble min time");
+        if (value === undefined) throw new SuperTypeError("Missing unscramble value");
+        if (num1 === undefined) throw new SuperTypeError("Missing unscramble min time");
 
         value.check("string");
         num1.check("number");
@@ -1112,8 +1119,8 @@ class GradientTag extends Tag {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [text, css] = args;
 
-        if (text === undefined) throw new Error("Missing gradient text");
-        if (css === undefined) throw new Error("Missing gradient css");
+        if (text === undefined) throw new SuperTypeError("Missing gradient text");
+        if (css === undefined) throw new SuperTypeError("Missing gradient css");
 
         text.check("string");
         css.check("string");
@@ -1175,7 +1182,7 @@ class GradientTag extends Tag {
         }
 
         if (stopParts.length < 2) {
-            throw new Error(`Invalid gradient css: Need at least 2 color stops, got ${stopParts.length}`);
+            throw new SuperTypeError(`Invalid gradient css: Need at least 2 color stops, got ${stopParts.length}`);
         }
 
         const stops = stopParts.map(part => {
@@ -1243,7 +1250,7 @@ class GradientTag extends Tag {
         const named = GradientTag.namedColors[str.toLowerCase()];
         if (named) return named;
 
-        throw new Error(`Invalid gradient color: ${str}`);
+        throw new SuperTypeError(`Invalid gradient color: ${str}`);
     }
 
     static sampleGradient(stops, t) {
@@ -1308,12 +1315,12 @@ class PayloadTag extends Tag {
     static tagName = "!payload";
 
     static onUse(engine, token) {
-        if(token.payload == undefined) throw new Error("Missing payload");
+        if(token.payload == undefined) throw new SuperTypeError("Missing payload");
         if(token.payload.onuse !== undefined) token.payload.onuse(engine, token);
     }
 
     static onRender(engine, token) {
-        if(token.payload == undefined) throw new Error("Missing payload");
+        if(token.payload == undefined) throw new SuperTypeError("Missing payload");
         if(token.payload.onrender !== undefined) token.payload.onrender(engine, token);
     }
 }
@@ -1326,7 +1333,7 @@ class AccuracyTag extends Tag {
 
         value.check("number");
 
-        if(value.value < 0 || value.value > 1) throw new Error(`Invalid accuracy value: Expected number between 0 and 1, got ${value.value}`);
+        if(value.value < 0 || value.value > 1) throw new SuperTypeError(`Invalid accuracy value: Expected number between 0 and 1, got ${value.value}`);
 
         engine.state.accuracy = value.value;
     }
@@ -1338,17 +1345,17 @@ class PageTag extends Tag {
     static routeToPage(engine, token, index) {
         const arg = token.args[0];
 
-        if (arg === undefined) throw new Error(`Missing page name at token index ${index}`);
+        if (arg === undefined) throw new SuperTypeError(`Missing page name at token index ${index}`);
 
         if (arg.type === "string") {
             const name = arg.value;
 
             if (name === "root") {
-                throw new Error(`Invalid page name at token index ${index}: 'root' is reserved`);
+                throw new SuperTypeError(`Invalid page name at token index ${index}: 'root' is reserved`);
             }
 
             if (engine.pages[name] !== undefined) {
-                throw new Error(`Duplicate page name at token index ${index}: ${name}`);
+                throw new SuperTypeError(`Duplicate page name at token index ${index}: ${name}`);
             }
 
             engine.pages[name] = [];
@@ -1360,7 +1367,7 @@ class PageTag extends Tag {
             return "root";
         }
 
-        throw new Error(`Invalid page argument token index ${index}: Expected String or end, got ${arg.type}`);
+        throw new SuperTypeError(`Invalid page argument token index ${index}: Expected String or end, got ${arg.type}`);
     }
 }
 
@@ -1369,12 +1376,12 @@ class MixinTag extends Tag {
 
     static extractBlock(rawArgs, content, ctx) {
         const nameArg = rawArgs[0];
-        if (nameArg === undefined) throw new Error("Missing mixin name");
+        if (nameArg === undefined) throw new SuperTypeError("Missing mixin name");
 
         const name = nameArg.replace(/^"|"$/g, "");
 
         if (ctx.engine.mixins[name] !== undefined) {
-            throw new Error(`Duplicate mixin name: ${name}`);
+            throw new SuperTypeError(`Duplicate mixin name: ${name}`);
         }
 
         ctx.engine.mixins[name] = content;
@@ -1429,11 +1436,11 @@ export class SuperType {
      */
     static registerTag(TagClass) {
         if (!TagClass.tagName) {
-            throw new Error(`Tag class "${TagClass.name}" must define a static tagName`);
+            throw new SuperTypeError(`Tag class "${TagClass.name}" must define a static tagName`);
         }
 
         if (SuperType.tags.has(TagClass.tagName)) {
-            throw new Error(`Tag "${TagClass.tagName}" is already registered`);
+            throw new SuperTypeError(`Tag "${TagClass.tagName}" is already registered`);
         }
 
         SuperType.tags.set(TagClass.tagName, TagClass);
@@ -1574,11 +1581,15 @@ export class SuperType {
         this.startCount = 0;
 
         this.allowedControls = new Set();
+        this.disallowedControls = new Set();
+
         this.functions = new Map();
+
+        this._highlightStyler = null;
 
         for (const [name, func] of Object.entries(functions)) {
             if (typeof func !== "function") {
-                throw new Error(`Invalid function for ${name}: Expected function, got ${typeof func}`);
+                throw new SuperTypeError(`Invalid function for ${name}: Expected function, got ${typeof func}`);
             }
 
             this.functions.set(name, func);
@@ -1586,6 +1597,45 @@ export class SuperType {
 
         if (target.__superTypeInstance) {
             target.__superTypeInstance.destroy();
+        }
+
+        function getRealColors(el) {
+            let current = el;
+            let bg = null;
+            let fg = null;
+
+            while (current && current !== document.documentElement) {
+                const cs = getComputedStyle(current);
+
+                // Only set bg if we haven't found a real one yet
+                if (!bg) {
+                    const cBg = cs.backgroundColor;
+                    if (cBg !== "transparent" && cBg !== "rgba(0, 0, 0, 0)") {
+                        bg = cBg;
+                    }
+                }
+
+                // Only set fg if we haven't found one yet
+                if (!fg) {
+                    const cFg = cs.color;
+                    if (cFg !== "inherit") {
+                        fg = cFg;
+                    }
+                }
+
+                // If we found both, stop early
+                if (bg && fg) break;
+
+                current = current.parentElement;
+            }
+
+            // fallback to body values
+            const bodyCS = getComputedStyle(document.body);
+
+            return {
+                bg: bg || bodyCS.backgroundColor,
+                fg: fg || bodyCS.color
+            };
         }
 
         const div = document.createElement("div");
@@ -1615,7 +1665,6 @@ export class SuperType {
         }
 
         this._keydownHandler = (e) => {
-            // allowCtrl is a special option that allows the user to use ctrl+key or cmd+key to trigger the control, but only if the control is allowed. This is useful for allowing the user to use ctrl+space to pause/resume, for example.
             const controlsCheck = (value, key, { allowCtrl = false } = {}) => {
                 if (!(this.allowedControls.has(value) || this.allowedControls.has("all"))) return false;
                 if (e.key !== key) return false;
@@ -1639,6 +1688,35 @@ export class SuperType {
 
         this.targetParent.addEventListener("keydown", this._keydownHandler)
 
+        if(this._highlightStyler == null){
+            const style = document.createElement("style");
+            document.head.appendChild(style);
+
+            this.targetParent.addEventListener("selectionchange", (e) => {
+                const sel = document.getSelection();
+                if (!sel.rangeCount) return;
+
+                const anchorNode = sel.anchorNode;
+
+                if (!anchorNode) return;
+
+                const node = anchorNode.nodeType === 3
+                    ? anchorNode.parentElement
+                    : anchorNode;
+
+                const real = getRealColors(node);
+
+                style.textContent = `
+                ::selection {
+                    background-color: ${real.fg} !important;
+                    color: ${real.bg} !important;
+                }
+                `;        
+            });
+
+            this._highlightStyler = style;
+        }
+
         this.target.style.whiteSpace = "pre-wrap";
 
         this.state = {
@@ -1646,6 +1724,7 @@ export class SuperType {
             pausedAt: 0,
             nextTime: performance.now(),
             paused: false,
+            freezed: false,
             page: "root",
 
             glitches: [],
@@ -1682,16 +1761,30 @@ export class SuperType {
         }
     }
 
-    static AllControls = ["reset", "instant", "pause", "fastforward", "all"]
+    static AllControls = ["reset", "instant", "pause", "fastforward", "selection", "all"]
 
     allowControls(...controls){
         for(const control of controls){
             if(!SuperType.AllControls.includes(control)){
-                throw new Error(`Invalid control: ${control}`);
+                throw new SuperTypeError(`Invalid control: ${control}`);
             }
 
             this.allowedControls.add(control);
         }
+
+        if(this.checkIfControlAllowed("selection")){
+            const style = document.createElement("style");
+            style.textContent = "* { user-select: text !important; }";
+            document.head.appendChild(style);
+        }
+    }
+
+    checkIfControlAllowed(control){
+        if(!SuperType.AllControls.includes(control)){
+            throw new SuperTypeError(`Invalid control: ${control}`);
+        }
+
+        return this.allowedControls.has(control) || this.allowedControls.has("all");
     }
 
     /**
@@ -1703,10 +1796,25 @@ export class SuperType {
     }
 
     /**
+     * Locks pause state, prevents the user from pausing or unpausing.
+     */
+    lockPause(){
+        this.state.pauseLocked = true;
+    }
+
+    /**
+     * Unlocks pause state, allows the user to pause or unpause.
+     */
+    unlockPause(){
+        this.state.pauseLocked = false;
+    }
+
+    /**
      * Pauses the typewriter, freezing the schedule and allowing the user to scroll.
      * @returns {void}
      */
     pause() {
+        if(this.state.pauseLocked === true) return;
         this.state.pausedAt = performance.now();
         this.state.paused = true;
         this.state.scrollLocked = false;
@@ -1871,18 +1979,18 @@ export class SuperType {
 
         // throw error if it doesnt have typewriter { ... }
         if (depth !== 0) {
-            throw new Error("Invalid header");
+            throw new SuperTypeError("Invalid header");
         }
         
         let header = parseHeader(this.data.slice(start, i));
 
         if(header.parsed.typewriter === undefined){
-            throw new Error("Header parsing failed: Missing 'typewriter' block");
+            throw new SuperTypeError("Header parsing failed: Missing 'typewriter' block");
         }
 
         if(header.errors.length > 0) {
             console.error("Header parsing errors:", header.errors);
-            throw new Error(`Header parsing failed:\n${header.errors.map(e => e.message).join("\n")}`);
+            throw new SuperTypeError(`Header parsing failed:\n${header.errors.map(e => e.message).join("\n")}`);
         }
 
         this.header = header.parsed.typewriter;
@@ -1891,10 +1999,10 @@ export class SuperType {
 
         this.body = await this.runExtractBlockHooks(this.body);
 
-        if(this.header.charDelay === undefined) throw new Error("Missing charDelay in header");
-        if(this.header.newlineDelay === undefined) throw new Error("Missing newlineDelay in header");
-        if(this.header.textColor === undefined) throw new Error("Missing textColor in header");
-        if(this.header.backgroundColor === undefined) throw new Error("Missing backgroundColor in header");
+        if(this.header.charDelay === undefined) throw new SuperTypeError("Missing charDelay in header");
+        if(this.header.newlineDelay === undefined) throw new SuperTypeError("Missing newlineDelay in header");
+        if(this.header.textColor === undefined) throw new SuperTypeError("Missing textColor in header");
+        if(this.header.backgroundColor === undefined) throw new SuperTypeError("Missing backgroundColor in header");
 
         if(this.header.customDelays === undefined) this.header.customDelays = {};
         if(this.header.instant === undefined) this.header.instant = false;
@@ -1987,13 +2095,63 @@ export class SuperType {
         return;
     }
 
+    /**
+     * Inserts a token into the current page at the current token index.
+     * @param {Object} token - The token to insert.
+     */
     insertToken(token) {
         this.pages[this.state.page].splice(this.state.token, 0, token);
     }
 
+    /**
+     * Inserts an array of tokens into the current page at the current token index.
+     * @param {Array} tokenArray - The array of tokens to insert.
+     */
     insertTokens(tokenArray){
         this.pages[this.state.page].splice(this.state.token, 0, ...tokenArray);
     }
+
+    // /**
+    //  * Inserts a string into the current page at the current token index. If `instant` is true, the string will be rendered instantly.
+    //  * @param {string} str - The string to insert.
+    //  * @param {boolean} [instant=false] - Whether to render the string instantly.
+    //  */
+    // insertString(str, instant=false){
+    //     const tokens = [];
+
+    //     if(instant){
+    //         tokens.push({
+    //             type: "tag",
+    //             name: "instant",
+    //             args: []
+    //         });
+    //     }
+
+    //     for (const ch of str) {
+    //         tokens.push({
+    //             type: "character",
+    //             value: ch,
+    //             style: {
+    //                 "color": this.state.currentColor,
+    //                 "bg": this.state.currentBg,
+    //                 "bold": this.state.currentStyle?.bold ?? false,
+    //                 "italic": this.state.currentStyle?.italic ?? false,
+    //                 "underline": this.state.currentStyle?.underline ?? false,
+    //                 "strikethrough": this.state.currentStyle?.strikethrough ?? false
+    //             }
+    //         });
+    //     }
+
+    //     if(instant){
+    //         tokens.push({
+    //             type: "tag",
+    //             name: "instant",
+    //             args: [new TagArgument("specific", "off")]
+    //         });
+    //     }
+
+    //     this.insertTokens(tokens);
+    // }
 
     insertPayload(payload){
         this.insertToken({
@@ -2015,10 +2173,13 @@ export class SuperType {
         let processed = 0;
 
         try {
-            while (now >= this.state.nextTime && (
-                processed < SuperType.MAX_CHARACTERS_PER_FRAME ||
-                (this.state.userInstantOverride || this.header.instant)
-            )) {
+            while (
+                !this.state.paused && 
+                now >= this.state.nextTime && (
+                    processed < SuperType.MAX_CHARACTERS_PER_FRAME ||
+                    (this.state.userInstantOverride || this.header.instant)
+                )
+            ) {
                 const token = this.pages[this.state.page][this.state.token++];
 
                 if (!token) {
@@ -2039,6 +2200,7 @@ export class SuperType {
                 processed++;
             }
         } catch (err) {
+            if(!(err instanceof SuperTypeError)) throw err;
             const token = this.pages[this.state.page][this.state.token - 1];
             console.error(
                 this.formatTokenError(
@@ -2604,12 +2766,12 @@ export class SuperType {
         const response = await fetch(path);
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch ${path}: ${response.status}`);
+            throw new SuperTypeError(`Failed to fetch ${path}: ${response.status}`);
         }
 
         // if its not a .st file, throw error
         if (!path.endsWith(".st")) {
-            throw new Error(`Invalid file type: ${path}. Expected .st file`);
+            throw new SuperTypeError(`Invalid file type: ${path}. Expected .st file`);
         }
 
         return await response.text();

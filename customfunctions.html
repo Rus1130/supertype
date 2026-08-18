@@ -42,6 +42,40 @@
     import { SuperType, TagArgument } from "./index.js";
 
     const tw = new SuperType(document.body, {
+        "userinput": function(engine, token) {
+            const [name, prefixText] = token.args;
+            engine.pause();
+            engine.lockPause();
+
+            tw.renderRaw(prefixText.value);
+
+            const inputElement = document.createElement("input");
+            inputElement.type = "text";
+            inputElement.classList.add("user-input");
+            inputElement.style.height = "12px";
+            inputElement.style.color = tw.state.currentColor;
+            inputElement.style.backgroundColor = tw.state.currentBg;
+            inputElement.style.outline = "none";
+            inputElement.style.border = "none";
+            inputElement.style.padding = "0";
+
+            inputElement.onkeydown = (event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") {
+                    engine.unlockPause();
+                    engine.resume();
+                    inputElement.disabled = true;
+                    tw.renderRaw(inputElement.value);
+                }
+            };
+            tw.appendToTarget(inputElement);
+
+            requestAnimationFrame(() => {
+                inputElement.focus();
+            });
+
+        },
+
         "end": function() {
             const returnButton = document.createElement("div");
             returnButton.classList.add("button");
@@ -158,7 +192,7 @@
         }
     })
 
-    await tw.load("hunt-the-wumpus.st").then(() => {
+    await tw.load("customfunctions.st").then(() => {
         tw.allowControls("all");
         tw.start();
     })
