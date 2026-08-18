@@ -59,12 +59,6 @@ export class TagArgument {
     }
 
     static parse(value) {
-        // "none" is a universal stand-in for "no argument was passed" -
-        // any tag argument slot that receives the literal string "none"
-        // behaves exactly as if that slot had been omitted entirely
-        // (i.e. resolves to JavaScript `undefined`, not a TagArgument
-        // instance). Every call site of parse() must be prepared to
-        // receive `undefined` back as a result of this.
         if (value === "none") {
             return undefined;
         }
@@ -267,10 +261,7 @@ export class Tag {
 class ForceStartTag extends Tag {
     static tagName = "$start";
 
-    // No runtime effect - the entry point it marks is resolved once, at
-    // load-time, into engine.startIndex (see load()), and openPage() reads
-    // that instead of always starting at 0.
-    static onUse(engine, token) {}
+    static onUse(engine, token) { }
 }
 
 class UseTag extends Tag {
@@ -435,9 +426,6 @@ class ImportTag extends Tag {
 class RawTag extends Tag {
     static tagName = "raw";
 
-    // Wraps [raw] ... [raw end], but unlike mixin/page below, raw doesn't
-    // need extractBlock or routeToPage, it handles its own wrapping
-    // right here in onTokenization by toggling tokenizer state directly.
     static onTokenization(rawArgs, ctx) {
         const args = super.onTokenization(rawArgs, ctx);
         const value = args[0];
@@ -449,9 +437,7 @@ class RawTag extends Tag {
         return args;
     }
 
-    static onUse(engine, token) {
-        // no runtime effect; entirely handled at tokenize-time above.
-    }
+    static onUse(engine, token) { }
 }
 
 class IgnoreTag extends Tag {
@@ -481,8 +467,6 @@ class InstantTag extends Tag {
 class RemoveLastTag extends Tag {
     static tagName = "removelast";
 
-    // See JitterTag for why this expansion must happen once at tokenize
-    // time rather than every time onUse fires.
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [number, group] = args;
@@ -496,7 +480,6 @@ class RemoveLastTag extends Tag {
             return args;
         }
 
-        // expand into one-character removals, animated one at a time
         for (let i = 0; i < number.value; i++) {
             ctx.queue.push({
                 type: "tag",
@@ -658,7 +641,7 @@ class GopageTag extends Tag {
                 charCount = Math.floor(targetWidth / fontSize);
             }
 
-            engine.renderRaw(`<br>${"=".repeat(charCount)}<br>`)
+            engine.renderRaw(`<br>${pageName.value} ${"=".repeat(charCount)}<br>`)
             engine.openPage(pageName.value);
             return;
         }
@@ -797,8 +780,6 @@ class RepeatTag extends Tag {
         return result;
     }
 
-    // See JitterTag for why the non-instant expansion below must happen
-    // once at tokenize time rather than every time onUse fires.
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [value, count, instant] = args;
@@ -823,10 +804,7 @@ class RepeatTag extends Tag {
     }
 
     static onUse(engine, token) {
-        // Only reached for the "instant" form now - the non-instant form is
-        // expanded once at tokenize time (see onTokenization above).
         const [value, count] = token.args;
-
         engine.renderCharacter(value.value.repeat(count.value), token.style);
     }
 }
@@ -1357,10 +1335,6 @@ class AccuracyTag extends Tag {
 class PageTag extends Tag {
     static tagName = "page";
 
-    // "page" tokens are never dispatched through process(): load() filters
-    // them out of the token stream entirely, calling routeToPage below to
-    // decide which page subsequent tokens get routed into. onUse/onRender
-    // are intentionally unused.
     static routeToPage(engine, token, index) {
         const arg = token.args[0];
 
@@ -1393,10 +1367,6 @@ class PageTag extends Tag {
 class MixinTag extends Tag {
     static tagName = "mixin";
 
-    // "mixin" tokens never make it to tokenize() at all: load() calls
-    // extractBlock below to strip `[mixin "name"] ... [mixin end]` blocks
-    // out of the raw body before tokenization happens. onUse/onRender are
-    // intentionally unused.
     static extractBlock(rawArgs, content, ctx) {
         const nameArg = rawArgs[0];
         if (nameArg === undefined) throw new Error("Missing mixin name");
@@ -1490,13 +1460,11 @@ export class SuperType {
         }
 
         // get shared jitters
-
         for(const jitters of Object.values(JitterTag.jitters)) {
             const transform = `translate(${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px, ${(Math.random() * 2 - 1) * (jitters[0].strength / 10)}px)`;
             jitters.forEach(jitter => {
                 jitter.textNode.parentElement.style.transform = transform;
             })
-            //jitter.textNode.parentElement.style.transform = `translate(${(Math.random() * 2 - 1) * (jitter.strength / 10)}px, ${(Math.random() * 2 - 1) * (jitter.strength / 10)}px)`;
         }
 
         this._jitterFrame = requestAnimationFrame(this.jitterLoop);
@@ -1616,13 +1584,6 @@ export class SuperType {
             this.functions.set(name, func);
         }
 
-        // If a SuperType instance is already attached to this target (e.g. a
-        // previous "page" that was opened by constructing a new SuperType on
-        // the same container), tear it down first. Without this, the old
-        // instance's DOM never gets removed and its render/jitter/glitch
-        // rAF loops and event listeners keep running forever, stacking
-        // visibly with every new instance (e.g. jitter text duplicating on
-        // every new page).
         if (target.__superTypeInstance) {
             target.__superTypeInstance.destroy();
         }
@@ -1636,12 +1597,6 @@ export class SuperType {
         this.fileName = null;
         target.__superTypeInstance = this;
 
-        // Cached layout measurements used by word-wrap. Both are invalidated
-        // (set back to null) only when the layout could actually have
-        // changed, rather than either caching forever (stale after the
-        // element/font changes) or re-measuring on every character (forces
-        // a synchronous reflow per call, which gets slower the more content
-        // is already on the page).
         this._containerWidth = null;
         this._fontBase = null;
 
@@ -1676,7 +1631,7 @@ export class SuperType {
 
             if(controlsCheck("fastforward", "ArrowRight")) this.state.userSpeedOverride = this.state.userSpeedOverride === null ? 2 : null;
 
-            if(controlsCheck("reset", "r")){
+            if(controlsCheck("reset", "r", {allowCtrl: false})){
                 this.setResetTarget(this.state.page);
                 location.reload();
             }
@@ -1727,11 +1682,11 @@ export class SuperType {
         }
     }
 
-    static allowedControls = ["reset", "instant", "pause", "fastforward", "all"]
+    static AllControls = ["reset", "instant", "pause", "fastforward", "all"]
 
     allowControls(...controls){
         for(const control of controls){
-            if(!SuperType.allowedControls.includes(control)){
+            if(!SuperType.AllControls.includes(control)){
                 throw new Error(`Invalid control: ${control}`);
             }
 
@@ -1776,7 +1731,7 @@ export class SuperType {
      * @returns {void}
      */
     openPage(page = "root") {
-        if(this.header.previewMode === true) this.header.instant = true;
+        if(this.header.previewMode === true) this.state.userInstantOverride = true;
 
         this.state.page = page;
         this.state.token = this.startIndex[page] ?? 0;
@@ -2040,6 +1995,14 @@ export class SuperType {
         this.pages[this.state.page].splice(this.state.token, 0, ...tokenArray);
     }
 
+    insertPayload(payload){
+        this.insertToken({
+            type: "tag",
+            name: "!payload",
+            payload
+        });
+    }
+
     render = (now) => {
         if (this.state.paused) {
             this._renderFrame = requestAnimationFrame(this.render);
@@ -2177,7 +2140,6 @@ export class SuperType {
     }
 
     fetchDelay(tokenValue){
-
         let delay = null;
 
         if(this.state.ignoreCustomDelays === true) delay = this.header.charDelay;
@@ -2300,7 +2262,7 @@ export class SuperType {
     lookAheadWord(firstChar) {
         let word = firstChar;
         const tokens = this.pages[this.state.page];
-        let idx = this.state.token; // already points past the token just pulled in render()
+        let idx = this.state.token;
 
         while (idx < tokens.length) {
             const t = tokens[idx];
@@ -2312,7 +2274,7 @@ export class SuperType {
     }
 
     maybeBreakBeforeWord(token) {
-        if (!this.header.wordWrap) return; // only meaningful with a fixed wordWrap width
+        if (!this.header.wordWrap) return;
 
         const word = this.lookAheadWord(token.value);
         const ctx = this.getMeasureCtx(token.style);
@@ -2375,9 +2337,6 @@ export class SuperType {
 
         let inDoubleString = false;
 
-        // Tracks the body offset the token currently being scanned started
-        // at, so every token can be traced back to a line/column for error
-        // reporting (see resolvePosition() / formatTokenError()).
         let tokenStart = 0;
         const push = (tok) => {
             tok.pos = tokenStart;
@@ -2714,56 +2673,6 @@ class Color {
     toString() {
         return this.hex;
     }
-}
-
-function parseValue(value){
-    if(SuperType.SPECIFIC_TYPES.includes(value)) return {type: "specific", value}
-
-    if (/^-?\d+(\.\d+)?$/.test(value)) {
-        return {type: "number", value: Number(value)};
-    }
-
-    // boolean
-    if (value === "true") {
-        return {type: "boolean", value: true};
-    }
-
-    if (value === "false") {
-        return {type: "boolean", value: false};
-    }
-
-
-    // hex color
-    if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-        return {type: "color", value: new Color(value).toString()};
-    }
-
-
-    // RGB color
-    if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(value)) {
-        const [r, g, b] = value.split(/,/).map(Number);
-
-        if (
-            r >= 0 && r <= 255 &&
-            g >= 0 && g <= 255 &&
-            b >= 0 && b <= 255
-        ) {
-            return {type: "color", value: new Color(r, g, b).toString()};
-        }
-
-        throw new Error(`Invalid RGB color: ${value}`);
-        return null;
-    }
-
-
-    // string
-    if (value.startsWith('"') && value.endsWith('"')) {
-        return {type: "string", value: value.slice(1, -1)};
-    }
-
-    if(typeof value === "string") return {type: "string", value: value.slice(1, -1)};
-
-    throw new Error(`Invalid value: ${value}`);
 }
 
 function parseHeader(blockContent) {
