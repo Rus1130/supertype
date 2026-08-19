@@ -545,23 +545,21 @@ class RemoveLastTag extends Tag {
 
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
-        const [number, group, instant] = args;
+        const [number, instant] = args;
 
         if (number === undefined) throw new SuperTypeError("Missing removelast value");
 
         number.check("number");
 
-        if (instant !== undefined) instant.checkSpecific("instant");
-
-        if (group !== undefined) {
-            group.checkSpecific("group");
+        if (instant !== undefined) {
+            instant.checkSpecific("instant");
             return args;
         }
 
         for (let i = 0; i < number.value; i++) {
             const expandedArgs = [
                 new TagArgument("number", 1),
-                new TagArgument("specific", "group"),
+                new TagArgument("specific", "instant"),
             ];
 
             if (instant !== undefined) expandedArgs.push(instant);
@@ -577,11 +575,9 @@ class RemoveLastTag extends Tag {
     }
 
     static onUse(engine, token) {
-        const [number, group, instant] = token.args;
+        const [number, instant] = token.args;
 
-        if(instant !== undefined) instant.checkSpecific("instant");
-
-        if(instant === undefined || instant.value === false) engine.addRenderTime(engine.state.charDelay);
+        engine.addRenderTime(engine.state.charDelay);
     }
 
     static onRender(engine, token) {

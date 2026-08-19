@@ -45,6 +45,63 @@
     let lastUserInputValue = "";
 
     const tw = new SuperType(document.body, {
+        "progress-bar": function(engine, token) {
+            const [name, character, totalLength] = token.args;
+            character.check("string");
+            totalLength.check("number");
+
+            const frameTokens = [];
+
+            for(let i = 0; i <= totalLength.value; i++){
+                let j = totalLength.value - i;
+                const startingBracket = {
+                    type: "character",
+                    value: "[",
+                    style: token.style
+                }
+
+                const repeatTag = {
+                    type: "tag",
+                    name: "repeat",
+                    style: token.style,
+                    args: [
+                        new TagArgument("string", character.value),
+                        new TagArgument("number", i)
+                    ]
+                }
+
+                const tabTag = {
+                    type: "tag",
+                    name: "tab",
+                    style: token.style,
+                    args: [
+                        new TagArgument("number", j)
+                    ]
+                }
+                const endingBracket = {
+                    type: "character",
+                    value: "]",
+                    style: token.style
+                }
+
+                const removeLastTag = {
+                    type: "tag",
+                    name: "removelast",
+                    style: token.style,
+                    args: [
+                        new TagArgument("number", totalLength.value + 2),
+                        new TagArgument("specific", "instant")
+                    ]
+                }
+
+
+                frameTokens.push(...[startingBracket, repeatTag, tabTag, endingBracket, removeLastTag]);
+            }
+
+            engine.insertTokens(frameTokens);
+        },
+
+
         "lastsentinput": function(engine, token) {
             const [name] = token.args;
             engine.insertTokens(lastUserInputTokens);

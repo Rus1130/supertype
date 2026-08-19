@@ -69,10 +69,10 @@ typewriter: {
 ```
 
 ## Tags
-`label<Type>` is used to show the type of the value that is expected for that specific label. For example, `speed delay<Number>` means that the `delay` value must be a `Number`. If something is followed by `?`, it means that the value is optional.
+`label<Type>` is used to show the type of the value that is expected for that specific label. For example, `speed delay<Number>` means that the `delay` value must be a `Number`. If something is followed by `?`, it means that the value is optional.  A `_` shows that the argument is positional and corresponds to the second argument, third argument, etc., rather than having a label. For example, `tagName count<Number> _ instant` means that `instant` must be the third argument to `tagName`.
 
 ### Text
-Controls how text is desplayed.
+Displays text in various ways.
 | Tag                                          | Description                                                                                                     |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `[newline]`                                  | Creates a new line. Raw newlines are ignored in .st files.                                                      |
@@ -82,7 +82,7 @@ Controls how text is desplayed.
 | `[tab count<Number>]`                        | Inserts `count` spaces.                                                                                         |
 | `[tab count<Number> fill]`                   | Inserts `count` spaces. The spaces will be the background color.                                                |
 | `[removelast count<Number>]`                 | Removes the last `count` rendered characters from the typewriter.                                               |
-| `[removelast count<Number> group]`           | Removes the last `count` rendered characters from the typewriter as a single group.                             |
+| `[removelast count<Number> instant]`         | Removes the last `count` rendered characters from the typewriter instantly.                                     |
 | `[repeat str<String> count<Number>]`         | Repeats `str` `count` times.                                                                                    |
 | `[repeat str<String> count<Number> instant]` | Instantly repeats `str` `count` times.                                                                          |
 | `[repeat count<Number> \]`                   | Repeats the content `count` times.                                                                              |
@@ -106,16 +106,15 @@ Modifies character timing.
 
 ### Styling
 Change the color of the text and background.
-| Tag                                        | Description                                                            |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| `[color color<Color>]`                     | Sets the text color to `color`.                                        |
-| `[color reset]`                            | Resets the text color to the default.                                  |
-| `[bg color<Color>]`                        | Sets the background color to `color`.                                  |
-| `[bg reset]`                               | Resets the background color to the default.                            |
-| `[resetcolors]`                            | Resets the text and background colors to the default.                  |
-| `[raw \]`                                  | Renders the content as raw characters.                                 |
-| `[swap]`                                   | Swaps the text and background colors.                                  |
-| `[gradient text<String> gradient<String>]` | Creates a gradient effect on `text` using the CSS gradient `gradient`. |
+| Tag                    | Description                                           |
+| ---------------------- | ----------------------------------------------------- |
+| `[color color<Color>]` | Sets the text color to `color`.                       |
+| `[color reset]`        | Resets the text color to the default.                 |
+| `[bg color<Color>]`    | Sets the background color to `color`.                 |
+| `[bg reset]`           | Resets the background color to the default.           |
+| `[resetcolors]`        | Resets the text and background colors to the default. |
+| `[raw \]`              | Renders the content as raw characters.                |
+| `[swap]`               | Swaps the text and background colors.                 |
 
 ### Pages
 | Tag                                       | Description                                                                                                    |
@@ -126,7 +125,7 @@ Change the color of the text and background.
 | `[$page page<String>]`                    | Forces the typewriter to open the page with name `page`.                                                       |
 | `[$page page<String> keep]`               | Forces the typewriter to open the page with name `page`. It will not reset the current screen.                 |
 
-### Fun Text Effects
+### Fun Effects
 FUN!
 | Tag                                                             | Description                                                                             |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -138,6 +137,7 @@ FUN!
 | `[accuracy value<Number>]`                                      | Sets the accuracy of the typewriter. Value is 0 to 1.                                   |
 | `[unscramble text<String> ms<Number>]`                          | Unscrambles `text` over `ms` milliseconds.                                              |
 | `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
+| `[gradient text<String> gradient<String>]                     ` | Creates a gradient effect on `text` using the CSS gradient `gradient`.                  |
 
 ### Miscellaneous
 Other tags.

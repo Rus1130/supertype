@@ -12,6 +12,9 @@ typewriter: {
     }
     wordWrap: 110
 }
-[function "input" "type here: " false][newline]
+big long string[removelast 15]
+big long string[removelast 15 instant]
+{{# [function "progress-bar" "=" 100] #}}
+{{# [function "input" "type here: " false][newline]
 last user input: [function "lastsentinput"][newline]
-/*[function "sine" 17 0.6 1][gradient "what the fuck!!!!" "90deg, #c8d8fb, #6f6fff"]/*
+/*[function "sine" 17 0.6 1][gradient "what the fuck!!!!" "90deg, #c8d8fb, #6f6fff"]/* #}}
