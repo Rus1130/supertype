@@ -97,7 +97,7 @@
             "patterns": [
                 {
                     "name": "param.mixin.st",
-                    "match": "<(String|Number|Color|Boolean)>"
+                    "match": "<(String|Number|Color|Boolean)(:[0-9]+)?>"
                 }
             ]
         },

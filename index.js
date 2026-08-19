@@ -14,6 +14,7 @@ export class TagArgument {
 
     /**
      * type check, does not error
+     * @returns {boolean}
      */
     is(...types) {
         return types.includes(this.type);
@@ -22,7 +23,7 @@ export class TagArgument {
     /**
      * value check, does not error
      * @param  {...any} values 
-     * @returns 
+     * @returns {boolean}
      */
     equals(...values) {
         return values.includes(this.value);
@@ -30,6 +31,7 @@ export class TagArgument {
 
     /**
      * specific value check, does not error
+     * @returns {boolean}
      */
     equalsSpecific(...values) {
         return this.type === "specific" && values.includes(this.value);
@@ -37,6 +39,7 @@ export class TagArgument {
 
     /**
      * type check, throws error if not one of the types
+     * @returns {void}
      */
     check(...types) {
         if (!types.includes(this.type)) {
@@ -48,6 +51,7 @@ export class TagArgument {
 
     /**
      * specific value check, throws error if not specific or not one of the values
+     * @returns {void}
      */
     checkSpecific(...values) {
         if (this.type !== "specific") {
@@ -485,11 +489,13 @@ class RemoveLastTag extends Tag {
 
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
-        const [number, group] = args;
+        const [number, group, instant] = args;
 
         if (number === undefined) throw new SuperTypeError("Missing removelast value");
 
         number.check("number");
+
+        if (instant !== undefined) instant.checkSpecific("instant");
 
         if (group !== undefined) {
             group.checkSpecific("group");
@@ -497,13 +503,17 @@ class RemoveLastTag extends Tag {
         }
 
         for (let i = 0; i < number.value; i++) {
+            const expandedArgs = [
+                new TagArgument("number", 1),
+                new TagArgument("specific", "group"),
+            ];
+
+            if (instant !== undefined) expandedArgs.push(instant);
+
             ctx.queue.push({
                 type: "tag",
                 name: "removelast",
-                args: [
-                    new TagArgument("number", 1),
-                    new TagArgument("specific", "group")
-                ],
+                args: expandedArgs,
             });
         }
 
@@ -511,7 +521,11 @@ class RemoveLastTag extends Tag {
     }
 
     static onUse(engine, token) {
-        engine.addRenderTime(engine.state.charDelay);
+        const [number, group, instant] = token.args;
+
+        if(instant !== undefined) instant.checkSpecific("instant");
+
+        if(instant === undefined || instant.value === false) engine.addRenderTime(engine.state.charDelay);
     }
 
     static onRender(engine, token) {
@@ -1696,7 +1710,7 @@ export class SuperType {
         this.targetParent.addEventListener("keydown", this._keydownHandler)
 
         if(document.getElementById("supertype-selection-color") === null){
-            
+
             const style = document.createElement("style");
             style.id = "supertype-selection-color";
 
@@ -1768,8 +1782,20 @@ export class SuperType {
         }
     }
 
+    /**
+     * All allowed controls
+     */
     static AllControls = ["reset", "instant", "pause", "fastforward", "selection", "all"]
 
+    /**
+     * These controls are excluded from "all", they must be explicitly allowed
+     */
+    static ExcludeControlFromAll = ["selection"]
+
+    /**
+     * Allows the user to use the given controls. If "all" is included, all controls are allowed except those in ExcludeControlFromAll.
+     * @param  {...String} controls
+     */
     allowControls(...controls){
         for(const control of controls){
             if(!SuperType.AllControls.includes(control)){
@@ -1780,7 +1806,6 @@ export class SuperType {
         }
 
         if(this.checkIfControlAllowed("selection")){
-            // find style with id "supertype-selection-style" and remove it if it exists
             let style = document.getElementById("supertype-selection-visibility");
             if(!style){
                 style = document.createElement("style");
@@ -1796,12 +1821,17 @@ export class SuperType {
         }
     }
 
+    /**
+     * Checks if a control is allowed, taking into account the "all" control and exclusions.
+     * @param {String} control
+     * @returns {Boolean}
+     */
     checkIfControlAllowed(control){
         if(!SuperType.AllControls.includes(control)){
             throw new SuperTypeError(`Invalid control: ${control}`);
         }
 
-        return this.allowedControls.has(control) || this.allowedControls.has("all");
+        return this.allowedControls.has(control) || (this.allowedControls.has("all") && !SuperType.ExcludeControlFromAll.includes(control));
     }
 
     /**
@@ -2009,7 +2039,7 @@ export class SuperType {
     /**
      * Loads a SuperType file from the given path, parses it, and prepares it for rendering.
      * @param {string} path - The path to the SuperType file to load.
-     * @returns 
+     * @returns {Promise<SuperType>} - A promise that resolves to the SuperType instance after loading and parsing the file.
      */
     async load(path) {
         this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
