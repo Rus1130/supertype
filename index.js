@@ -308,7 +308,7 @@ class UseTag extends Tag {
 
         // Matches <String>, <Number:2>, etc. Sticky so we can test/advance
         // from the current index `i` without allocating a substring.
-        const placeholderPattern = /<(String|Number|Color|Boolean)(?::(\d+))?>/y;
+        const placeholderPattern = /<(String|Number|Color|Boolean)(?::(\d+))?(?:\s*\|\s*(.*?)\s*)?>/y;
 
         for (let i = 0; i < mixinBody.length; i++) {
 
@@ -352,7 +352,22 @@ class UseTag extends Tag {
             if (placeholderMatch !== null) {
                 const typeName = placeholderMatch[1];
                 const matched = typeName.toLowerCase();
-                const explicitIndex = placeholderMatch[2] !== undefined ? Number(placeholderMatch[2]) : null;
+
+                const explicitIndex =
+                    placeholderMatch[2] !== undefined
+                        ? Number(placeholderMatch[2])
+                        : null;
+
+                const defaultRaw = placeholderMatch[3];
+
+                let defaultValue;
+
+                if (defaultRaw !== undefined) {
+                    defaultValue = TagArgument.parse(defaultRaw);
+                    if (defaultValue !== undefined) {
+                        defaultValue.check(matched);
+                    }
+                }
 
                 let value;
 
@@ -363,27 +378,41 @@ class UseTag extends Tag {
                         );
                     }
 
-                    // Pick the Nth substitution that's already of this type,
-                    // independent of (and without advancing) the shared
-                    // positional argIndex counter used by bare <Type>.
-                    const matchingArgs = substitutions.filter(arg => arg.type === matched);
+                    // Only arguments of this type participate in :N indexing.
+                    const matchingArgs = substitutions.filter(
+                        arg => arg !== undefined && arg.type === matched
+                    );
+
                     value = matchingArgs[explicitIndex - 1];
 
+                    // No argument at this index -> use the default if one exists.
                     if (value === undefined) {
-                        throw new SuperTypeError(
-                            `Mixin "${nameArg.value}" expected at least ${explicitIndex} ${matched} argument(s), got ${matchingArgs.length}`
-                        );
+                        if (defaultValue !== undefined) {
+                            value = defaultValue;
+                        } else {
+                            throw new SuperTypeError(
+                                `Mixin "${nameArg.value}" expected at least ${explicitIndex} ${matched} argument(s), got ${matchingArgs.length}`
+                            );
+                        }
                     }
                 } else {
+                    // Bare placeholders consume the next positional argument.
                     value = substitutions[argIndex];
 
+                    // undefined means the argument was not passed, so a default
+                    // is allowed to replace it.
                     if (value === undefined) {
-                        throw new SuperTypeError(
-                            `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
-                        );
+                        if (defaultValue !== undefined) {
+                            value = defaultValue;
+                        } else {
+                            throw new SuperTypeError(
+                                `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
+                            );
+                        }
+                    } else {
+                        // A supplied argument still has to be the correct type.
+                        value.check(matched);
                     }
-
-                    value.check(matched);
                 }
 
                 switch (matched) {
@@ -416,9 +445,10 @@ class UseTag extends Tag {
 
                 i += placeholderMatch[0].length - 1;
 
-                // Indexed placeholders pull from a side channel and don't
-                // consume the next positional argument.
-                if (explicitIndex === null) argIndex++;
+                // Only positional placeholders consume an argument slot.
+                if (explicitIndex === null) {
+                    argIndex++;
+                }
 
                 continue;
             }

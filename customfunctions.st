@@ -14,12 +14,12 @@ typewriter: {
 }
 
 [mixin "placeholder-test"]
-    String: <String>[newline]
-    Number: <Number>[newline]
+    String: <String | "hi">[newline]
+    Number: <Number | 10>[newline]
     First String: <String:1>[newline]
 [mixin end]
 
-[@use "placeholder-test" "hi" 10][newline]
+[@use "placeholder-test" "hi" 12][newline]
 
 {{# [mixin "progress-bar-frame"]
     [instant]\[[repeat "=" <Number>][tab <Number>]\][instant off]
