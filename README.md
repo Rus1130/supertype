@@ -193,6 +193,8 @@ hello johny!
 hello clara!
 ```
 
+TODOC: index specification & default values
+
 ### Imports
 Imports are a way to include other `.st` files into your current file.
 

@@ -96,8 +96,63 @@
         "mixinPlaceholder": {
             "patterns": [
                 {
+                    "match": "<(String|Number|Color|Boolean)(:)([0-9]+)>",
+                    "captures": {
+                        "1": {
+                            "name": "param.mixin.st"
+                        },
+                        "3": {
+                            "name": "constant.numeric.st"
+                        }
+                    }
+                },
+                {
+                    "match": "<(String)\\s+(\\|)\\s+([^\u003e]+)>",
+                    "captures": {
+                        "1": {
+                            "name": "param.mixin.st"
+                        },
+                        "3": {
+                            "name": "string.quoted.double.supertype"
+                        }
+                    }
+                },
+                {
+                    "match": "<(Number)\\s+(\\|)\\s+(-?\\d+(?:\\.\\d+)?)>",
+                    "captures": {
+                        "1": {
+                            "name": "param.mixin.st"
+                        },
+                        "3": {
+                            "name": "constant.numeric.number.st"
+                        }
+                    }
+                },
+                {
+                    "match": "<(Color)\\s+(\\|)\\s+(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\\b(?:25[0-5]|2[0-4]\\d|1?\\d?\\d),(?:25[0-5]|2[0-4]\\d|1?\\d?\\d),(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\b)>",
+                    "captures": {
+                        "1": {
+                            "name": "param.mixin.st"
+                        },
+                        "3": {
+                            "name": "color.st"
+                        }
+                    }
+                },
+                {
+                    "match": "<(Boolean)\\s+(\\|)\\s+(true|false)>",
+                    "captures": {
+                        "1": {
+                            "name": "param.mixin.st"
+                        },
+                        "3": {
+                            "name": "constant.language.boolean.st"
+                        }
+                    }
+                },
+                {
                     "name": "param.mixin.st",
-                    "match": "<(String|Number|Color|Boolean)(:[0-9]+)?>"
+                    "match": "<(String|Number|Color|Boolean)>"
                 }
             ]
         },

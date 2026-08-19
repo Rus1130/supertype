@@ -306,6 +306,10 @@ class UseTag extends Tag {
         let inDoubleString = false;
         let inSingleString = false;
 
+        // Matches <String>, <Number:2>, etc. Sticky so we can test/advance
+        // from the current index `i` without allocating a substring.
+        const placeholderPattern = /<(String|Number|Color|Boolean)(?::(\d+))?>/y;
+
         for (let i = 0; i < mixinBody.length; i++) {
 
             // escaped character
@@ -342,24 +346,45 @@ class UseTag extends Tag {
                 continue;
             }
 
-            let matched = null;
+            placeholderPattern.lastIndex = i;
+            const placeholderMatch = placeholderPattern.exec(mixinBody);
 
-            if (mixinBody.startsWith("<String>", i)) matched = "string";
-            else if (mixinBody.startsWith("<Number>", i)) matched = "number";
-            else if (mixinBody.startsWith("<Color>", i)) matched = "color";
-            else if (mixinBody.startsWith("<Boolean>", i)) matched = "boolean";
+            if (placeholderMatch !== null) {
+                const typeName = placeholderMatch[1];
+                const matched = typeName.toLowerCase();
+                const explicitIndex = placeholderMatch[2] !== undefined ? Number(placeholderMatch[2]) : null;
 
-            if (matched !== null) {
+                let value;
 
-                const value = substitutions[argIndex];
+                if (explicitIndex !== null) {
+                    if (explicitIndex < 1) {
+                        throw new SuperTypeError(
+                            `Mixin "${nameArg.value}" placeholder <${typeName}:${explicitIndex}> index must be >= 1`
+                        );
+                    }
 
-                if (value === undefined) {
-                    throw new SuperTypeError(
-                        `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
-                    );
+                    // Pick the Nth substitution that's already of this type,
+                    // independent of (and without advancing) the shared
+                    // positional argIndex counter used by bare <Type>.
+                    const matchingArgs = substitutions.filter(arg => arg.type === matched);
+                    value = matchingArgs[explicitIndex - 1];
+
+                    if (value === undefined) {
+                        throw new SuperTypeError(
+                            `Mixin "${nameArg.value}" expected at least ${explicitIndex} ${matched} argument(s), got ${matchingArgs.length}`
+                        );
+                    }
+                } else {
+                    value = substitutions[argIndex];
+
+                    if (value === undefined) {
+                        throw new SuperTypeError(
+                            `Mixin "${nameArg.value}" expected argument #${argIndex + 1}`
+                        );
+                    }
+
+                    value.check(matched);
                 }
-
-                value.check(matched);
 
                 switch (matched) {
 
@@ -374,26 +399,27 @@ class UseTag extends Tag {
                                 .replace(/\[/g, "\\[")
                                 .replace(/\]/g, "\\]");
                         }
-                        i += "<String>".length - 1;
                         break;
 
                     case "number":
                         expanded += value.raw ?? String(value.value);
-                        i += "<Number>".length - 1;
                         break;
 
                     case "color":
                         expanded += value.raw ?? value.value;
-                        i += "<Color>".length - 1;
                         break;
 
                     case "boolean":
                         expanded += value.raw ?? String(value.value);
-                        i += "<Boolean>".length - 1;
                         break;
                 }
 
-                argIndex++;
+                i += placeholderMatch[0].length - 1;
+
+                // Indexed placeholders pull from a side channel and don't
+                // consume the next positional argument.
+                if (explicitIndex === null) argIndex++;
+
                 continue;
             }
 

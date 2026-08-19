@@ -13,7 +13,15 @@ typewriter: {
     wordWrap: 110
 }
 
-[mixin "progress-bar-frame"]
+[mixin "placeholder-test"]
+    String: <String>[newline]
+    Number: <Number>[newline]
+    First String: <String:1>[newline]
+[mixin end]
+
+[@use "placeholder-test" "hi" 10][newline]
+
+{{# [mixin "progress-bar-frame"]
     [instant]\[[repeat "=" <Number>][tab <Number>]\][instant off]
 [mixin end]
 
@@ -37,7 +45,7 @@ typewriter: {
 [@use "progress-bar-frame" 17 3]
 [@use "progress-bar-frame" 18 2]
 [@use "progress-bar-frame" 19 1]
-[@use "progress-bar-frame" 20 0]
+[@use "progress-bar-frame" 20 0] #}}
 
 {{# [mixin "progress-bar"]
         [instant]
