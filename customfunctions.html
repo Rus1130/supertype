@@ -41,13 +41,40 @@
 <script type="module">
     import { SuperType, TagArgument } from "./index.js";
 
-    const tw = new SuperType(document.body, {
-        "userinput": function(engine, token) {
-            const [name, prefixText] = token.args;
-            engine.pause();
-            engine.lockPause();
+    let lastUserInputTokens = [];
+    let lastUserInputValue = "";
 
-            tw.renderRaw(prefixText.value);
+    const tw = new SuperType(document.body, {
+        "lastsentinput": function(engine, token) {
+            const [name] = token.args;
+            engine.insertTokens(lastUserInputTokens);
+        },
+
+        "input": function(engine, token) {
+            const [name, prefixText] = token.args;
+
+            prefixText.check("string");
+
+            const renderPrefixTokens = [...prefixText.value].map(ch => ({
+                type: "character",
+                value: ch,
+                style: token.style
+            }));
+
+            engine.insertTokens([...renderPrefixTokens, {
+                type: "tag",
+                name: "!payload",
+                payload: {
+                    onUse: function(engine){
+                        engine.pause()
+                        engine.lockPause()
+                        tw.appendToTarget(inputElement);
+                        requestAnimationFrame(() => {
+                            inputElement.focus();
+                        });
+                    }
+                }
+            }]);
 
             const inputElement = document.createElement("input");
             inputElement.type = "text";
@@ -61,20 +88,25 @@
 
             inputElement.onkeydown = (event) => {
                 event.stopPropagation();
+                inputElement.style.width = (inputElement.value.length + 1) + "ch";
+
                 if (event.key === "Enter") {
-                    engine.unlockPause();
-                    // it wont render the input for some reason
-                    console.log(inputElement.value)
-                    engine.resume();
+                    event.preventDefault();
                     inputElement.disabled = true;
+
+                    const chars = [...inputElement.value].map(ch => ({
+                        type: "character",
+                        value: ch,
+                        style: token.style
+                    }));
+
+                    lastUserInputValue = inputElement.value;
+                    lastUserInputTokens = chars;
+
+                    engine.unlockPause();
+                    engine.resume();
                 }
             };
-            tw.appendToTarget(inputElement);
-
-            requestAnimationFrame(() => {
-                inputElement.focus();
-            });
-
         },
 
         "end": function() {

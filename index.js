@@ -167,7 +167,8 @@ export class Tag {
      * @returns {false | void}
      */
     static onUse(engine, token) {
-        console.error(`Unknown tag type: ${token.name}`);
+        if(token.name === undefined) throw new SuperTypeError("Missing tag name");
+        throw new SuperTypeError(`Tag ${token.name} has no onUse() implementation`);
     }
 
     /**
@@ -1132,7 +1133,7 @@ class GradientTag extends Tag {
             type: "tag",
             name: "!payload",
             payload: {
-                onuse: (engine, token) => {
+                onUse: (engine, token) => {
                     if (engine.state.gradientColorStack === undefined) engine.state.gradientColorStack = [];
                     engine.state.gradientColorStack.push(engine.state.currentColor);
                 }
@@ -1149,7 +1150,7 @@ class GradientTag extends Tag {
                 name: "!payload",
                 args: [new TagArgument("color", color)],
                 payload: {
-                    onuse: (engine, token) => {
+                    onUse: (engine, token) => {
                         engine.state.currentColor = token.args[0].value;
                     }
                 }
@@ -1162,7 +1163,7 @@ class GradientTag extends Tag {
             type: "tag",
             name: "!payload",
             payload: {
-                onuse: (engine, token) => {
+                onUse: (engine, token) => {
                     const stack = engine.state.gradientColorStack;
                     if (stack && stack.length) engine.state.currentColor = stack.pop();
                 }
@@ -1302,10 +1303,10 @@ class GradientTag extends Tag {
  *      type: "tag",
  *      name: "!payload",
  *      payload: {
- *          onuse: (engine, token) => {
+ *          onUse: (engine, token) => {
  *              console.log("on use payload!");
  *          },
- *          onrender: (engine, token) => {
+ *          onRender: (engine, token) => {
  *              console.log("on render payload!");
  *          }
  *      }
@@ -1316,12 +1317,12 @@ class PayloadTag extends Tag {
 
     static onUse(engine, token) {
         if(token.payload == undefined) throw new SuperTypeError("Missing payload");
-        if(token.payload.onuse !== undefined) token.payload.onuse(engine, token);
+        if(token.payload.onUse !== undefined) token.payload.onUse(engine, token);
     }
 
     static onRender(engine, token) {
         if(token.payload == undefined) throw new SuperTypeError("Missing payload");
-        if(token.payload.onrender !== undefined) token.payload.onrender(engine, token);
+        if(token.payload.onRender !== undefined) token.payload.onRender(engine, token);
     }
 }
 
