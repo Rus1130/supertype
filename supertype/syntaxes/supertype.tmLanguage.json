@@ -126,7 +126,7 @@
                 },
                 {
                     "name": "tag.st",
-                    "begin": "(?<!\\\\)\\[((?:@use|@import))\\b",
+                    "begin": "(?<!\\\\)\\[((?:@use|@import|@noop))\\b",
                     "beginCaptures": {
                         "0": { "name": "tag.st" },
                         "1": { "name": "attag.tag.st" }

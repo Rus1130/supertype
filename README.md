@@ -148,6 +148,7 @@ Other tags.
 | `[$start]`                    | Forces the typewriter to start from where the tag is. If inside of a page, the page will start wherever the tag is.   |
 | `[$scroll]`                   | Forces the typewriter to scroll. There should be zero reason to use this tag, as the typewriter will always scroll automatically. If, for whatever reason, you need to use this tag to make the typewriter scroll, please contact me. |
 | `[$separate I/O]`             | Controls force separate mode. Forces the renderer to have each character be it's own element.                         |
+| `[@noop]`                     | Does nothing.                                                                                                         |
 
 ### Mixins
 Mixins are a way to create reusable blocks of tags and text.

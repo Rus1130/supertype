@@ -266,6 +266,12 @@ export class Tag {
     static blockOpenArgsPattern = null;
 }
 
+class NoopTag extends Tag {
+    static tagName = "@noop";
+
+    static onUse(engine, token) { }
+}
+
 class ForceStartTag extends Tag {
     static tagName = "$start";
 
@@ -391,6 +397,8 @@ class UseTag extends Tag {
         }
 
         expanded = expanded.replace(/\n[ \t]+/g, "\n");
+
+        expanded = ctx.engine.runExtractBlockHooksSync(expanded);
 
         ctx.queue.push(...ctx.engine.tokenize(expanded));
 
@@ -1565,6 +1573,45 @@ export class SuperType {
         localStorage.removeItem("supertype-reset-target");
     }
 
+    getRealColors(el) {
+        let current = el;
+        let bg = null;
+        let fg = null;
+
+        while (current && current !== document.documentElement) {
+            const cs = getComputedStyle(current);
+
+            // Only set bg if we haven't found a real one yet
+            if (!bg) {
+                const cBg = cs.backgroundColor;
+                if (cBg !== "transparent" && cBg !== "rgba(0, 0, 0, 0)") {
+                    bg = cBg;
+                }
+            }
+
+            // Only set fg if we haven't found one yet
+            if (!fg) {
+                const cFg = cs.color;
+                if (cFg !== "inherit") {
+                    fg = cFg;
+                }
+            }
+
+            // If we found both, stop early
+            if (bg && fg) break;
+
+            current = current.parentElement;
+        }
+
+        // fallback to body values
+        const bodyCS = getComputedStyle(document.body);
+
+        return {
+            bg: bg || bodyCS.backgroundColor,
+            fg: fg || bodyCS.color
+        };
+    }
+
     /**
      * 
      * @param {HTMLElement} target 
@@ -1586,8 +1633,6 @@ export class SuperType {
 
         this.functions = new Map();
 
-        this._highlightStyler = null;
-
         for (const [name, func] of Object.entries(functions)) {
             if (typeof func !== "function") {
                 throw new SuperTypeError(`Invalid function for ${name}: Expected function, got ${typeof func}`);
@@ -1598,45 +1643,6 @@ export class SuperType {
 
         if (target.__superTypeInstance) {
             target.__superTypeInstance.destroy();
-        }
-
-        function getRealColors(el) {
-            let current = el;
-            let bg = null;
-            let fg = null;
-
-            while (current && current !== document.documentElement) {
-                const cs = getComputedStyle(current);
-
-                // Only set bg if we haven't found a real one yet
-                if (!bg) {
-                    const cBg = cs.backgroundColor;
-                    if (cBg !== "transparent" && cBg !== "rgba(0, 0, 0, 0)") {
-                        bg = cBg;
-                    }
-                }
-
-                // Only set fg if we haven't found one yet
-                if (!fg) {
-                    const cFg = cs.color;
-                    if (cFg !== "inherit") {
-                        fg = cFg;
-                    }
-                }
-
-                // If we found both, stop early
-                if (bg && fg) break;
-
-                current = current.parentElement;
-            }
-
-            // fallback to body values
-            const bodyCS = getComputedStyle(document.body);
-
-            return {
-                bg: bg || bodyCS.backgroundColor,
-                fg: fg || bodyCS.color
-            };
         }
 
         const div = document.createElement("div");
@@ -1689,11 +1695,14 @@ export class SuperType {
 
         this.targetParent.addEventListener("keydown", this._keydownHandler)
 
-        if(this._highlightStyler == null){
+        if(document.getElementById("supertype-selection-color") === null){
+            
             const style = document.createElement("style");
+            style.id = "supertype-selection-color";
+
             document.head.appendChild(style);
 
-            this.targetParent.addEventListener("selectionchange", (e) => {
+            document.addEventListener("selectionchange", (e) => {
                 const sel = document.getSelection();
                 if (!sel.rangeCount) return;
 
@@ -1705,7 +1714,7 @@ export class SuperType {
                     ? anchorNode.parentElement
                     : anchorNode;
 
-                const real = getRealColors(node);
+                const real = this.getRealColors(node);
 
                 style.textContent = `
                 ::selection {
@@ -1714,8 +1723,6 @@ export class SuperType {
                 }
                 `;        
             });
-
-            this._highlightStyler = style;
         }
 
         this.target.style.whiteSpace = "pre-wrap";
@@ -1773,9 +1780,19 @@ export class SuperType {
         }
 
         if(this.checkIfControlAllowed("selection")){
-            const style = document.createElement("style");
-            style.textContent = "* { user-select: text !important; }";
-            document.head.appendChild(style);
+            // find style with id "supertype-selection-style" and remove it if it exists
+            let style = document.getElementById("supertype-selection-visibility");
+            if(!style){
+                style = document.createElement("style");
+                style.id = "supertype-selection-visibility";
+                style.textContent = "* { user-select: text !important; }";
+                document.head.appendChild(style);
+            } else {
+                style.textContent = "* { user-select: text !important; }";
+            }
+        } else {
+            const existingStyle = document.getElementById("supertype-selection-visibility");
+            if(existingStyle) existingStyle.remove();
         }
     }
 
@@ -1915,6 +1932,52 @@ export class SuperType {
                 const rawArgs = (rawArgsStr ?? "").match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
 
                 const replacement = (await TagClass.extractBlock(rawArgs, content, { engine: this })) ?? "";
+
+                body = body.slice(0, match.index) + replacement + body.slice(match.index + fullMatch.length);
+                re.lastIndex = match.index + replacement.length;
+            }
+        }
+
+        return body;
+    }
+
+    /**
+     * Synchronous counterpart to runExtractBlockHooks(). Needed because
+     * mixin expansion (@use, see UseTag) happens inside onTokenization,
+     * which tokenize() calls synchronously - there's no way to await
+     * there. Without this, block-form tags (e.g. [repeat N] ... [repeat
+     * end]) that were left un-expanded inside a stored mixin body (mixin
+     * definitions are captured as raw text and are NOT run through
+     * runExtractBlockHooks at [mixin ...] definition time) would reach
+     * tokenize() unexpanded and get misinterpreted as an inline tag call
+     * instead of a block, causing bogus argument-type errors.
+     *
+     * Only usable for tags whose extractBlock() is synchronous. If a tag
+     * with an async extractBlock() (e.g. @import) is encountered as a
+     * block inside mixin content, this throws rather than silently
+     * mishandling it - async extractBlock hooks aren't supported inside
+     * mixins.
+     *
+     * @param {string} body
+     * @returns {string}
+     */
+    runExtractBlockHooksSync(body) {
+        for (const [name, TagClass] of SuperType.tags) {
+            if (!Object.hasOwn(TagClass, "extractBlock")) continue;
+
+            const argsPattern = TagClass.blockOpenArgsPattern ?? "[^\\]]*";
+            const re = new RegExp(`\\[${name}(?:\\s+(${argsPattern}))?\\]([\\s\\S]*?)\\[${name}\\s+end\\]`, "g");
+
+            let match;
+            re.lastIndex = 0;
+
+            while ((match = re.exec(body)) !== null) {
+                const [fullMatch, rawArgsStr, content] = match;
+                const rawArgs = (rawArgsStr ?? "").match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+
+                const result = TagClass.extractBlock(rawArgs, content, { engine: this });
+
+                const replacement = (result instanceof Promise) ? "[@noop]" : (result ?? "");
 
                 body = body.slice(0, match.index) + replacement + body.slice(match.index + fullMatch.length);
                 re.lastIndex = match.index + replacement.length;
@@ -2812,6 +2875,7 @@ for (const TagClass of [
     ForceStartTag,
     ForcePageTag,
     ForceScrollTag,
+    NoopTag,
 ]) {
     SuperType.registerTag(TagClass);
 }
