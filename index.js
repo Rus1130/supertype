@@ -662,7 +662,7 @@ class FunctionTag extends Tag {
 
         if (!func) throw new SuperTypeError(`Function not found: ${funcName.value}`)
 
-        engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.scrollCount = engine.maxScrollCount;
         func(engine, token);
     }
 }
@@ -913,7 +913,7 @@ class NewlineTag extends Tag {
         if (instant === undefined) instant = false;
 
         if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
-        engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
     }
@@ -932,7 +932,7 @@ class LinebreakTag extends Tag {
         if (instant === undefined) instant = false;
 
         if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
-        engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
     }
@@ -1481,7 +1481,7 @@ class ForceScrollTag extends Tag {
     static tagName = "$scroll";
 
     static onUse(engine, token) {
-        engine.state.scrollCount = SuperType.defaultScrollCount;
+        engine.state.scrollCount = engine.maxScrollCount;
     }
 }
 
@@ -1494,8 +1494,6 @@ export class SuperType {
     static randomCharacter() {
         return SuperType.randomCharacters[Math.floor(Math.random() * SuperType.randomCharacters.length)];
     }
-
-    static defaultScrollCount = 6;
 
     /**
      * Registry of tag name -> Tag class. Populated via SuperType.registerTag().
@@ -1693,6 +1691,7 @@ export class SuperType {
         this.mixins = {};
 
         this.startCount = 0;
+        this.maxScrollCount = 12;
 
         this.allowedControls = new Set();
         this.disallowedControls = new Set();
@@ -2312,6 +2311,8 @@ export class SuperType {
             return;
         }
 
+        console.log(this.targetParent.scrollHeight, this.targetParent.scrollTop, this.targetParent.clientHeight);
+
         const fragment = document.createDocumentFragment();
         this.state.fragment = fragment;
 
@@ -2357,6 +2358,8 @@ export class SuperType {
         } finally {
             if (fragment.childNodes.length) {
                 this.target.appendChild(fragment);
+
+                // this.scrollTargetParent(this.targetParent.scrollHeight);
 
                 if (this.state.scrollCount > 0) {
                     this.state.scrollCount--;

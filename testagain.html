@@ -1,0 +1,65 @@
+<!-- written 19 july, 2026 -->
+ <style>
+    button:focus, input:focus, select:focus, textarea:focus, [contenteditable]:focus {
+        outline:none;
+    }
+    body {
+        overflow-y: hidden;
+        scrollbar-width: none;
+        background-color: black;
+        color: white;
+        margin-right: 0;
+    }
+    * {
+        font-family: monospace;
+        user-select: none;
+    }
+    .button {
+        margin-bottom: 1px;
+        display: block;
+        cursor: pointer;
+    }
+    .button:hover {
+        background-color: white;
+        color: black;
+    }
+    .hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<head>
+    <meta property="og:title"       content="PSYCHE INCIDENT"                                      />
+    <meta property="og:description" content="THIS REPORT HAS BEEN RELEASED TO THE PUBLIC."         />
+    <meta property="og:url"         content="https://rus1130.github.io/space2313/psyche-incident/" />
+    <title>PSYCHE INCIDENT</title>
+</head>
+<body>
+</body>
+<script type="module">
+    import { SuperType } from './index.js';
+
+    const tw = new SuperType(document.body, {
+        "end": function() {
+            const returnButton = document.createElement("div");
+            returnButton.classList.add("button");
+            returnButton.id = "return";
+            returnButton.textContent = "▌< Return";
+            returnButton.onclick = () => {
+                location.href = 'https://rus1130.github.io/space2313/';
+            };
+            tw.appendToTarget(returnButton);
+            tw.target.style.overflowY = 'scroll';
+            tw.target.classList.add('hide-scrollbar');
+        }
+    })
+
+    await tw.load("./testagain.st").then(() => {
+        tw.allowControls("all");
+        tw.start();
+        tw.state.userSpeedOverride = 5;
+    })
+</script>
