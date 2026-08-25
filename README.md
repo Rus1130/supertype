@@ -117,13 +117,13 @@ Change the color of the text and background.
 | `[swap]`               | Swaps the text and background colors.                 |
 
 ### Pages
-| Tag                                       | Description                                                                                                    |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `[page name<String> \]`                   | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.     |
-| `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                       |
-| `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button. It will not reset the current screen. |
-| `[$page page<String>]`                    | Forces the typewriter to open the page with name `page`.                                                       |
-| `[$page page<String> keep]`               | Forces the typewriter to open the page with name `page`. It will not reset the current screen.                 |
+| Tag                                       | Description                                                                                                          |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `[page name<String> \]`                   | Creates a page with the name `name`. The content inside the tags will be rendered when the page is opened.           |
+| `[gopage page<String> text<String>]`      | Creates a button that opens page `page`, with text `text` on the button.                                             |
+| `[gopage page<String> text<String> keep]` | Creates a button that opens page `page`, with text `text` on the button. It will not remove currently rendered text. |
+| `[$page page<String>]`                    | Forces the typewriter to open the page with name `page`.                                                             |
+| `[$page page<String> keep]`               | Forces the typewriter to open the page with name `page`. It will not remove currently rendered text.                 |
 
 ### Fun Effects
 FUN!
