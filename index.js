@@ -2311,8 +2311,6 @@ export class SuperType {
             return;
         }
 
-        console.log(this.targetParent.scrollHeight, this.targetParent.scrollTop, this.targetParent.clientHeight);
-
         const fragment = document.createDocumentFragment();
         this.state.fragment = fragment;
 
