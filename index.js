@@ -424,9 +424,13 @@ class UseTag extends Tag {
                                 .replace(/"/g, '\\"')}"`;
                         } else {
                             expanded += value.value
-                                .replace(/\\/g, "\\\\")
-                                .replace(/\[/g, "\\[")
-                                .replace(/\]/g, "\\]");
+                                .replaceAll(/\\/g, "\\\\")
+                                .replaceAll(/\[/g, "\\[")
+                                .replaceAll(/\]/g, "\\]")
+                                .replaceAll(/\\-/g, "\-")
+                                .replaceAll(/\\\*/g, "\*")
+                                .replaceAll(/\\\//g, "\/")
+                                .replaceAll(/\\_/g, "\_")
                         }
                         break;
 
