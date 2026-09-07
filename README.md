@@ -192,8 +192,8 @@ Include `<String>`, `<Number>`, `<Boolean>`, or `<Color>` in the mix-in to use p
 hello johny!
 hello clara!
 ```
-
-TODOC: index specification & default values
+Index specification: `<Number:1>`
+default values: `<String|"Hello!">`
 
 ### Imports
 Imports are a way to include other `.st` files into your current file.
