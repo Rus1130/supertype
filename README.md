@@ -137,7 +137,7 @@ FUN!
 | `[accuracy value<Number>]`                                      | Sets the accuracy of the typewriter. Value is 0 to 1.                                   |
 | `[unscramble text<String> ms<Number>]`                          | Unscrambles `text` over `ms` milliseconds.                                              |
 | `[unscramble text<String> minimumMs<Number> maximumMs<Number>]` | Unscrambles `text` over a random time between `minimumMs` and `maximumMs` milliseconds. |
-| `[gradient text<String> gradient<String>]                     ` | Creates a gradient effect on `text` using the CSS gradient `gradient`.                  |
+| `[gradient text<String> gradient<String>]`                      | Creates a gradient effect on `text` using the CSS gradient `gradient`.                  |
 
 ### Miscellaneous
 Other tags.
