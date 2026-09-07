@@ -34,7 +34,8 @@ Specific : group
          | end
            etc...
          | I/O
-           This specific type means that the tag accepts both the on and off specific. If no specific is present, it will default to on.
+           This specific type means that the tag accepts both the on and off specific.
+           If no specific is present, it will default to on.
 ```
 
 ## None
