@@ -1,4 +1,4 @@
-class SuperTypeError extends Error {
+export class SuperTypeError extends Error {
     constructor(message) {
         super(message);
         this.name = "SuperTypeError";
