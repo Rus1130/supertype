@@ -1681,6 +1681,25 @@ export class SuperType {
     }
 
     /**
+     * @description Returns a hash of the engine.
+     * @returns 
+     */
+    hash(){
+        if(this.data === null) {
+            throw new SuperTypeError("Cannot hash engine: File has not been loaded.");
+        }
+
+        let hash = 0x49dcb12a0beff322n;
+
+        for (let i = 0; i < this.data.length; i++) {
+            hash ^= BigInt(this.data.charCodeAt(i));
+            hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+        }
+
+        return hash.toString(16).padStart(16, "0");
+    }
+
+    /**
      * 
      * @param {HTMLElement} target 
      */
