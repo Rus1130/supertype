@@ -1,48 +1,57 @@
-{{# written 19 july, 2026 #}}
+{{# written 21 july, 2026 #}}
 typewriter: {
-    charDelay: 28
-    newlineDelay: 150
+    charDelay: 20
+    newlineDelay: 200
     textColor: #ffffff
     backgroundColor: #000000
     customDelays: {
-        ",": 335
-        ".": 650
-        ";": 650
+        ",": 300
+        ".": 400
+        ":": 300
     }
-    wordWrap: 100
+    instant: true
+    wordWrap: 150
+    backToTop: true
 }
-[$instant]THIS REPORT HAS BEEN RELEASED TO THE PUBLIC. ALL SENSITIVE INFORMATION HAS BEEN REDACTED.[sleep 550][linebreak]
 
-This report was written by the Interplanetary Transit Authority[sleep 350] (“ITA”) [sleep 351]to document the events surrounding what has been dubbed [sleep 400]the “Psyche Incident”[sleep 400].[sleep 1000][linebreak]
+*== Defensive ==*[newline]
 
-BACKGROUND[sleep 1500][linebreak]
+There are 2 main defensive layers to a ship: shield and armor. Hull is the main frame of the ship. If the hull of a ship is sufficiently damaged, the ship will explode.[linebreak]
 
-Project ATLAS was a large\-scale interplanetary logistics initiative consisting of two operational phases. The first phase involved transporting Asteroid 16 Psyche[sleep 350] (“Psyche”) [sleep 351]from its position within the asteroid belt to a fixed position approximately 500 kilometers above the continent of Australia. The second, indefinite phase involved the continued extraction of metallic resources from Psyche and their distribution to terrestrial industries, as well as orbital facilities throughout the Inner Solar System.[sleep 550][linebreak]
+*Armor*[newline]
 
-Project ATLAS was conceived by Dr[speed 28 override].[speeddefault] ████████ ███████ as a long\-term solution to humanity’s continued depletion of economically viable metal reserves on Earth. Following an evaluation of numerous candidate asteroids, Psyche was selected due to its high abundance of iron, nickel, and platinum metals, as well as its already established mining infrastructure. Subsequent studies concluded that the relocation of the asteroid to Earth would be substantially more economical than transporting millions of individual shipments from the asteroid belt over the lifetime of the project.[sleep 550][linebreak]
+Armor is a ship’s primary physical protection. It consists of thick, reinforced plating mounted directly to the hull. It forms the ships outer structural protection and covers critical sections of the hull.[newline]
+Additionally, ships may have “soft armor” mounted on top of the “hard armor” described above. Soft armor does not provide any physical protection, rather, it uses oganesson to dampen the momentum of objects before they can impact the armor below. However, soft armor is extremely fragile, and can be quickly degraded or destroy by sustained fire.[linebreak]
 
-After multiple independent site\-selection studies, the region of space above Australia was selected as the final destination for Psyche. The decision was based on a combination of engineering, economic, and logistical considerations. At the time of project approval, nearly half of Earth’s shipbuilding industry was located within Australia, which allowed for extracted materials to be transported directly to major manufacturing centers with minimal transit time, as well as reducing the need for additional infrastructure to be constructed. Australia’s vast sparsely populated interior also insured that in the event of a failure, casualties could be kept to a minimum. Additionally, the continent’s relatively low volcanic and seismic activity made it a favorable location for the long\-term operation of critical ground infrastructure. Ultimately, the Martian\-Australian Mining Company endorsed Australia as the preferred site after determining that no other candidate location provided an equivalent combination of industrial capacity, logistical efficiency, operational safety, and political support.[sleep 550][linebreak]
+*Shields*[newline]
 
-An Oganesson Inertial Sink[sleep 350] (“OIS”) [sleep 351]is a device that utilize the anomalous properties of oganesson to continuously remove inertia from a targeted object, preventing said object from exceeding predetermined inertial limits.[sleep 550][linebreak]
+Shields consist of two parts: sensor arrays mounted on the ship, and a network of fast\-moving Oganesson Inertial Sinks. Incoming objects are continuously tracked by the sensor array, and, in response, the shield computer positions OISs in a triangular lattice and intercepts them. Rather than surrounding an entire ship, shields are only activated where and when they are needed. The OISs dampen the momentum of incoming objects, either bringing them to a complete stop within the shield or slowing them sufficiently for the ship’s point defense systems to destroy them before impact.[linebreak]
 
-Psyche maintained its fixed position relative to Earth’s surface by a network of 1[speed 1 override],[speeddefault]024 OISs. The network was arranged in a spherical formation surrounding the asteroid, allowing each unit to contribute to attitude, altitude, and rotational control. The use of 1[speed 1 override],[speeddefault]024 independent OISs provided both load\-sharing and system redundancy, ensuring that the failure of a single unit would not compromise overall stability. The network operated autonomously under the supervision of an AI\-controlled stability management system[sleep 350] (“the System”)[sleep 351], with the continuous oversight provided by multiple human overseers. In the event of an individual OIS failure, the affected unit would automatically withdraw from the formation and notify the overseers of its malfunction. The remaining OISs would subsequently reposition themselves to restore the formation and redistribute the additional load among the operational units. The System would then deploy a reserve OIS to replace the failed unit, restoring the network to full operational capacity. Under normal operating conditions, this process required less than two minutes and thirty seconds to complete and did not require direct intervention from any overseer.[sleep 550][linebreak]
+Intercepted material remains within the active shield lattice. As debris accumulates, the shield becomes increasingly congested, which reduces its effectiveness. If too much material is present, newly intercepted objects may collide with trapped debris and detonate, inflicting significant damage on the shield network. This material must be either discarded by flinging it off in an arbitrary direction, or, if the material is in a sufficiently undamaged state, may be brought back into the ship to be used by the ship’s own offensive systems.[linebreak]
 
-An Undamped Inertial Upset[sleep 350] (“UIU”) [sleep 351]is defined as any uncommanded translational or rotational movement that causes the asteroid to move beyond its intended operational position or orientation. In the event of a UIU, the System would automatically identify the direction of the unintended motion and command a proportional number of OISs to reposition opposite the direction of travel. Once in position, the reassigned OISs would generate corrective inertial forces intended to arrest the asteroid’s motion and return it to its designated position.[sleep 1000][linebreak]
+The shield computer may also concentrate multiple OIS arrays in a single area, effectively “doubling,” “tripling,” etc. the shield’s strength against attacks from a specific direction. This provides substantially greater protection in that region but leaves fewer OIS arrays available to defend the rest of the ship.[linebreak]
 
-[$instant off]THE PSYCHE INCIDENT[sleep 1500][linebreak]
+Most civilian ships do not have shield systems, as the technology is generally reserved for military vessels and other high\-value assets due to its cost, complexity, and power requirements. Soft armor is also not often found on civilian ships, but its more common than shields.[linebreak]
 
-During a routine movement operation on February 13th, 2315, at 8:03:03 SST, approximately one\-third of the OISs experienced a simultaneous malfunction. The affected units were concentrated within the same region of the asteroid’s inertial sink network and on the side of the asteroid aligned with its direction of movement. The failed OISs automatically withdrew from the formation as instructed by the System; however, because the failures occurred while the asteroid was already in motion, the remaining OIS network was unable to compensate for the sudden loss of control. The asteroid continued along an unintended trajectory, causing the System to classify the event as a UIU and initiate the UIU recovery protocol.[sleep 550][linebreak]
+Shields are easily explained by looking at defensive magic from Frieren: Beyond Journey’s End.[linebreak]
 
-In accordance with the UIU recovery protocol, the System attempted to restore control by commanding all available OIS units to reposition to the side opposite of the detected motion and increasing corrective output in order to return Psyche to its assigned position. However, sixty\-four OIS units located within the center of the affected region failed to receive the repositioning command due to a █████ ███████ ██████[sleep 350] (“███ ██████”)[sleep 351]. Soon after, ███ ██████ ██████ ████████████, which allowed these units to stay in their original positions while receiving the command to increase corrective output, causing their combined force to act on the asteroid from an unintended location.[sleep 550][linebreak]
 
-The resulting imbalance caused the sixty\-four operational OISs to generate a concentrated corrective force focused on a single region of the asteroid. Although each individual unit remained within its operational limits, the combined force exceeded the structural tolerance of the surrounding material. The resulting stress initiated a structural fracture, causing the separation of a large fragment of the asteroid. The fragment then entered an uncontrollable descent, impacting the Simpson Desert approximately two minutes later.[sleep 1000][linebreak]
+*== Offensive ==*[newline]
 
-CONCLUSION[sleep 1500][linebreak]
+There are two types of offensive systems: kinetic and laser. Kinetic can be further subdivided into autocannons, artillery, and missiles.[linebreak]
 
-The ITA concluded that Project ATLAS' inertial regulation architecture did not provide adequate protection against asymmetric OIS failures capable of generating localized structural overloads; however, the initial operational failure was not a result of any of these factors. The investigation determined that the loss of sixty\-four operational OIS units from the recovery maneuver was directly attributable to the presence of ███ ██████, which █████████████ █████████ ███████ █████████████ within a localized region of the OIS network. Investigators found no evidence that ███ █████████████ ███████ █████ ████ ████████ ███████ ███ █████ ███████ ██████████ █████████.[sleep 550][linebreak]
+*Kinetic*[newline]
 
-Based upon the available evidence, the ITA officially classified the Psyche Incident as a ██████████ ███ ██ ████████. The nature of ███ ██████ indicates that its objective was not the destruction of Project ATLAS itself, but rather the ███████████ ██████████ of an ██████████████ ██████ on ███████ ███████. Although the detached fragment impacted the Simpson Desert, trajectory reconstruction determined that only minor deviations in the fragment’s separation velocity would have resulted in an impact within one of the several major Australian population centers. The ITA therefore concluded that the ██████ was ████████ ██ ███████ ████ ████████ ██████████ through the ██████████ █████████████ of Psyche.[sleep 550][linebreak]
+Kinetic weapons use physical projectiles to inflict damage through momentum and impact. They rely on accelerating a solid mass toward a target, causing structural damage upon collision. The effectiveness of a kinetic weapon is primarily determined by the projectiles mass and velocity.[linebreak]
 
-In response to this incident, the ITA immediately suspended all active asteroid relocation and enacted Directive 2305\-17, permanently prohibiting the transfer of asteroids exceeding 1 billion kilograms to within 2[speed 1 override],[speeddefault]000 kilometers of Earth’s surface. The findings of this investigation remain the foundation of modern interplanetary planetary\-defense and asteroid\-transit safety regulations.[sleep 1460][linebreak instant]
+Autocannons are low caliber, high rate\-of\-fire weapons designed for sustained engagements. Their high fire rate makes them effective against lightly armored targets and missiles, while also providing consistent pressure against larger vessels. Shields have difficulty intercepting autocannon rounds due to their small size, which makes inertial dampening difficult, as well as the sheer volume of projectiles fired in a short amount of time, which will lead to shield lattices accumulating debris more rapidly. However, each individual round carries relatively little energy, making autocannons less effective against heavily armored targets. Due to limitations regarding projectile velocity, tracking accuracy, and position prediction, autocannons have an optimal range of 50 to 1,000 kilometers, with a maximum range of 2,000 kilometers.[linebreak]
 
-[sleep 700][function "end"]
+Artillery are high caliber, low rate\-of\-fire weapons designed to deliver high alpha strike. They sacrifice firing speed for projectile mass and velocity, allowing them to inflict significant damage with each individual shot. Being of larger size, artillery shells are easier for shields to detect and intercept, but their increased momentum makes them more difficult to fully dampen. If an artillery shell penetrates shields, it can inflict significant damage to both armor and hull. Artillery have significantly higher ranges than autogannons, due to their higher projectile velocities and more advanced targeting systems, with typical engagement ranges of 5,000 to 10,000 kilometers with maximum effecting ranges of approximately 25,000 kilometers.[linebreak]
+
+Missiles are self\-propelled, guided weapons that use onboard propulsion and targetting systems to pursue their targets after launch. Unlike autocannons and artillery, which rely on direct trajectories, missiles can dynamically adjust their course during flight, allowing them to engage maneuvering targets and attack beyond line\-of\-sight. Additionally, they can deal high damage to shield lattices, as a missile’s explosion can take out many OIS units at once. Due to the explosion’s blast energy being dispersed over a wider area, they are less than effective against armor. Missiles have the longest effective engagement range of any kinetic weapon, typically engaging targets at distances of 100,000 to 250,000 kilometers and remaining effective at ranges up to 350,000 kilometers, depending on their propulsion system and guidance package.[linebreak]
+
+*Laser*[newline]
+
+Lasers project highly focused beams of light to transfer energy directly into a target. Because the beam travels at the speed of light, lasers require virtually no lead at typical combat ranges and cannot be intercepted by conventional point\-defense systems. However, beam divergence and the immense power required to maintain a destructive beam limit their effective range. Lasers bypass shields entirely, and melt through hull structures almost instantly. While they are also capable of damaging hard armor, the thickness and thermal resistance of armor plating requires sustained exposure to penetrate. Most ship\-mounted laser systems engage targets at 50,000 to 150,000 kilometers, with maximum effective ranges approaching 200,000 kilometers.[linebreak]
+
+[function "end"]

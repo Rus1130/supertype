@@ -2209,6 +2209,17 @@ export class SuperType {
         }
 
 
+        if(this.header.backToTop === true){
+            this.insertPayload({
+                onRender: (engine, token) => {
+                    requestAnimationFrame(() => {
+                        this.scrollTargetParent(0);
+                    });
+                }
+            });
+        }
+
+
         for(let page in this.pages) {
             let pageTokens = this.pages[page];
             let styleStack = {
@@ -2245,6 +2256,15 @@ export class SuperType {
 
         for (let page in this.pages) {
             const idx = this.pages[page].findIndex(t => t.type === "tag" && t.name === ForceStartTag.tagName);
+            if(this.header.backToTop === true){
+                this.insertPayloadToPage(page, {
+                    onRender: (engine, token) => {
+                        requestAnimationFrame(() => {
+                            this.scrollTargetParent(0);
+                        });
+                    }
+                });
+            }
             if (idx !== -1) this.startIndex[page] = idx;
         }
 
@@ -2271,6 +2291,16 @@ export class SuperType {
     }
 
     /**
+     * Inserts a token into the specified page.
+     * @param {string} page - The name of the page to insert the token into.
+     * @param {Object} token - The token to insert.
+     */
+    insertTokenToPage(page, token) {
+        if(this.pages[page] === undefined) throw new SuperTypeError(`Page ${page} does not exist`);
+        this.pages[page].push(token);
+    }
+
+    /**
      * Inserts an array of tokens into the current page at the current token index.
      * @param {Array} tokenArray - The array of tokens to insert.
      */
@@ -2278,50 +2308,35 @@ export class SuperType {
         this.pages[this.state.page].splice(this.state.token, 0, ...tokenArray);
     }
 
-    // /**
-    //  * Inserts a string into the current page at the current token index. If `instant` is true, the string will be rendered instantly.
-    //  * @param {string} str - The string to insert.
-    //  * @param {boolean} [instant=false] - Whether to render the string instantly.
-    //  */
-    // insertString(str, instant=false){
-    //     const tokens = [];
-
-    //     if(instant){
-    //         tokens.push({
-    //             type: "tag",
-    //             name: "instant",
-    //             args: []
-    //         });
-    //     }
-
-    //     for (const ch of str) {
-    //         tokens.push({
-    //             type: "character",
-    //             value: ch,
-    //             style: {
-    //                 "color": this.state.currentColor,
-    //                 "bg": this.state.currentBg,
-    //                 "bold": this.state.currentStyle?.bold ?? false,
-    //                 "italic": this.state.currentStyle?.italic ?? false,
-    //                 "underline": this.state.currentStyle?.underline ?? false,
-    //                 "strikethrough": this.state.currentStyle?.strikethrough ?? false
-    //             }
-    //         });
-    //     }
-
-    //     if(instant){
-    //         tokens.push({
-    //             type: "tag",
-    //             name: "instant",
-    //             args: [new TagArgument("specific", "off")]
-    //         });
-    //     }
-
-    //     this.insertTokens(tokens);
-    // }
-
+    /**
+     * Inserts an array of tokens into the specified page.
+     * @param {string} page - The name of the page to insert the tokens into.
+     * @param {Array} tokenArray - The array of tokens to insert.
+     */
+    insertTokensToPage(page, tokenArray){
+        if(this.pages[page] === undefined) throw new SuperTypeError(`Page ${page} does not exist`);
+        this.pages[page].push(...tokenArray);
+    }
+    
+    /**
+     * Inserts a payload into the current page at the current token index. The payload is wrapped in a token with type "tag" and name "!payload".
+     * @param {Object} payload - The payload to insert.
+     */
     insertPayload(payload){
         this.insertToken({
+            type: "tag",
+            name: "!payload",
+            payload
+        });
+    }
+
+    /**
+     * Inserts a payload into the specified page. The payload is wrapped in a token with type "tag" and name "!payload".
+     * @param {string} page - The name of the page to insert the payload into.
+     * @param {Object} payload - The payload to insert.
+     */
+    insertPayloadToPage(page, payload){
+        this.insertTokenToPage(page, {
             type: "tag",
             name: "!payload",
             payload
@@ -2353,13 +2368,6 @@ export class SuperType {
                     this.state.scrollLocked = false;
                     this.state.pauseLocked = true;
                     this.pause();
-
-                    if (this.header.backToTop === true) {
-                        requestAnimationFrame(() => {
-                            this.scrollWindow(0);
-                        });
-                    }
-
                     break;
                 }
 
@@ -2380,9 +2388,7 @@ export class SuperType {
             if (fragment.childNodes.length) {
                 this.target.appendChild(fragment);
 
-                // this.scrollTargetParent(this.targetParent.scrollHeight);
-
-                if (this.state.scrollCount > 0) {
+                if (this.state.scrollCount > 0 && this.header.backToTop !== true) {
                     this.state.scrollCount--;
 
                     requestAnimationFrame(() => {
