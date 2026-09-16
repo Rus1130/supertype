@@ -410,6 +410,7 @@
             const randID = Math.random().toString(36).substring(2, 15);
 
             await scanPixels(imagePath.value, width.value, height.value).then((array) => {
+                console.log(JSON.stringify(array));
                 engine.insertPayload({
                     onRender: (engine, token) => {
                         const real = document.createElement("canvas");
