@@ -32,10 +32,10 @@
     }
 </style>
 <head>
-    <meta property="og:title"       content="PSYCHE INCIDENT"                                      />
-    <meta property="og:description" content="THIS REPORT HAS BEEN RELEASED TO THE PUBLIC."         />
-    <meta property="og:url"         content="https://rus1130.github.io/space2313/psyche-incident/" />
-    <title>PSYCHE INCIDENT</title>
+    <meta property="og:title"       content="Image test"                                      />
+    <meta property="og:description" content="img"         />
+    <meta property="og:url"         content="https://rus1130.github.io/space2313/testagain" />
+    <title>Image test</title>
 </head>
 <body>
 </body>
@@ -148,7 +148,11 @@
         };
     }
     
-    const rand = mulberry32(20319923);
+    let rand = mulberry32(20319923);
+
+    function setSeed(seed) {
+        rand = mulberry32(seed);
+    }
 
     function rowGlitch(ctx, width, height, glitchiness = 0.1) {
         const rowCount = Math.floor(height * glitchiness);
@@ -280,6 +284,8 @@
     let hueRotateBlockSize = 0;
     let hueRotateCount = 0;
 
+    let priority = [];
+
     const tw = new SuperType(document.body, {
         "end": function() {
             const returnButton = document.createElement("div");
@@ -294,6 +300,16 @@
             tw.target.classList.add('hide-scrollbar');
         },
 
+        "change random image seed": function(engine, token) {
+            const [name, seed] = token.args;
+
+            if (seed == undefined) throw new SuperTypeError("change random image seed function requires a seed argument", token);
+
+            seed.check("number");
+
+            setSeed(seed.value);
+        },
+
         "set image channel shift": function(engine, token) {
             const [name, channels, amount] = token.args;
 
@@ -305,6 +321,8 @@
 
             channelShiftChannels = channels.value;
             channelShiftAmount = amount.value;
+
+            priority.push("shift");
         },
 
         "set image bit corrupt": function(engine, token) {
@@ -315,6 +333,8 @@
             chance.check("number");
 
             bitCorruptChance = chance.value;
+
+            priority.push("corrupt");
         },
 
         "set image block glitch": function(engine, token) {
@@ -328,6 +348,8 @@
 
             blockGlitchBlockSize = blockSize.value;
             blockGlitchCount = count.value;
+
+            priority.push("block");
         },
 
         "set image wave distort": function(engine, token) {
@@ -341,6 +363,8 @@
 
             waveDistortAmplitude = amplitude.value;
             waveDistortFrequency = frequency.value;
+
+            priority.push("wave");
         },
 
         "set image hue rotate": function(engine, token) {
@@ -354,6 +378,8 @@
 
             hueRotateBlockSize = blockSize.value;
             hueRotateCount = count.value;
+
+            priority.push("hue");
         },
 
         "image": async function(engine, token){
@@ -408,20 +434,31 @@
                             }
                         }
 
-                        // // channels, amount
-                        channelShift(realCtx, width.value, height.value, channelShiftChannels, channelShiftAmount);
+                        function applyEffects() {
+                            for (const effect of priority) {
+                                switch (effect) {
+                                    case "shift":
+                                        channelShift(realCtx, width.value, height.value, channelShiftChannels, channelShiftAmount);
+                                        break;
+                                    case "corrupt":
+                                        bitCorrupt(realCtx, width.value, height.value, bitCorruptChance);
+                                        break;
+                                    case "block":
+                                        blockGlitch(realCtx, width.value, height.value, blockGlitchBlockSize, blockGlitchCount);
+                                        break;
+                                    case "hue":
+                                        hueRotateBlocks(realCtx, width.value, height.value, hueRotateBlockSize, hueRotateCount);
+                                        break;
+                                    case "wave":
+                                        waveDistort(realCtx, width.value, height.value, waveDistortAmplitude, waveDistortFrequency);
+                                        break;
+                                }
+                            }
 
-                        // // // chance
-                        bitCorrupt(realCtx, width.value, height.value, bitCorruptChance);
+                            priority = [];
+                        }
 
-                        // // // blocksize, count
-                        blockGlitch(realCtx, width.value, height.value, blockGlitchBlockSize, blockGlitchCount);
-
-                        // // // amplitude, frequency
-                        waveDistort(realCtx, width.value, height.value, waveDistortAmplitude, waveDistortFrequency);
-
-                        // // blocksize, count
-                        hueRotateBlocks(realCtx, width.value, height.value, hueRotateBlockSize, hueRotateCount);
+                        applyEffects();
 
                         engine.appendToTarget(canvas);
 
