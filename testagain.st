@@ -9,7 +9,6 @@ typewriter: {
         ".": 400
         ":": 300
     }
-    instant: true
     wordWrap: 150
     backToTop: true
 }
@@ -17,5 +16,5 @@ typewriter: {
 hi!
 [mixin end]
 hiiii[newline]
-[function "image" "img-to-st/test-img-NOT-MINE.png"][newline]
+[function "image" "img-to-st/test-img-NOT-MINE.png" 312 438][newline]
 hello!

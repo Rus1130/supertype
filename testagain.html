@@ -41,6 +41,48 @@
 </body>
 <script type="module">
     import { SuperType, TagArgument, SuperTypeError } from './index.js';
+
+    function rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return [h, s, l];
+    }
+
+    function hslToRgb(h, s, l) {
+        let r, g, b;
+        if (s === 0) {
+            r = g = b = l;
+        } else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1 / 3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1 / 3);
+        }
+        return [r * 255, g * 255, b * 255];
+    }
  
     async function scanPixels(imgSrc, width, height) {
         const bitmap = []
@@ -95,6 +137,138 @@
             console.error("Could not copy text: ", err);
         });
     }
+    function mulberry32(seed) {
+        let a = seed;
+        return function () {
+            a |= 0;
+            a = (a + 0x6D2B79F5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    
+    const rand = mulberry32(20319923);
+
+    function rowGlitch(ctx, width, height, glitchiness = 0.1) {
+        const rowCount = Math.floor(height * glitchiness);
+
+        for (let n = 0; n < rowCount; n++) {
+            const y = Math.floor(rand() * height);
+            const rowHeight = 1 + Math.floor(rand() * 4);
+            const shift = Math.floor((rand() - 0.5) * width * 0.3);
+
+            const slice = ctx.getImageData(0, y, width, rowHeight);
+            ctx.clearRect(0, y, width, rowHeight);
+            ctx.putImageData(slice, shift, y);
+        }
+    }
+
+    function bitCorrupt(ctx, width, height, chance = 0.002) {
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (rand() < chance) {
+                const channel = i + Math.floor(rand() * 3);
+                data[channel] = rand() < 0.5 ? 0 : 255;
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    function blockGlitch(ctx, width, height, blockSize = 8, count = 20) {
+        for (let n = 0; n < count; n++) {
+            const sx = Math.floor(rand() * (width - blockSize));
+            const sy = Math.floor(rand() * (height - blockSize));
+            const dx = Math.min(width - blockSize, Math.max(0, sx + (rand() - 0.5) * 30));
+            const dy = Math.min(height - blockSize, Math.max(0, sy + (rand() - 0.5) * 30));
+
+            const block = ctx.getImageData(sx, sy, blockSize, blockSize);
+            ctx.putImageData(block, dx, dy);
+        }
+    }
+
+    function waveDistort(ctx, width, height, amplitude = 5, frequency = 0.1) {
+        const phase = rand() * Math.PI * 2;
+
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const src = imgData.data;
+        const out = new Uint8ClampedArray(src);
+
+        for (let y = 0; y < height; y++) {
+            const shift = Math.round(Math.sin(y * frequency + phase) * amplitude);
+
+            for (let x = 0; x < width; x++) {
+                const srcX = Math.min(width - 1, Math.max(0, x - shift));
+                const i = (y * width + x) * 4;
+                const si = (y * width + srcX) * 4;
+
+                out[i] = src[si];
+                out[i + 1] = src[si + 1];
+                out[i + 2] = src[si + 2];
+                out[i + 3] = src[si + 3];
+            }
+        }
+
+        ctx.putImageData(new ImageData(out, width, height), 0, 0);
+    }
+
+    function hueRotateBlocks(ctx, width, height, blockSize = 20, count = 15) {
+        for (let n = 0; n < count; n++) {
+            const x = Math.floor(rand() * (width - blockSize));
+            const y = Math.floor(rand() * (height - blockSize));
+            const rotation = rand(); // 0..1 fraction of full hue circle
+
+            const block = ctx.getImageData(x, y, blockSize, blockSize);
+            const data = block.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+                const [r2, g2, b2] = hslToRgb((h + rotation) % 1, s, l);
+                data[i] = r2;
+                data[i + 1] = g2;
+                data[i + 2] = b2;
+            }
+
+            ctx.putImageData(block, x, y);
+        }
+    }
+
+    function channelShift(ctx, width, height, channels, amount = 4) {
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const src = imgData.data;
+        const out = new Uint8ClampedArray(src);
+
+        const channelMap = { r: 0, g: 1, b: 2 };
+        const indices = [...new Set(channels.toLowerCase())].map(ch => {
+            const idx = channelMap[ch];
+            if (idx === undefined) {
+                throw new Error(`Invalid channel: "${ch}". Expected some combination of "r", "g", "b"`);
+            }
+            return idx;
+        });
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const i = (y * width + x) * 4;
+                const shiftedX = Math.min(width - 1, x + amount);
+                const si = (y * width + shiftedX) * 4;
+
+                out[i] = src[i];
+                out[i + 1] = src[i + 1];
+                out[i + 2] = src[i + 2];
+                out[i + 3] = src[i + 3];
+
+                for (const idx of indices) {
+                    out[i + idx] = src[si + idx];
+                }
+            }
+        }
+
+        ctx.putImageData(new ImageData(out, width, height), 0, 0);
+    }
 
     const tw = new SuperType(document.body, {
         "end": function() {
@@ -111,115 +285,109 @@
         },
 
         "image": async function(engine, token){
-            const [name, imagePath] = token.args;
+            const [name, imagePath, width, height] = token.args;
             engine.header.wordWrap = Infinity;
 
             if(imagePath == undefined) throw new SuperTypeError("image function requires an image path argument", token);
+            if(width == undefined) throw new SuperTypeError("image function requires a width argument", token);
+            if(height == undefined) throw new SuperTypeError("image function requires a height argument", token);
             imagePath.check("string");
+            width.check("number");
+            height.check("number");
 
-            const width = 312;
-            const height = 438;
+            engine.insertTokens([
+                {
+                    type: "tag",
+                    name: "textsize",
+                    style: {},
+                    args: [new TagArgument("number", 1)]
+                },
+                {
+                    type: "tag",
+                    name: "$instant",
+                    style: {},
+                    args: [new TagArgument("specific", "on")]
+                }
+            ])
 
             engine.pause()
 
-            await scanPixels(imagePath.value, width, height).then((array) => {
-                const mixin = "{{# first is text, 2nd is background #}}\n[mixin \"c\"]\n    [color <Color:1>][bg <Color:2>]▀\n[mixin end]"
-                let output = "[$instant][textsize 1]\n"; 
+            const randID = Math.random().toString(36).substring(2, 15);
 
-                if(engine.mixins["c"] != undefined) throw new SuperTypeError("Mixin 'c' already exists. Please remove it before using the image function.", token);
-                else engine.mixins["c"] = "[color <Color:1>][bg <Color:2>]▀"
-        
-                for(let i = 0; i < array.length; i += 2) {
-                    const textColorRow = array[i];
-                    const bgColorRow = array[i + 1];
-        
-                    for(let j = 0; j < textColorRow.length; j++) {
-                        const textColor = textColorRow[j];
-                        const bgColor = bgColorRow[j];
-        
-        
-                        output += `[@use "c" #${textColor} #${bgColor}]`
-                    }
-                    output += "[newline]\n"
-                }
-        
-                output += "[$instant off][textsize default][resetcolors]"
+            await scanPixels(imagePath.value, width.value, height.value).then((array) => {
+                engine.insertPayload({
+                    onRender: (engine, token) => {
+                        const real = document.createElement("canvas");
+                        real.width = width.value;
+                        real.height = height.value;
+                        real.style.imageRendering = "pixelated";
 
-                const tokens = engine.tokenize(output);
+                        const canvas = document.createElement("canvas");
+                        canvas.id = `image-${randID}`;
+                        canvas.width = width.value;
+                        canvas.height = height.value;
+                        canvas.style.imageRendering = "pixelated";
 
-                console.log(tokens)
+                        const realCtx = real.getContext("2d");
 
-                // separate the tokens array into more manageable chunks to avoid freezing the browser
-
-                const chunkSize = 1000;
-                for (let i = 0; i < tokens.length; i += chunkSize)
-                {
-                    let chunk = tokens.slice(i, i + chunkSize);
-                    chunk = chunk.map(token => {
-                        if(token.type !== "character") return token;
-                        else if(token.type == "character") {
-                            // FUCK
+                        for(let i = 0; i < array.length; i++) {
+                            for (let j = 0; j < array[i].length; j++) {
+                                const color = array[i][j];
+                                const ctx = real.getContext("2d");
+                                ctx.fillStyle = `#${color}`;
+                                ctx.fillRect(j, i, 1, 1);
+                            }
                         }
-                    })
-                    engine.insertTokens(chunk);
-                }
 
+                        // // channels, amount
+                        channelShift(realCtx, width.value, height.value, "rb", 10);
+
+                        // // chance
+                        bitCorrupt(realCtx, width.value, height.value, 0.7);
+
+                        // // blocksize, count
+                        blockGlitch(realCtx, width.value, height.value, 30, 10);
+
+                        // // amplitude, frequency
+                        waveDistort(realCtx, width.value, height.value, 1, 10000000);
+
+                        // blocksize, count
+                        hueRotateBlocks(realCtx, width.value, height.value, 100, 150);
+
+                        engine.appendToTarget(canvas);
+
+                        const ctx = canvas.getContext("2d");
+
+                        const rowDelay = 120;
+                        const rowTokens = [];
+
+                        for (let y = 0; y < height.value; y++) {
+                            rowTokens.push({
+                                type: "tag",
+                                name: "!payload",
+                                payload: {
+                                    onUse: (engine, token) => {
+                                        engine.addRenderTime(rowDelay);
+                                    },
+                                    onRender: (engine, token) => {
+                                        ctx.drawImage(
+                                            real,
+                                            0, y, width.value, 1,
+                                            0, y, width.value, 1
+                                        );
+                                    }
+                                }
+                            });
+                        }
+
+                        engine.insertTokens(rowTokens);
+                    }
+                });
             }).finally(() => {
                 engine.resume();
-            })
+            });
         }
     })
-
-                //     array = array.reverse();
-            //     for(let i = 0; i < array.length; i += 2){
-            //         const textColorRow = array[i + 1];
-            //         const bgColorRow = array[i];
-
-            //         for(let j = 0; j < textColorRow.length; j++){
-            //             const textColor = textColorRow[j];
-            //             const bgColor = bgColorRow[j];
-
-            //             engine.insertToken({
-            //                 type: "tag",
-            //                 name: "textsize",
-            //                 style: {},
-            //                 args: [new TagArgument("number", 2)]
-            //             })
-
-            //             engine.insertToken({
-            //                 type: "tag",
-            //                 name: "!payload",
-            //                 payload: {
-            //                     onUse: (engine, token) => {
-            //                         engine.state.currentColor = textColor;
-            //                         engine.state.currentBg = bgColor;
-            //                     }
-            //                 }
-            //             });
-
-            //             engine.insertToken({
-            //                 type: "character",
-            //                 value: "▀",
-            //                 style: {
-            //                     color: textColor,
-            //                     backgroundColor: bgColor
-            //                 }
-            //             });
-            //         }
-
-            //         engine.insertToken({
-            //             type: "tag",
-            //             name: "newline",
-            //             style: {},
-            //             args: []
-            //         })
-            //     }
-
-            // }).catch((err) => {
-            //     throw new SuperTypeError(`Failed to scan pixels for image: ${imagePath.value}. Error: ${err.message}`, token);
-            // });
-
-            // engine.resume()
 
     await tw.load("./testagain.st").then(() => {
         tw.allowControls("all");
