@@ -5,322 +5,128 @@
 
 <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <script type="module">
-
-    // test - https://www.pixilart.com/art/windows-xp-sr5z78d21d9e58aws3
-    // 300x180
-
-    // test2 - https://www.pixilart.com/art/anomaly-sr5z08db741fc6aws3
-
-
     const bitmap = []
-
+ 
     class ImageReader {
-        static imgOffsetAmount = 200;
-
-        // =========================
-        // ENCODE
-        // =========================
-        static encodeImage(reader) {
-            // deep copy so we NEVER mutate original data
-            const bitmap = reader.bitmap.map(row => row.slice());
-            const palette = reader.palette.map(c => c.replace("#", ""));
-
-            // convert hex colors → palette indices
-            for (let y = 0; y < bitmap.length; y++) {
-                const row = bitmap[y];
-
-                for (let x = 0; x < row.length; x++) {
-                    const val = row[x].replace("#", "");
-                    const index = palette.indexOf(val);
-
-                    if (index === -1) {
-                        throw new Error("Color not found in palette");
-                    }
-
-                    row[x] = index + 2; // reserve 0,1 for control codes
-                }
-            }
-
-            // run-length encoding
-            let rle = [];
-
-            for (let y = 0; y < bitmap.length; y++) {
-                const row = bitmap[y];
-                let out = [];
-
-                let run = 1;
-
-                for (let x = 0; x < row.length; x++) {
-                    if (x === 0) {
-                        out.push(row[x]);
-                    } else if (row[x] === row[x - 1]) {
-                        run++;
-                    } else {
-                        if (run > 1) {
-                            out.push(0, run);
-                        }
-                        out.push(row[x]);
-                        run = 1;
-                    }
-                }
-
-                if (run > 1) {
-                    out.push(0, run);
-                }
-
-                out.push(1); // end of row
-                rle.push(out);
-            }
-
-            const bytes = ImageReader.hex2DArrayToBytes(rle);
-            const compressed = ImageReader.deflate(bytes);
-
-            return Array.from(compressed)
-                .map(x => String.fromCharCode(x + ImageReader.imgOffsetAmount))
-                .join("");
-        }
-
-        static decodeImage(file) {
-
-            const data = file[file[1] + 2];
-
-            let palette = file.slice(2, 2 + file[1])
-                .map(c => c.replace("#", ""));
-
-            if (typeof data !== "string") {
-                throw new Error("Invalid compressed data");
-            }
-
-            const bytes = Array.from(
-                ImageReader.inflate(
-                    new Uint8Array(
-                        data.split("").map(c =>
-                            c.charCodeAt(0) - ImageReader.imgOffsetAmount
-                        )
-                    )
-                )
-            );
-
-            const pixels = [];
-            let row = [];
-
-            for (let i = 0; i < bytes.length; i++) {
-                const v = bytes[i];
-
-                if (v === 0) {
-                    const count = bytes[++i];
-                    const last = row[row.length - 1];
-
-                    for (let j = 0; j < count - 1; j++) {
-                        row.push(last);
-                    }
-
-                } else if (v === 1) {
-                    pixels.push(row);
-                    row = [];
-
-                } else {
-                    row.push(v);
-                }
-            }
-
-            return pixels.map(r =>
-                r.map(idx => "#" + palette[idx - 2])
-            );
-        }
-        // =========================
-        static hex2DArrayToBytes(arr) {
-            return new Uint8Array(arr.flat());
-        }
-
-        static deflate(bytes) {
-            return pako.deflate(bytes);
-        }
-
-        static inflate(bytes) {
-            return pako.inflate(bytes);
-        }
-
-        // =========================
+ 
         constructor(type, array2D) {
             if (!Array.isArray(array2D) || array2D.some(r => !Array.isArray(r))) {
                 throw new Error("Invalid image data (0)");
             }
-
+ 
             if (array2D.length === 0 || array2D[0].length === 0) {
                 throw new Error("Invalid image data (1)");
             }
-
+ 
             this.type = type;
             this.height = array2D.length;
             this.width = array2D[0].length;
-
+ 
             // IMPORTANT: store raw reference, but never mutate it
             this.bitmap = array2D;
-
+ 
             const colorFrequency = {};
             for (let row of array2D) {
                 for (let color of row) {
                     colorFrequency[color] = (colorFrequency[color] || 0) + 1;
                 }
             }
-
+ 
             this.palette = Object.entries(colorFrequency)
                 .sort((a, b) => b[1] - a[1])
                 .map(x => x[0]);
         }
-
+ 
         // =========================
         toFile(stringify = false) {
             let fileContent;
-
-            switch (this.type) {
-                case "bmap":
-                    fileContent = [
-                        "bmap",
-                        this.bitmap.map(row => row.join(" "))
-                    ];
-                    break;
-
-                case "img": {
-                    const data = ImageReader.encodeImage(this);
-
-                    fileContent = [
-                        "img",
-                        this.palette.length,
-                        ...this.palette,
-                        data,
-                    ];
-                    break;
-                }
+ 
+            if (this.type === "bmap") {
+                fileContent = [
+                    "bmap",
+                    this.bitmap.map(row => row.join(" "))
+                ];
             }
-
+ 
             return stringify ? JSON.stringify(fileContent) : fileContent;
         }
-
+ 
         // =========================
         reconstruct() {
             const canvas = document.getElementById("c2");
             const ctx = canvas.getContext("2d");
-
+ 
             const fileData = this.toFile();
-
+ 
             canvas.width = this.width;
             canvas.height = this.height;
-
+ 
             ctx.imageSmoothingEnabled = false;
-
+ 
             if (this.type === "bmap") {
                 const imgData = fileData[1];
-
+ 
                 for (let y = 0; y < imgData.length; y++) {
                     const row = imgData[y].split(" ");
-
+ 
                     for (let x = 0; x < row.length; x++) {
                         const hex = row[x];
-
+ 
                         const r = parseInt(hex.slice(0, 2), 16);
                         const g = parseInt(hex.slice(2, 4), 16);
                         const b = parseInt(hex.slice(4, 6), 16);
-
-                        ctx.fillStyle = `rgb(${r},${g},${b})`;
-                        ctx.fillRect(x, y, 1, 1);
-                    }
-                }
-            } else if (this.type === "img") {
-                const fileData = this.toFile();
-
-                const paletteLength = fileData[1];
-
-                const palette = fileData.slice(2, 2 + paletteLength);
-                const data = fileData[2 + paletteLength];
-                const height = fileData[3 + paletteLength];
-
-                if (typeof data !== "string") {
-                    throw new Error("Corrupted image data: missing compressed string");
-                }
-
-                const pixelData = ImageReader.decodeImage(fileData);
-
-                for(let y = 0; y < pixelData.length; y++) {
-                    const row = pixelData[y];
-
-                    for(let x = 0; x < row.length; x++) {
-                        const hex = row[x].replace("#", "");
-
-                        const r = parseInt(hex.slice(0, 2), 16);
-                        const g = parseInt(hex.slice(2, 4), 16);
-                        const b = parseInt(hex.slice(4, 6), 16);
-
-                        ctx.fillStyle = `rgb(${r},${g},${b})`;
-                        ctx.fillRect(x, y, 1, 1);
-                    }
-                }
-
-                return;
-
-                // render
-                for (let y = 0; y < img.length; y++) {
-                    const row = img[y];
-
-                    for (let x = 0; x < row.length; x++) {
-                        const hex = row[x];
-
-                        const r = parseInt(hex.slice(0, 2), 16);
-                        const g = parseInt(hex.slice(2, 4), 16);
-                        const b = parseInt(hex.slice(4, 6), 16);
-
+ 
                         ctx.fillStyle = `rgb(${r},${g},${b})`;
                         ctx.fillRect(x, y, 1, 1);
                     }
                 }
             }
         }
-    
+ 
     }
-
+ 
     async function scanPixels(imgSrc, width, height) {
         const img = new Image();
         img.src = imgSrc;
         await img.decode();
-
+ 
         const canvas = document.getElementById("c");
         const ctx = canvas.getContext("2d");
-
+ 
         canvas.width = width;
         canvas.height = height;
-
+ 
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, 0, 0, width, height);
-
+ 
         // Grab the entire pixel buffer ONCE
         const data = ctx.getImageData(0, 0, width, height).data;
-
+ 
         // Loop through pixels
         for (let y = 0; y < height; y++) {
-
+ 
             let row = []
-
+ 
             for (let x = 0; x < width; x++) {
-
+ 
                 const i = (y * width + x) * 4;
-
+ 
                 let r = data[i];
                 let g = data[i + 1];
                 let b = data[i + 2];
                 let a = data[i + 3];
-
+ 
                 let hex = (r << 16) | (g << 8) | b;
-
+ 
                 // push it into the bitmap
-
+ 
                 row.push(hex.toString(16).padStart(6, "0"))
             }
-
+ 
             bitmap.push(row.join(" "))
         }
     }
-
+ 
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             console.log("Copied to clipboard");
@@ -328,39 +134,41 @@
             console.error("Could not copy text: ", err);
         });
     }
+    
 
+    // width of the actual image
     const width = 312;
+    // height of the actual image
     const height = 438;
-
+ 
     scanPixels("test-img-NOT-MINE.png", width, height).then(() => {
         let bitmapCompat = bitmap.map(row => row.split(" "));
-
-        const bmap = new ImageReader("tw", bitmapCompat);
-
+ 
+        const bmap = new ImageReader("st", bitmapCompat);
+ 
         const array = bmap.bitmap;
-
-        // // get all the colors used in the bitmap and sort them by frequency
-        // const colorFrequency = {};
-
-        // for (let row of array) {
-        //     for (let color of row) {
-        //         colorFrequency[color] = (colorFrequency[color] || 0) + 1;
-        //     }
-        // }
-        // // order the colors by frequency
-        // const sortedColors = Object.entries(colorFrequency)
-        //     .sort((a, b) => b[1] - a[1])
-        //     .map(x => x[0]);
-
-        // console.log(sortedColors)
-
+ 
         const mixin = "{{# first is text, 2nd is background #}}\n[mixin \"c\"]\n    [color <Color:1>][bg <Color:2>]▀\n[mixin end]"
-
-        console.log(mixin)
-
-        console.log(array)
-
+        let output = new String(mixin) + "\n\n[$instant][textsize 1]\n"; 
+ 
+        for(let i = 0; i < array.length; i += 2) {
+            const textColorRow = array[i];
+            const bgColorRow = array[i + 1];
+ 
+            for(let j = 0; j < textColorRow.length; j++) {
+                const textColor = textColorRow[j];
+                const bgColor = bgColorRow[j];
+ 
+ 
+                output += `[@use "c" #${textColor} #${bgColor}]`
+            }
+            output += "[newline]\n"
+        }
+ 
+        output += "[$instant off][textsize default][resetcolors]"
+ 
+        copyToClipboard(output);
+ 
         bmap.reconstruct();
-
     })
 </script>

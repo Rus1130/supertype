@@ -40,7 +40,61 @@
 <body>
 </body>
 <script type="module">
-    import { SuperType } from './index.js';
+    import { SuperType, TagArgument, SuperTypeError } from './index.js';
+ 
+    async function scanPixels(imgSrc, width, height) {
+        const bitmap = []
+
+        const img = new Image();
+        img.src = imgSrc;
+        await img.decode();
+ 
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+ 
+        canvas.width = width;
+        canvas.height = height;
+ 
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, width, height);
+ 
+        // Grab the entire pixel buffer ONCE
+        const data = ctx.getImageData(0, 0, width, height).data;
+ 
+        // Loop through pixels
+        for (let y = 0; y < height; y++) {
+ 
+            let row = []
+ 
+            for (let x = 0; x < width; x++) {
+ 
+                const i = (y * width + x) * 4;
+ 
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+                let a = data[i + 3];
+ 
+                let hex = (r << 16) | (g << 8) | b;
+ 
+                // push it into the bitmap
+ 
+                row.push(hex.toString(16).padStart(6, "0"))
+            }
+ 
+            bitmap.push(row.join(" "))
+        }
+
+        return bitmap.map(row => row.split(" "));
+    }
+ 
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            console.log("Copied to clipboard");
+        }).catch(err => {
+            console.error("Could not copy text: ", err);
+        });
+    }
 
     const tw = new SuperType(document.body, {
         "end": function() {
@@ -54,8 +108,118 @@
             tw.appendToTarget(returnButton);
             tw.target.style.overflowY = 'scroll';
             tw.target.classList.add('hide-scrollbar');
+        },
+
+        "image": async function(engine, token){
+            const [name, imagePath] = token.args;
+            engine.header.wordWrap = Infinity;
+
+            if(imagePath == undefined) throw new SuperTypeError("image function requires an image path argument", token);
+            imagePath.check("string");
+
+            const width = 312;
+            const height = 438;
+
+            engine.pause()
+
+            await scanPixels(imagePath.value, width, height).then((array) => {
+                const mixin = "{{# first is text, 2nd is background #}}\n[mixin \"c\"]\n    [color <Color:1>][bg <Color:2>]▀\n[mixin end]"
+                let output = "[$instant][textsize 1]\n"; 
+
+                if(engine.mixins["c"] != undefined) throw new SuperTypeError("Mixin 'c' already exists. Please remove it before using the image function.", token);
+                else engine.mixins["c"] = "[color <Color:1>][bg <Color:2>]▀"
+        
+                for(let i = 0; i < array.length; i += 2) {
+                    const textColorRow = array[i];
+                    const bgColorRow = array[i + 1];
+        
+                    for(let j = 0; j < textColorRow.length; j++) {
+                        const textColor = textColorRow[j];
+                        const bgColor = bgColorRow[j];
+        
+        
+                        output += `[@use "c" #${textColor} #${bgColor}]`
+                    }
+                    output += "[newline]\n"
+                }
+        
+                output += "[$instant off][textsize default][resetcolors]"
+
+                const tokens = engine.tokenize(output);
+
+                console.log(tokens)
+
+                // separate the tokens array into more manageable chunks to avoid freezing the browser
+
+                const chunkSize = 1000;
+                for (let i = 0; i < tokens.length; i += chunkSize)
+                {
+                    let chunk = tokens.slice(i, i + chunkSize);
+                    chunk = chunk.map(token => {
+                        if(token.type !== "character") return token;
+                        else if(token.type == "character") {
+                            // FUCK
+                        }
+                    })
+                    engine.insertTokens(chunk);
+                }
+
+            }).finally(() => {
+                engine.resume();
+            })
         }
     })
+
+                //     array = array.reverse();
+            //     for(let i = 0; i < array.length; i += 2){
+            //         const textColorRow = array[i + 1];
+            //         const bgColorRow = array[i];
+
+            //         for(let j = 0; j < textColorRow.length; j++){
+            //             const textColor = textColorRow[j];
+            //             const bgColor = bgColorRow[j];
+
+            //             engine.insertToken({
+            //                 type: "tag",
+            //                 name: "textsize",
+            //                 style: {},
+            //                 args: [new TagArgument("number", 2)]
+            //             })
+
+            //             engine.insertToken({
+            //                 type: "tag",
+            //                 name: "!payload",
+            //                 payload: {
+            //                     onUse: (engine, token) => {
+            //                         engine.state.currentColor = textColor;
+            //                         engine.state.currentBg = bgColor;
+            //                     }
+            //                 }
+            //             });
+
+            //             engine.insertToken({
+            //                 type: "character",
+            //                 value: "▀",
+            //                 style: {
+            //                     color: textColor,
+            //                     backgroundColor: bgColor
+            //                 }
+            //             });
+            //         }
+
+            //         engine.insertToken({
+            //             type: "tag",
+            //             name: "newline",
+            //             style: {},
+            //             args: []
+            //         })
+            //     }
+
+            // }).catch((err) => {
+            //     throw new SuperTypeError(`Failed to scan pixels for image: ${imagePath.value}. Error: ${err.message}`, token);
+            // });
+
+            // engine.resume()
 
     await tw.load("./testagain.st").then(() => {
         tw.allowControls("all");

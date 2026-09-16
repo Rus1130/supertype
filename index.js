@@ -276,6 +276,30 @@ class NoopTag extends Tag {
     static onUse(engine, token) { }
 }
 
+class TextSizeTag extends Tag {
+    static tagName = "textsize";
+
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const value = args[0];
+
+        if (value === undefined) throw new SuperTypeError("Missing textSize value");
+
+        // first if its a specific default
+        if (value.equalsSpecific("default")) {
+            ctx.queue.push({ type: "style", value: "textSize", args: ["inherit"] });
+        } else {
+            value.check("number");
+            ctx.queue.push({ type: "style", value: "textSize", args: [value] });
+        }
+
+    
+        return false;
+    }
+
+    static onUse(engine, token) { };
+}
+
 class ForceStartTag extends Tag {
     static tagName = "$start";
 
@@ -1838,6 +1862,7 @@ export class SuperType {
             newlineDelay: null,
             currentColor: null,
             currentBg: null,
+            currentTextSize: null,
             fragment: null,
 
             currentSpan: null,
@@ -2170,6 +2195,7 @@ export class SuperType {
         if(this.header.newlineDelay === undefined) throw new SuperTypeError("Missing newlineDelay in header");
         if(this.header.textColor === undefined) throw new SuperTypeError("Missing textColor in header");
         if(this.header.backgroundColor === undefined) throw new SuperTypeError("Missing backgroundColor in header");
+        if(this.header.textSize === undefined) this.header.textSize = "inherit";
 
         if(this.header.customDelays === undefined) this.header.customDelays = {};
         if(this.header.instant === undefined) this.header.instant = false;
@@ -2178,7 +2204,7 @@ export class SuperType {
         if(this.header.completionBar === undefined) this.header.completionBar = false;
 
         this.target.style.display = "inline-block";
-        this.target.style.width = this.header.wordWrap ? `${this.header.wordWrap}ch` : "auto";
+        this.target.style.maxWidth = this.header.wordWrap ? `${this.header.wordWrap}ch` : "inherit";
 
         this.runBeforeTokenizationHooks(this.body);
 
@@ -2201,6 +2227,7 @@ export class SuperType {
             token.style = {
                 "color": this.header.textColor,
                 "bg": this.header.backgroundColor,
+                "textSize": this.header.textSize,
                 "bold": false,
                 "italic": false,
                 "underline": false,
@@ -2228,7 +2255,8 @@ export class SuperType {
                 "bold": false,
                 "italic": false,
                 "underline": false,
-                "strikethrough": false
+                "strikethrough": false,
+                "textSize": this.header.textSize,
             };
 
             for(let i = 0; i < pageTokens.length; i++) {
@@ -2239,6 +2267,7 @@ export class SuperType {
                     if(token.value === "italic") styleStack.italic = !styleStack.italic;
                     if(token.value === "underline") styleStack.underline = !styleStack.underline;
                     if(token.value === "strikethrough") styleStack.strikethrough = !styleStack.strikethrough;
+                    if(token.value === "textSize") styleStack.textSize = token.args[0].value;
 
                     // remove this token from the pageTokens array
                     pageTokens.splice(i, 1);
@@ -2250,7 +2279,8 @@ export class SuperType {
                         "bold": styleStack.bold,
                         "italic": styleStack.italic,
                         "underline": styleStack.underline,
-                        "strikethrough": styleStack.strikethrough
+                        "strikethrough": styleStack.strikethrough,
+                        "textSize": styleStack.textSize
                     }
                 }
             }
@@ -2508,6 +2538,7 @@ export class SuperType {
         element.style.backgroundColor = this.state.currentBg;
         element.style.fontWeight = style.bold ? "bold" : "normal";
         element.style.fontStyle = style.italic ? "italic" : "normal";
+        element.style.fontSize = style.textSize ?? "";
         
         // Build text-decoration correctly
         const decorations = [];
@@ -2533,7 +2564,8 @@ export class SuperType {
             this.state.currentStyle.underline === style.underline &&
             this.state.currentStyle.strikethrough === style.strikethrough &&
             this.state.currentColor === this.state.currentStyle.color &&
-            this.state.currentBg === this.state.currentStyle.bg;
+            this.state.currentBg === this.state.currentStyle.bg &&
+            style.textSize === this.state.currentStyle.textSize;
 
         if ((!sameStyle) || this.state.separateElements === true) {
             const span = document.createElement("span");
@@ -2555,7 +2587,8 @@ export class SuperType {
                 underline: style.underline,
                 strikethrough: style.strikethrough,
                 color: this.state.currentColor,
-                bg: this.state.currentBg
+                bg: this.state.currentBg,
+                textSize: style.textSize
             };
         }
 
@@ -2990,6 +3023,7 @@ for (const TagClass of [
     ForcePageTag,
     ForceScrollTag,
     NoopTag,
+    TextSizeTag
 ]) {
     SuperType.registerTag(TagClass);
 }

@@ -120,15 +120,17 @@ Modifies character timing.
 
 ### Styling
 Change the color of the text and background.
-| Tag                    | Description                                           |
-| ---------------------- | ----------------------------------------------------- |
-| `[color color<Color>]` | Sets the text color to `color`.                       |
-| `[color reset]`        | Resets the text color to the default.                 |
-| `[bg color<Color>]`    | Sets the background color to `color`.                 |
-| `[bg reset]`           | Resets the background color to the default.           |
-| `[resetcolors]`        | Resets the text and background colors to the default. |
-| `[raw \]`              | Renders the content as raw characters.                |
-| `[swap]`               | Swaps the text and background colors.                 |
+| Tag                       | Description                                           |
+| ------------------------- | ----------------------------------------------------- |
+| `[color color<Color>]`    | Sets the text color to `color`.                       |
+| `[color reset]`           | Resets the text color to the default.                 |
+| `[bg color<Color>]`       | Sets the background color to `color`.                 |
+| `[bg reset]`              | Resets the background color to the default.           |
+| `[textsize size<Number>]` | Sets the text size to `size`.                         |
+| `[textsize default]`      | Resets the text size to the CSS default.              |
+| `[resetcolors]`           | Resets the text and background colors to the default. |
+| `[raw \]`                 | Renders the content as raw characters.                |
+| `[swap]`                  | Swaps the text and background colors.                 |
 
 ### Pages
 | Tag                                       | Description                                                                                                          |
