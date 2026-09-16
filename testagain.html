@@ -270,6 +270,16 @@
         ctx.putImageData(new ImageData(out, width, height), 0, 0);
     }
 
+    let channelShiftChannels = '';
+    let channelShiftAmount = 0;
+    let bitCorruptChance = 0;
+    let blockGlitchBlockSize = 0;
+    let blockGlitchCount = 0;
+    let waveDistortAmplitude = 0;
+    let waveDistortFrequency = 0;
+    let hueRotateBlockSize = 0;
+    let hueRotateCount = 0;
+
     const tw = new SuperType(document.body, {
         "end": function() {
             const returnButton = document.createElement("div");
@@ -284,16 +294,81 @@
             tw.target.classList.add('hide-scrollbar');
         },
 
+        "set image channel shift": function(engine, token) {
+            const [name, channels, amount] = token.args;
+
+            if (channels == undefined) throw new SuperTypeError("image channel shift function requires a channels argument", token);
+            if (amount == undefined) throw new SuperTypeError("image channel shift function requires an amount argument", token);
+
+            channels.check("string");
+            amount.check("number");
+
+            channelShiftChannels = channels.value;
+            channelShiftAmount = amount.value;
+        },
+
+        "set image bit corrupt": function(engine, token) {
+            const [name, chance] = token.args;
+
+            if (chance == undefined) throw new SuperTypeError("image bit corrupt function requires a chance argument", token);
+
+            chance.check("number");
+
+            bitCorruptChance = chance.value;
+        },
+
+        "set image block glitch": function(engine, token) {
+            const [name, blockSize, count] = token.args;
+
+            if (blockSize == undefined) throw new SuperTypeError("image block glitch function requires a block size argument", token);
+            if (count == undefined) throw new SuperTypeError("image block glitch function requires a count argument", token);
+
+            blockSize.check("number");
+            count.check("number");
+
+            blockGlitchBlockSize = blockSize.value;
+            blockGlitchCount = count.value;
+        },
+
+        "set image wave distort": function(engine, token) {
+            const [name, amplitude, frequency] = token.args;
+
+            if (amplitude == undefined) throw new SuperTypeError("image wave distort function requires an amplitude argument", token);
+            if (frequency == undefined) throw new SuperTypeError("image wave distort function requires a frequency argument", token);
+
+            amplitude.check("number");
+            frequency.check("number");
+
+            waveDistortAmplitude = amplitude.value;
+            waveDistortFrequency = frequency.value;
+        },
+
+        "set image hue rotate": function(engine, token) {
+            const [name, blockSize, count] = token.args;
+
+            if (blockSize == undefined) throw new SuperTypeError("image hue rotate function requires a block size argument", token);
+            if (count == undefined) throw new SuperTypeError("image hue rotate function requires a count argument", token);
+
+            blockSize.check("number");
+            count.check("number");
+
+            hueRotateBlockSize = blockSize.value;
+            hueRotateCount = count.value;
+        },
+
         "image": async function(engine, token){
-            const [name, imagePath, width, height] = token.args;
+            const [name, imagePath, width, height, speed] = token.args;
             engine.header.wordWrap = Infinity;
 
             if(imagePath == undefined) throw new SuperTypeError("image function requires an image path argument", token);
             if(width == undefined) throw new SuperTypeError("image function requires a width argument", token);
             if(height == undefined) throw new SuperTypeError("image function requires a height argument", token);
+            if(speed == undefined) throw new SuperTypeError("image function requires a speed argument", token);
+
             imagePath.check("string");
             width.check("number");
             height.check("number");
+            speed.check("number");
 
             engine.insertTokens([
                 {
@@ -302,12 +377,6 @@
                     style: {},
                     args: [new TagArgument("number", 1)]
                 },
-                {
-                    type: "tag",
-                    name: "$instant",
-                    style: {},
-                    args: [new TagArgument("specific", "on")]
-                }
             ])
 
             engine.pause()
@@ -340,25 +409,25 @@
                         }
 
                         // // channels, amount
-                        channelShift(realCtx, width.value, height.value, "rb", 10);
+                        channelShift(realCtx, width.value, height.value, channelShiftChannels, channelShiftAmount);
 
-                        // // chance
-                        bitCorrupt(realCtx, width.value, height.value, 0.7);
+                        // // // chance
+                        bitCorrupt(realCtx, width.value, height.value, bitCorruptChance);
+
+                        // // // blocksize, count
+                        blockGlitch(realCtx, width.value, height.value, blockGlitchBlockSize, blockGlitchCount);
+
+                        // // // amplitude, frequency
+                        waveDistort(realCtx, width.value, height.value, waveDistortAmplitude, waveDistortFrequency);
 
                         // // blocksize, count
-                        blockGlitch(realCtx, width.value, height.value, 30, 10);
-
-                        // // amplitude, frequency
-                        waveDistort(realCtx, width.value, height.value, 1, 10000000);
-
-                        // blocksize, count
-                        hueRotateBlocks(realCtx, width.value, height.value, 100, 150);
+                        hueRotateBlocks(realCtx, width.value, height.value, hueRotateBlockSize, hueRotateCount);
 
                         engine.appendToTarget(canvas);
 
                         const ctx = canvas.getContext("2d");
 
-                        const rowDelay = 120;
+                        const rowDelay = speed.value;
                         const rowTokens = [];
 
                         for (let y = 0; y < height.value; y++) {
