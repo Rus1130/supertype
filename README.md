@@ -12,6 +12,7 @@ Look at `example.st` for an example of how to use supertype. Look at `index.html
 - `[@tag]`: at tag
 - `[$tag]`: force(d) tag, or dollar tag
 - Raw newlines and whitespace at the beginning of lines are ignored in .st files. use `[newline]` to create a new line, and `[tab count<Number>]` to create whitespace at the beginning of a line.
+- If you want to style the typewriter, just style it yourself through `tw.target` or `tw.targetParent`.
 
 ## Types
 ```
@@ -67,6 +68,18 @@ typewriter: {
         String: Number
     }
 }
+```
+```
+charDelay - The delay between each character being typed, in milliseconds.
+newlineDelay - The delay between each newline being typed, in milliseconds.
+textColor - The color of the text. Can be a hex code or an rgb value.
+backgroundColor - The color of the background. Can be a hex code or an rgb value.
+instant - If true, all text will be typed instantly. Defaults to false.
+completionBar - If true, a completion bar will be shown at the bottom of the typewriter. Defaults to false. Not implemented.
+wordWrap - The number of characters before the typewriter will wrap to the next line. Defaults to Infinity.
+previewMode - Muh
+backToTop - If true, the typewriter will scroll to the top of the page when it is finished. Defaults to false.
+customDelays - An object that maps characters to their custom delays. For example, if you want the comma to have a delay of 500ms, you would set `customDelays: { ",": 500 }`.
 ```
 
 ## Tags

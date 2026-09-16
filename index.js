@@ -2173,6 +2173,8 @@ export class SuperType {
 
         if(this.header.customDelays === undefined) this.header.customDelays = {};
         if(this.header.instant === undefined) this.header.instant = false;
+
+        // not implemented
         if(this.header.completionBar === undefined) this.header.completionBar = false;
 
         this.target.style.display = "inline-block";
