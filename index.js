@@ -2204,7 +2204,7 @@ export class SuperType {
         if(this.header.completionBar === undefined) this.header.completionBar = false;
 
         this.target.style.display = "inline-block";
-        this.target.style.maxWidth = this.header.wordWrap ? `${this.header.wordWrap}ch` : "inherit";
+        this.target.style.minWidth = this.header.wordWrap ? `${this.header.wordWrap}ch` : "inherit";
 
         this.runBeforeTokenizationHooks(this.body);
 
