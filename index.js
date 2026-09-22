@@ -1124,6 +1124,7 @@ class UnscrambleTag extends Tag {
 
         if (value === undefined) throw new SuperTypeError("Missing unscramble value");
         if (num1 === undefined) throw new SuperTypeError("Missing unscramble min time");
+        if (num2 !== undefined && num1.value > num2.value) throw new SuperTypeError("Unscramble min time cannot be greater than max time");
 
         value.check("string");
         num1.check("number");
@@ -1152,6 +1153,7 @@ class UnscrambleTag extends Tag {
 
         value.check("string");
         num1.check("number");
+
         if (num2 !== undefined) num2.check("number");
 
         // Per-character setup.
@@ -1160,8 +1162,14 @@ class UnscrambleTag extends Tag {
         const min = num1.value;
         const max = num2 === undefined ? min : num2.value;
 
+        let trueValue = value.value;
+
+        if(engine.state.accuracy < Math.random()){
+            trueValue = SuperType.randomCharacter();
+        }
+
         UnscrambleTag.unscrambles[id] = {
-            text: value.value,
+            text: trueValue,
             start: performance.now(),
             maxTime: max,
             times: value.value.split("").map(() =>
@@ -1593,7 +1601,7 @@ export class SuperType {
             unscramble.textNode.data = unscramble.text
                 .split("")
                 .map((ch, i) => {
-                    if (ch === " ") return " ";
+                    // if (ch === " ") return " ";
                     if (now - unscramble.start >= unscramble.times[i]) return ch;
                     return SuperType.randomCharacter();
                 })

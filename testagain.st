@@ -13,8 +13,6 @@ typewriter: {
     backToTop: true
 }
 hiiii[newline]
-
-
 [function "set image channel shift" "rb" 1000]
 [function "set image bit corrupt" 1]
 [function "set image block glitch" 50 100]
