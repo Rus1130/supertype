@@ -1770,6 +1770,7 @@ export class SuperType {
         target.appendChild(div);
 
         this.targetParent = target;
+        this.targetParent.style.marginBottom = "2ch";
         this.target = div;
         this.fileName = null;
         target.__superTypeInstance = this;
