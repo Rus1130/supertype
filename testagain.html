@@ -88,6 +88,7 @@
         const bitmap = []
 
         const img = new Image();
+        img.crossOrigin = "anonymous"
         img.src = imgSrc;
         await img.decode();
  
@@ -410,7 +411,6 @@
             const randID = Math.random().toString(36).substring(2, 15);
 
             await scanPixels(imagePath.value, width.value, height.value).then((array) => {
-                console.log(JSON.stringify(array));
                 engine.insertPayload({
                     onRender: (engine, token) => {
                         const real = document.createElement("canvas");
@@ -422,6 +422,7 @@
                         canvas.id = `image-${randID}`;
                         canvas.width = width.value;
                         canvas.height = height.value;
+                        canvas.
                         canvas.style.imageRendering = "pixelated";
 
                         const realCtx = real.getContext("2d");

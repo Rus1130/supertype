@@ -1562,6 +1562,158 @@ export class SuperType {
         return [...SuperType.tags.keys()];
     }
 
+    static parseHeader(blockContent) {
+        const lines = blockContent.split(/\r?\n/);
+
+        const result = {};
+        const stack = [result];
+
+        let errors = [];
+
+        const addError = (line, col, message) => {
+            errors.push({
+                line,
+                col,
+                message,
+                context: lines[line] ?? ""
+            });
+        };
+
+
+        const parseKey = (key) => {
+            key = key.trim().replace(/^"|"$/g, "");
+
+            if (/^-?\d+(\.\d+)?$/.test(key)) {
+                return Number(key);
+            }
+
+            return key;
+        };
+
+        const parseValue = (value, lineIdx, colIdx) => {
+            value = value.trim();
+
+            // number
+            if (/^-?\d+(\.\d+)?$/.test(value)) {
+                return Number(value);
+            }
+
+
+            // boolean
+            if (value === "true") {
+                return true;
+            }
+
+            if (value === "false") {
+                return false;
+            }
+
+
+            // hex color
+            if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+                return new Color(value).toString();
+            }
+
+
+            // RGB color
+            if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(value)) {
+                const [r, g, b] = value.split(/,/).map(Number);
+
+                if (
+                    r >= 0 && r <= 255 &&
+                    g >= 0 && g <= 255 &&
+                    b >= 0 && b <= 255
+                ) {
+                    return new Color(r, g, b).toString();
+                }
+
+                addError(lineIdx, colIdx, `Invalid RGB color: ${value}`);
+                return null;
+            }
+
+
+            // string
+            if (value.startsWith('"') && value.endsWith('"')) {
+                return value.slice(1, -1);
+            }
+
+
+            addError(lineIdx, colIdx, `Invalid value: ${value}`);
+            return null;
+        };
+
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+
+            if (!line) continue;
+
+
+            // closing block
+            if (line === "}") {
+                if (stack.length > 1) {
+                    stack.pop();
+                } else {
+                    addError(i, 0, "Unexpected '}'");
+                }
+
+                continue;
+            }
+
+
+            const match = line.match(/^(?:"([^"]+)"|([^:]+))\s*:\s*(.*)$/);
+
+            if (!match) {
+                addError(i, 0, `Invalid syntax: "${line}"`);
+                continue;
+            }
+
+
+            const key = parseKey(match[1] ?? match[2]);
+            const value = match[3].trim();
+
+
+            // object start
+            if (value === "{") {
+                const obj = {};
+
+                stack[stack.length - 1][key] = obj;
+
+                stack.push(obj);
+
+                continue;
+            }
+
+
+            const keyText = match[1] ?? match[2];
+
+            const parsed = parseValue(
+                value,
+                i,
+                keyText.length + 1
+            );
+
+            if (parsed !== null) {
+                stack[stack.length - 1][key] = parsed;
+            }
+        }
+
+
+        if (stack.length > 1) {
+            addError(
+                lines.length,
+                0,
+                "Missing closing '}'"
+            );
+        }
+
+
+        return {
+            parsed: result,
+            errors
+        };
+    }
+
     glitchLoop = () => {
         for (const text of this.state.glitches) {
             text.data = SuperType.randomCharacter();
@@ -2030,6 +2182,9 @@ export class SuperType {
     }
 
     start(){
+        if(this.header == null) throw new SuperTypeError("No header");
+        if(this.data == null) throw new SuperTypeError("No data");
+
         if(this.getResetTarget() !== null){
             const page = this.getResetTarget();
             this.removeResetTarget();
@@ -2144,16 +2299,8 @@ export class SuperType {
         }
     }
 
-    /**
-     * Loads a SuperType file from the given path, parses it, and prepares it for rendering.
-     * @param {string} path - The path to the SuperType file to load.
-     * @returns {Promise<SuperType>} - A promise that resolves to the SuperType instance after loading and parsing the file.
-     */
-    async load(path) {
-        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
 
-        this.fileName = path.split("/").pop().split(".")[0];
-
+    async #setup(){
         const start = this.data.indexOf("typewriter");
         const open = this.data.indexOf("{", start);
 
@@ -2178,12 +2325,12 @@ export class SuperType {
 
         this.targetParent.addEventListener("wheel", this._wheelHandler);
 
-        // throw error if it doesnt have typewriter { ... }
         if (depth !== 0) {
             throw new SuperTypeError("Invalid header");
         }
-        
-        let header = parseHeader(this.data.slice(start, i));
+
+        const headerData = this.data.slice(start, i);
+        let header = SuperType.parseHeader(headerData);
 
         if(header.parsed.typewriter === undefined){
             throw new SuperTypeError("Header parsing failed: Missing 'typewriter' block");
@@ -2257,7 +2404,6 @@ export class SuperType {
             });
         }
 
-
         for(let page in this.pages) {
             let pageTokens = this.pages[page];
             let styleStack = {
@@ -2310,6 +2456,67 @@ export class SuperType {
         }
 
         return this;
+    }
+
+    static objectToHeader(object){
+        let headerString = "typewriter: {\n";
+
+        function addOptionToHeader(key, value, isObject){
+            let indent = 4;
+
+            headerString += `${" ".repeat(indent)}${key}: `
+
+            if(isObject != true) headerString += `${value}\n`
+            else {
+                headerString += "{\n"
+                for(const [key, value2] of Object.entries(value)){
+                    headerString += `${" ".repeat(indent * 2)}\"${key}\": ${value2}\n`
+                }
+                headerString += `${" ".repeat(indent)}}\n`
+            }
+        }
+
+        function loopKeys(object2){
+            for (const [key, value] of Object.entries(object2)) {
+
+                addOptionToHeader(key, value, typeof value === "object");
+            }
+        }
+
+        loopKeys(object);
+
+        headerString += "}";
+
+        return headerString;
+    }
+
+    /**
+     * Loads a SuperType file from the given path, parses it, and prepares it for rendering.
+     * @param {string} path - The path to the SuperType file to load.
+     * @returns {Promise<SuperType>} - A promise that resolves to the SuperType instance after loading and parsing the file.
+     */
+    async load(path) { 
+        this.fileName = path.split("/").pop().split(".")[0];
+        this.data = (await this.fetch(path)).replaceAll(/\{\{#[\s\S]*?#\}\}/g, "");
+
+        await this.#setup();
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @param {object} header 
+     * @param {string} data 
+     */
+    async loadFromString(name, header, data){
+        this.fileName = name.split(/\s+/).join("-");
+
+        if(!this.fileName.endsWith(".st")) this.fileName += ".st"
+
+
+        this.data = SuperType.objectToHeader(header) + "\n" + data;
+
+        await this.#setup();
     }
 
     appendToTarget(element) {
@@ -3055,156 +3262,4 @@ class Color {
     toString() {
         return this.hex;
     }
-}
-
-function parseHeader(blockContent) {
-    const lines = blockContent.split(/\r?\n/);
-
-    const result = {};
-    const stack = [result];
-
-    let errors = [];
-
-    const addError = (line, col, message) => {
-        errors.push({
-            line,
-            col,
-            message,
-            context: lines[line] ?? ""
-        });
-    };
-
-
-    const parseKey = (key) => {
-        key = key.trim().replace(/^"|"$/g, "");
-
-        if (/^-?\d+(\.\d+)?$/.test(key)) {
-            return Number(key);
-        }
-
-        return key;
-    };
-
-    const parseValue = (value, lineIdx, colIdx) => {
-        value = value.trim();
-
-        // number
-        if (/^-?\d+(\.\d+)?$/.test(value)) {
-            return Number(value);
-        }
-
-
-        // boolean
-        if (value === "true") {
-            return true;
-        }
-
-        if (value === "false") {
-            return false;
-        }
-
-
-        // hex color
-        if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-            return new Color(value).toString();
-        }
-
-
-        // RGB color
-        if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(value)) {
-            const [r, g, b] = value.split(/,/).map(Number);
-
-            if (
-                r >= 0 && r <= 255 &&
-                g >= 0 && g <= 255 &&
-                b >= 0 && b <= 255
-            ) {
-                return new Color(r, g, b).toString();
-            }
-
-            addError(lineIdx, colIdx, `Invalid RGB color: ${value}`);
-            return null;
-        }
-
-
-        // string
-        if (value.startsWith('"') && value.endsWith('"')) {
-            return value.slice(1, -1);
-        }
-
-
-        addError(lineIdx, colIdx, `Invalid value: ${value}`);
-        return null;
-    };
-
-
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-
-        if (!line) continue;
-
-
-        // closing block
-        if (line === "}") {
-            if (stack.length > 1) {
-                stack.pop();
-            } else {
-                addError(i, 0, "Unexpected '}'");
-            }
-
-            continue;
-        }
-
-
-        const match = line.match(/^(?:"([^"]+)"|([^:]+))\s*:\s*(.*)$/);
-
-        if (!match) {
-            addError(i, 0, `Invalid syntax: "${line}"`);
-            continue;
-        }
-
-
-        const key = parseKey(match[1] ?? match[2]);
-        const value = match[3].trim();
-
-
-        // object start
-        if (value === "{") {
-            const obj = {};
-
-            stack[stack.length - 1][key] = obj;
-
-            stack.push(obj);
-
-            continue;
-        }
-
-
-        const keyText = match[1] ?? match[2];
-
-        const parsed = parseValue(
-            value,
-            i,
-            keyText.length + 1
-        );
-
-        if (parsed !== null) {
-            stack[stack.length - 1][key] = parsed;
-        }
-    }
-
-
-    if (stack.length > 1) {
-        addError(
-            lines.length,
-            0,
-            "Missing closing '}'"
-        );
-    }
-
-
-    return {
-        parsed: result,
-        errors
-    };
 }

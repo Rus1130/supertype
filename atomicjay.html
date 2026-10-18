@@ -1,0 +1,244 @@
+<style>
+    button:focus, input:focus, select:focus, textarea:focus, [contenteditable]:focus {
+        outline:none;
+    }
+    body {
+        overflow-y: hidden;
+        scrollbar-width: none;
+        background-color: black;
+        color: white;
+        margin-right: 0;
+    }
+    * {
+        font-family: monospace;
+        user-select: none;
+    }
+    .button {
+        margin-bottom: 1px;
+        display: block;
+        cursor: pointer;
+    }
+    .button:hover {
+        background-color: white;
+        color: black;
+    }
+    .hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<head>
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
+    <meta property="og:url" content="">
+</head>
+<body>
+</body>
+<script type="module">
+    import { SuperType, SuperTypeError, TagArgument } from "./index.js";
+
+    const tw = new SuperType(document.body, {
+        "image": async function(engine, token){
+            function rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    h /= 6;
+                }
+                return [h, s, l];
+            }
+
+            function hslToRgb(h, s, l) {
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1 / 6) return p + (q - p) * 6 * t;
+                        if (t < 1 / 2) return q;
+                        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                        return p;
+                    };
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1 / 3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1 / 3);
+                }
+                return [r * 255, g * 255, b * 255];
+            }
+        
+            async function scanPixels(imgSrc, width, height) {
+                const bitmap = []
+
+                const img = new Image();
+                img.crossOrigin = "anonymous"
+                img.src = imgSrc;
+                await img.decode();
+        
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+        
+                canvas.width = width;
+                canvas.height = height;
+        
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, width, height);
+        
+                // Grab the entire pixel buffer ONCE
+                const data = ctx.getImageData(0, 0, width, height).data;
+        
+                // Loop through pixels
+                for (let y = 0; y < height; y++) {
+        
+                    let row = []
+        
+                    for (let x = 0; x < width; x++) {
+        
+                        const i = (y * width + x) * 4;
+        
+                        let r = data[i];
+                        let g = data[i + 1];
+                        let b = data[i + 2];
+                        let a = data[i + 3];
+        
+                        let hex = (r << 16) | (g << 8) | b;
+        
+                        // push it into the bitmap
+        
+                        row.push(hex.toString(16).padStart(6, "0"))
+                    }
+        
+                    bitmap.push(row.join(" "))
+                }
+
+                return bitmap.map(row => row.split(" "));
+            }
+ 
+
+            const [name, imagePath, width, height, speed] = token.args;
+            engine.header.wordWrap = Infinity;
+
+            if(imagePath == undefined) throw new SuperTypeError("image function requires an image path argument", token);
+            if(width == undefined) throw new SuperTypeError("image function requires a width argument", token);
+            if(height == undefined) throw new SuperTypeError("image function requires a height argument", token);
+            if(speed == undefined) throw new SuperTypeError("image function requires a speed argument", token);
+
+            imagePath.check("string");
+            width.check("number");
+            height.check("number");
+            speed.check("number");
+
+            engine.insertTokens([
+                {
+                    type: "tag",
+                    name: "textsize",
+                    style: {},
+                    args: [new TagArgument("number", 1)]
+                },
+            ])
+
+            engine.pause()
+
+            const randID = Math.random().toString(36).substring(2, 15);
+
+            await scanPixels(imagePath.value, width.value, height.value).then((array) => {
+                engine.insertPayload({
+                    onRender: (engine, token) => {
+                        const real = document.createElement("canvas");
+                        real.width = width.value;
+                        real.height = height.value;
+                        real.style.imageRendering = "pixelated";
+
+                        const canvas = document.createElement("canvas");
+                        canvas.id = `image-${randID}`;
+                        canvas.width = width.value;
+                        canvas.height = height.value;
+                        canvas.style.imageRendering = "pixelated";
+
+                        const realCtx = real.getContext("2d");
+
+                        for(let i = 0; i < array.length; i++) {
+                            for (let j = 0; j < array[i].length; j++) {
+                                const color = array[i][j];
+                                const ctx = real.getContext("2d");
+                                ctx.fillStyle = `#${color}`;
+                                ctx.fillRect(j, i, 1, 1);
+                            }
+                        }
+
+                        engine.appendToTarget(canvas);
+
+                        const ctx = canvas.getContext("2d");
+
+                        const rowDelay = speed.value;
+                        const rowTokens = [];
+
+                        for (let y = 0; y < height.value; y++) {
+                            rowTokens.push({
+                                type: "tag",
+                                name: "!payload",
+                                payload: {
+                                    onUse: (engine, token) => {
+                                        engine.addRenderTime(rowDelay);
+                                    },
+                                    onRender: (engine, token) => {
+                                        ctx.drawImage(
+                                            real,
+                                            0, y, width.value, 1,
+                                            0, y, width.value, 1
+                                        );
+                                    }
+                                }
+                            });
+                        }
+
+                        engine.insertTokens(rowTokens);
+                    }
+                });
+            }).finally(() => {
+                engine.resume();
+            });
+        }
+    })
+
+
+    /*
+    typewriter: {
+        charDelay: 40
+        newlineDelay: 120
+        textColor: #ffffff
+        backgroundColor: #000000
+        customDelays: {
+            ",": 500
+        }
+    }
+    */
+    tw.loadFromString("atomicjay", {
+        charDelay: 40,
+        newlineDelay: 120,
+        textColor: "#ffffff",
+        backgroundColor: "0,0,0",
+        customDelays: {
+            ",": 500
+        }
+    }, `atomicJay[newline][function "image" "https://cdn.discordapp.com/avatars/468114702145159168/3048dc3a98f5db9caf3992723eef20c6.webp?size=1536" 100 100 0]`);
+    tw.allowControls("all");
+    tw.start();
+</script>
