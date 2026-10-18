@@ -125,6 +125,7 @@ const FunctionImportManager = (() => {
     }
 
     let rand = mulberry32(20319923);
+    
     function setSeed(seed) { rand = mulberry32(seed); }
 
     function copyToClipboard(text) {
