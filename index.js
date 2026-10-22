@@ -2124,7 +2124,7 @@ export class SuperType {
         if(this.state.pauseLocked === true) return;
         this.state.pausedAt = performance.now();
         this.state.paused = true;
-        this.state.scrollLocked = false;
+        this.state.scrollLocked = true;
     }
 
     /**
@@ -2136,7 +2136,7 @@ export class SuperType {
         const delta = performance.now() - this.state.pausedAt;
         this.state.nextTime += delta;   // shift the schedule forward
         this.state.paused = false;
-        this.state.scrollLocked = true;
+        this.state.scrollLocked = false;
         this.scrollWindow(this.targetParent.scrollHeight);
     }
 
