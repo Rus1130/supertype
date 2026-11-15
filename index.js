@@ -2693,8 +2693,9 @@ export class SuperType {
 
                 if (!token) {
                     this.state.scrollLocked = false;
-                    this.state.pauseLocked = true;
+                    this.state.pauseLocked = false;
                     this.pause();
+                    this.state.pauseLocked = true;
                     break;
                 }
 
