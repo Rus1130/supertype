@@ -330,6 +330,13 @@ const FunctionImportManager = (() => {
             inputElement.style.outline = "none";
             inputElement.style.border = "none";
             inputElement.style.padding = "0";
+            inputElement.setAttribute("autocomplete", "off");
+            inputElement.setAttribute("autocorrect", "off");
+            inputElement.setAttribute("autocapitalize", "off");
+            inputElement.setAttribute("spellcheck", "false");
+            inputElement.setAttribute("data-1p-ignore", "true");
+            inputElement.setAttribute("data-lpignore", "true");
+            inputElement.setAttribute("data-form-type", "other");
 
             inputElement.onkeydown = (event) => {
                 event.stopPropagation();
