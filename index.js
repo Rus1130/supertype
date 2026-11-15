@@ -936,18 +936,44 @@ class NewlineTag extends Tag {
     static tagName = "newline";
 
     static onUse(engine, token) {
-        const mode = token.args[0];
-        if (mode !== undefined) mode.checkSpecific("instant", "sticky");
+        let instant = token.args[0];
+        if (instant !== undefined) instant.checkSpecific("instant");
+        if (instant === undefined) instant = false;
 
-        if (mode === undefined) {
-            engine.addRenderTime(engine.state.newlineDelay);
-        } else if (mode.equalsSpecific("sticky")) {
-            engine.state.stickyDelay += engine.state.newlineDelay;
-        }
-
+        if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
         engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
+    }
+
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const mode = args[0];
+
+        if (mode !== undefined) mode.checkSpecific("instant", "sticky");
+
+        if (mode === undefined || mode.equalsSpecific("instant")) return args;
+
+        // sticky: pay the newline delay first, then break instantly
+        ctx.queue.push({
+            type: "tag",
+            name: "!payload",
+            payload: {
+                onUse: (engine) => engine.addRenderTime(engine.state.newlineDelay)
+            }
+        });
+
+        ctx.queue.push({
+            type: "tag",
+            name: "newline", // "linebreak" in LinebreakTag
+            args: [new TagArgument("specific", "instant")]
+        });
+
+        return false;
+    }
+
+    static onRender(engine, token) {
+        engine.renderRaw("<br>");
     }
 }
 
@@ -967,6 +993,32 @@ class LinebreakTag extends Tag {
         engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
+    }
+
+    static onTokenization(rawArgs, ctx) {
+        const args = rawArgs.map(arg => TagArgument.parse(arg));
+        const mode = args[0];
+
+        if (mode !== undefined) mode.checkSpecific("instant", "sticky");
+
+        if (mode === undefined || mode.equalsSpecific("instant")) return args;
+
+        // sticky: pay the newline delay first, then break instantly
+        ctx.queue.push({
+            type: "tag",
+            name: "!payload",
+            payload: {
+                onUse: (engine) => engine.addRenderTime(engine.state.newlineDelay)
+            }
+        });
+
+        ctx.queue.push({
+            type: "tag",
+            name: "newline",
+            args: [new TagArgument("linebreak", "instant")]
+        });
+
+        return false;
     }
 
     static onRender(engine, token) {
@@ -1025,7 +1077,7 @@ class GlitchTag extends Tag {
     }
 
     static onUse(engine, token) {
-        engine.addRenderTime(engine.state.charDelay + engine.takeStickyDelay());
+        engine.addRenderTime(engine.state.charDelay);
     }
 
     static onRender(engine, token) {
@@ -1087,7 +1139,7 @@ class JitterTag extends Tag {
     static onUse(engine, token) {
         const value = token.args[0];
 
-        engine.addRenderTime(engine.fetchDelay(value.value) + engine.takeStickyDelay());
+        engine.addRenderTime(engine.fetchDelay(value.value));
     }
 
     static onRender(engine, token) {
@@ -1169,7 +1221,7 @@ class UnscrambleTag extends Tag {
 
         token.unscrambleID = id;
 
-        engine.addRenderTime(engine.fetchDelay(value.value) + engine.takeStickyDelay());
+        engine.addRenderTime(engine.fetchDelay(value.value));
     }
 
     static onRender(engine, token) {
@@ -1763,6 +1815,16 @@ export class SuperType {
         UnscrambleTag.unscrambles = {};
     }
 
+    /**
+     * Fully tears down this instance: cancels all running rAF loops,
+     * removes its DOM and event listeners, and clears any jitter/glitch/
+     * unscramble bookkeeping it registered. Call this (or just construct a
+     * new SuperType on the same target, which calls this automatically)
+     * before discarding an instance - otherwise its animation loops keep
+     * running forever and its DOM is never removed, causing effects like
+     * jitter to visibly duplicate every time a new page/instance is opened
+     * on top of it.
+     */
     destroy() {
         cancelAnimationFrame(this._renderFrame);
         cancelAnimationFrame(this._glitchFrame);
@@ -1994,7 +2056,6 @@ export class SuperType {
             scrollCount: 0,
             lineWidth: 0,
             inWord: false,
-            stickyDelay: false,
 
             tagSpeedOverride: false,
             userSpeedOverride: null,
@@ -2135,7 +2196,6 @@ export class SuperType {
         this.state.nextTime = performance.now();
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
-        this.state.stickyDelay = 0;
 
         this.clearLoops();
 
@@ -2641,17 +2701,6 @@ export class SuperType {
         this.state.nextTime += ms;
     }
 
-    /**
-     * Returns and clears any delay deferred by a [newline sticky] / [linebreak sticky].
-     * Call this when a displayable token adds its own render time.
-     * @returns {number}
-     */
-    takeStickyDelay() {
-        const delay = this.state.stickyDelay;
-        this.state.stickyDelay = 0;
-        return delay;
-    }
-
     createGlitch(style) {
         this.resetSpanTextStyle();
 
@@ -2734,7 +2783,7 @@ export class SuperType {
         this.state.inWord = token.value !== " ";
 
         let delay = this.fetchDelay(token.value);
-        this.addRenderTime(delay + this.takeStickyDelay());
+        this.addRenderTime(delay);
 
         this.renderCharacter(token.value, token.style);
 
