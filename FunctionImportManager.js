@@ -338,6 +338,15 @@ const FunctionImportManager = (() => {
             inputElement.setAttribute("data-lpignore", "true");
             inputElement.setAttribute("data-form-type", "other");
 
+            const refocus = () => {
+                if (!inputElement.isConnected) {
+                    document.removeEventListener("click", refocus);
+                    return;
+                }
+                inputElement.focus();
+            };
+
+
             inputElement.onkeydown = (event) => {
                 event.stopPropagation();
                 inputElement.style.width = (inputElement.value.length + 1) + "ch";
@@ -345,6 +354,7 @@ const FunctionImportManager = (() => {
                 if (event.key === "Enter") {
                     event.preventDefault();
                     inputElement.disabled = true;
+                    document.removeEventListener("click", refocus);
 
                     state.lastUserInputValue = inputElement.value;
                     state.lastUserInputTokens = [...inputElement.value].map(ch => ({
@@ -366,6 +376,7 @@ const FunctionImportManager = (() => {
                         engine.pause();
                         engine.lockPause();
                         host.appendToTarget(inputElement);
+                        document.addEventListener("click", refocus);
                         requestAnimationFrame(() => inputElement.focus());
                     }
                 }
