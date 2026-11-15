@@ -1533,7 +1533,7 @@ class ForceScrollTag extends Tag {
 
 export class SuperType {
     static MAX_CHARACTERS_PER_FRAME = 200;
-    static SPECIFIC_TYPES = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill", "keep", "on"];
+    static SPECIFIC_TYPES = ["reset", "override", "default", "group", "end", "instant", "off", "shared", "fill", "keep", "on", "sticky"];
 
     static randomCharacters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "@", "#", "$", "%", "&", "\\", "<", ">", "?"];
 
