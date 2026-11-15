@@ -87,22 +87,24 @@ customDelays - An object that maps characters to their custom delays. For exampl
 
 ### Text
 Displays text in various ways.
-| Tag                                          | Description                                                                                                     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `[newline]`                                  | Creates a new line. Raw newlines are ignored in .st files.                                                      |
-| `[newline instant]`                          | Creates a new line instantly.                                                                                   |
-| `[linebreak]`                                | Two new lines for the timing of 1.                                                                              |
-| `[linebreak instant]`                        | Creates two new lines instantly.                                                                                |
-| `[tab count<Number>]`                        | Inserts `count` spaces.                                                                                         |
-| `[tab count<Number> fill]`                   | Inserts `count` spaces. The spaces will be the background color.                                                |
-| `[removelast count<Number>]`                 | Removes the last `count` rendered characters from the typewriter.                                               |
-| `[removelast count<Number> instant]`         | Removes the last `count` rendered characters from the typewriter instantly.                                     |
-| `[repeat str<String> count<Number>]`         | Repeats `str` `count` times.                                                                                    |
-| `[repeat str<String> count<Number> instant]` | Instantly repeats `str` `count` times.                                                                          |
-| `[repeat count<Number> \]`                   | Repeats the content `count` times.                                                                              |
-| `[repeat count<Number> instant \]`           | Instantly repeats the content `count` times.                                                                    |
-| `[mixin name<String> \]`                     | Creates a mixin with the name `name`. See the Mixins section for more information.                              |
-| `[@use name<String> ...]`                    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information. |
+| Tag                                          | Description                                                                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `[newline]`                                  | Creates a new line. Raw newlines are ignored in .st files.                                                       |
+| `[newline instant]`                          | Creates a new line instantly.                                                                                    |
+| `[newline sticky]`                           | Creates a new line that is rendered instantly, but it's delay is attached to the next displayable character.     |
+| `[linebreak]`                                | Two new lines for the timing of 1.                                                                               |
+| `[linebreak instant]`                        | Creates two new lines instantly.                                                                                 |
+| `[newline sticky]`                           | Creates two new lines that are rendered instantly, but it's delay is attached to the next displayable character. |
+| `[tab count<Number>]`                        | Inserts `count` spaces.                                                                                          |
+| `[tab count<Number> fill]`                   | Inserts `count` spaces. The spaces will be the background color.                                                 |
+| `[removelast count<Number>]`                 | Removes the last `count` rendered characters from the typewriter.                                                |
+| `[removelast count<Number> instant]`         | Removes the last `count` rendered characters from the typewriter instantly.                                      |
+| `[repeat str<String> count<Number>]`         | Repeats `str` `count` times.                                                                                     |
+| `[repeat str<String> count<Number> instant]` | Instantly repeats `str` `count` times.                                                                           |
+| `[repeat count<Number> \]`                   | Repeats the content `count` times.                                                                               |
+| `[repeat count<Number> instant \]`           | Instantly repeats the content `count` times.                                                                     |
+| `[mixin name<String> \]`                     | Creates a mixin with the name `name`. See the Mixins section for more information.                               |
+| `[@use name<String> ...]`                    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information.  |
 
 ### Timing
 Modifies character timing.

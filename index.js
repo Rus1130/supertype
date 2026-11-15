@@ -936,11 +936,16 @@ class NewlineTag extends Tag {
     static tagName = "newline";
 
     static onUse(engine, token) {
-        let instant = token.args[0];
-        if (instant !== undefined) instant.checkSpecific("instant");
-        if (instant === undefined) instant = false;
+        let option = token.args[0];
 
-        if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
+        if (option !== undefined) option.checkSpecific("instant", "sticky");
+
+        if (option?.equalsSpecific("sticky")) {
+            engine.state.stickyDelay += engine.state.newlineDelay;
+        } else if (!option?.equalsSpecific("instant")) {
+            engine.addRenderTime(engine.state.newlineDelay);
+        }
+
         engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
@@ -955,11 +960,16 @@ class LinebreakTag extends Tag {
     static tagName = "linebreak";
 
     static onUse(engine, token) {
-        let instant = token.args[0];
-        if (instant !== undefined) instant.checkSpecific("instant");
-        if (instant === undefined) instant = false;
+        let option = token.args[0];
 
-        if (instant == false) engine.addRenderTime(engine.state.newlineDelay);
+        if (option !== undefined) option.checkSpecific("instant", "sticky");
+
+        if (option?.equalsSpecific("sticky")) {
+            engine.state.stickyDelay += engine.state.newlineDelay;
+        } else if (!option?.equalsSpecific("instant")) {
+            engine.addRenderTime(engine.state.newlineDelay);
+        }
+
         engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
@@ -2014,6 +2024,7 @@ export class SuperType {
             scrollCount: 0,
             lineWidth: 0,
             inWord: false,
+            stickyDelay: false,
 
             tagSpeedOverride: false,
             userSpeedOverride: null,
@@ -2154,6 +2165,7 @@ export class SuperType {
         this.state.nextTime = performance.now();
         this.state.tagSpeedOverride = false;
         this.state.scrollCount = 0;
+        this.state.stickyDelay = 0;
 
         this.clearLoops();
 
@@ -2741,6 +2753,10 @@ export class SuperType {
         this.state.inWord = token.value !== " ";
 
         let delay = this.fetchDelay(token.value);
+
+        delay += this.state.stickyDelay;
+        this.state.stickyDelay = 0;
+
         this.addRenderTime(delay);
         this.renderCharacter(token.value, token.style);
 
