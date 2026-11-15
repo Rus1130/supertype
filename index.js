@@ -936,23 +936,18 @@ class NewlineTag extends Tag {
     static tagName = "newline";
 
     static onUse(engine, token) {
-        let option = token.args[0];
+        const mode = token.args[0];
+        if (mode !== undefined) mode.checkSpecific("instant", "sticky");
 
-        if (option !== undefined) option.checkSpecific("instant", "sticky");
-
-        if (option?.equalsSpecific("sticky")) {
-            engine.state.stickyDelay += engine.state.newlineDelay;
-        } else if (!option?.equalsSpecific("instant")) {
+        if (mode === undefined) {
             engine.addRenderTime(engine.state.newlineDelay);
+        } else if (mode.equalsSpecific("sticky")) {
+            engine.state.stickyDelay += engine.state.newlineDelay;
         }
 
         engine.state.scrollCount = engine.maxScrollCount;
         engine.state.lineWidth = 0;
         engine.state.inWord = false;
-    }
-
-    static onRender(engine, token) {
-        engine.renderRaw("<br>");
     }
 }
 
@@ -960,14 +955,13 @@ class LinebreakTag extends Tag {
     static tagName = "linebreak";
 
     static onUse(engine, token) {
-        let option = token.args[0];
+        const mode = token.args[0];
+        if (mode !== undefined) mode.checkSpecific("instant", "sticky");
 
-        if (option !== undefined) option.checkSpecific("instant", "sticky");
-
-        if (option?.equalsSpecific("sticky")) {
-            engine.state.stickyDelay += engine.state.newlineDelay;
-        } else if (!option?.equalsSpecific("instant")) {
+        if (mode === undefined) {
             engine.addRenderTime(engine.state.newlineDelay);
+        } else if (mode.equalsSpecific("sticky")) {
+            engine.state.stickyDelay += engine.state.newlineDelay;
         }
 
         engine.state.scrollCount = engine.maxScrollCount;
@@ -1031,7 +1025,7 @@ class GlitchTag extends Tag {
     }
 
     static onUse(engine, token) {
-        engine.addRenderTime(engine.state.charDelay);
+        engine.addRenderTime(engine.state.charDelay + engine.takeStickyDelay());
     }
 
     static onRender(engine, token) {
@@ -1048,15 +1042,6 @@ class JitterTag extends Tag {
 
     static jitters = {};
 
-    // Expansion into one-character group tags happens here, at tokenize
-    // time, which runs exactly once per occurrence of the tag in the body.
-    // It must NOT happen in onUse: onUse fires every time process() reaches
-    // this token, and openPage() resets state.token back to 0 every time a
-    // page is (re)opened - so an onUse-driven expansion would splice in a
-    // fresh batch of characters in front of the previous batch on every
-    // revisit, permanently growing the page's token array and rendering
-    // duplicated text (e.g. "jittery!" becoming "jitteryjitteryjittery!"
-    // after a few visits).
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
 
@@ -1072,8 +1057,6 @@ class JitterTag extends Tag {
 
         if (third !== undefined) third.checkSpecific("group", "shared");
 
-        // Already a single-character token (produced by the expansion
-        // below) - nothing further to expand, push it as-is.
         if (third !== undefined && third.equalsSpecific("group")) {
             return args;
         }
@@ -1104,8 +1087,7 @@ class JitterTag extends Tag {
     static onUse(engine, token) {
         const value = token.args[0];
 
-        // Render this character with the normal typewriter delay.
-        engine.addRenderTime(engine.fetchDelay(value.value));
+        engine.addRenderTime(engine.fetchDelay(value.value) + engine.takeStickyDelay());
     }
 
     static onRender(engine, token) {
@@ -1126,8 +1108,6 @@ class UnscrambleTag extends Tag {
     static tagName = "unscramble";
     static unscrambles = {};
 
-    // See JitterTag for why this expansion must happen once at tokenize
-    // time rather than every time onUse fires.
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const [value, num1, num2] = args;
@@ -1189,7 +1169,7 @@ class UnscrambleTag extends Tag {
 
         token.unscrambleID = id;
 
-        engine.addRenderTime(engine.fetchDelay(value.value));
+        engine.addRenderTime(engine.fetchDelay(value.value) + engine.takeStickyDelay());
     }
 
     static onRender(engine, token) {
@@ -1783,16 +1763,6 @@ export class SuperType {
         UnscrambleTag.unscrambles = {};
     }
 
-    /**
-     * Fully tears down this instance: cancels all running rAF loops,
-     * removes its DOM and event listeners, and clears any jitter/glitch/
-     * unscramble bookkeeping it registered. Call this (or just construct a
-     * new SuperType on the same target, which calls this automatically)
-     * before discarding an instance - otherwise its animation loops keep
-     * running forever and its DOM is never removed, causing effects like
-     * jitter to visibly duplicate every time a new page/instance is opened
-     * on top of it.
-     */
     destroy() {
         cancelAnimationFrame(this._renderFrame);
         cancelAnimationFrame(this._glitchFrame);
@@ -2671,6 +2641,17 @@ export class SuperType {
         this.state.nextTime += ms;
     }
 
+    /**
+     * Returns and clears any delay deferred by a [newline sticky] / [linebreak sticky].
+     * Call this when a displayable token adds its own render time.
+     * @returns {number}
+     */
+    takeStickyDelay() {
+        const delay = this.state.stickyDelay;
+        this.state.stickyDelay = 0;
+        return delay;
+    }
+
     createGlitch(style) {
         this.resetSpanTextStyle();
 
@@ -2753,11 +2734,8 @@ export class SuperType {
         this.state.inWord = token.value !== " ";
 
         let delay = this.fetchDelay(token.value);
+        this.addRenderTime(delay + this.takeStickyDelay());
 
-        delay += this.state.stickyDelay;
-        this.state.stickyDelay = 0;
-
-        this.addRenderTime(delay);
         this.renderCharacter(token.value, token.style);
 
         if (this.header.wordWrap) {
