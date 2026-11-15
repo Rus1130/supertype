@@ -1084,6 +1084,10 @@ class GlitchTag extends Tag {
         const value = token.args[0];
 
         for (let i = 0; i < value.value; i++) {
+            if (engine.state.inWord !== true) {
+                engine.maybeBreakBeforeWord({ value: "0", style: token.style });
+            }
+            engine.state.inWord = true;
             engine.createGlitch(token.style);
         }
     }
@@ -2228,6 +2232,8 @@ export class SuperType {
 
         this.resetSpanTextStyle();
 
+        this.state.lineWidth = 0;
+        this.state.inWord = false;
 
         this.fragment = null;
 
@@ -2419,7 +2425,15 @@ export class SuperType {
         if(this.header.completionBar === undefined) this.header.completionBar = false;
 
         this.target.style.display = "inline-block";
-        this.target.style.minWidth = this.header.wordWrap ? `${this.header.wordWrap}ch` : "inherit";
+
+        if (this.header.wordWrap) {
+            this.target.style.width = `${this.header.wordWrap}ch`;
+        } else {
+            this.target.style.minWidth = "inherit";
+        }
+        if (this._containerWidth === null) {
+            this._containerWidth = parseFloat(getComputedStyle(this.target).width);
+        }
 
         this.runBeforeTokenizationHooks(this.body);
 
@@ -2807,10 +2821,6 @@ export class SuperType {
         this.addRenderTime(delay);
 
         this.renderCharacter(token.value, token.style);
-
-        if (this.header.wordWrap) {
-            this.state.lineWidth += this.getMeasureCtx(token.style).measureText(token.value).width;
-        }
     }
 
     styleElement(element, style) {
@@ -2873,6 +2883,10 @@ export class SuperType {
         }
 
         this.state.currentText.appendData(text);
+
+        if (this.header.wordWrap) {
+            this.state.lineWidth += this.getMeasureCtx(style).measureText(text).width;
+        }
     }
 
     renderRaw(html) {
@@ -2917,6 +2931,11 @@ export class SuperType {
 
         while (idx < tokens.length) {
             const t = tokens[idx];
+            if (t.type === "tag" && t.name === "glitch") {
+            word += "0".repeat(t.args[0].value);
+                idx++;
+                continue;
+            }
             if (t.type !== "character" || t.value === " ") break;
             word += t.value;
             idx++;
