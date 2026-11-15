@@ -74,5 +74,8 @@
     await tw.load("example.st").then(() => {
         tw.allowControls("all");
         tw.start();
+        document.addEventListener("typewriterPaused", (event) => {
+            console.log(event);
+        });
     })
 </script>

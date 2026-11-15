@@ -1942,6 +1942,10 @@ export class SuperType {
         this.startCount = 0;
         this.maxScrollCount = 12;
 
+        this.id = Array.from({ length: 20 }, () =>
+            Math.floor(Math.random() * 16).toString(16)
+        ).join("");
+
         this.allowedControls = new Set();
         this.disallowedControls = new Set();
 
@@ -1996,6 +2000,19 @@ export class SuperType {
 
             if(controlsCheck("pause", " ")) {
                 this.paused() ? this.resume() : this.pause();
+                if(this.paused()) {
+                    document.dispatchEvent(new CustomEvent("typewriterPaused", {
+                        detail: { id: this.id }
+                    }));
+                } else {
+                    document.dispatchEvent(new CustomEvent("typewriterResumed", {
+                        detail: { id: this.id }
+                    }));
+                }
+
+                document.dispatchEvent(new CustomEvent("typewriterPauseStateChanged", {
+                    detail: { id: this.id }
+                }));
             }
 
             if(controlsCheck("instant", "i")) this.state.userInstantOverride = !this.state.userInstantOverride;
