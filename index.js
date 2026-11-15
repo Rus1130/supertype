@@ -965,7 +965,7 @@ class NewlineTag extends Tag {
 
         ctx.queue.push({
             type: "tag",
-            name: "newline", // "linebreak" in LinebreakTag
+            name: "newline",
             args: [new TagArgument("specific", "instant")]
         });
 
@@ -1014,8 +1014,8 @@ class LinebreakTag extends Tag {
 
         ctx.queue.push({
             type: "tag",
-            name: "newline",
-            args: [new TagArgument("linebreak", "instant")]
+            name: "linebreak",
+            args: [new TagArgument("specific", "instant")]
         });
 
         return false;
