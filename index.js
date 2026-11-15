@@ -2695,6 +2695,7 @@ export class SuperType {
                     this.state.scrollLocked = false;
                     this.state.pauseLocked = true;
                     this.pause();
+                    break;
                 }
 
                 this.process(token);
