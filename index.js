@@ -2093,7 +2093,7 @@ export class SuperType {
             currentText: null,
             currentStyle: null,
 
-            scrollLocked: false,
+            scrollLocked: true,
             pauseLocked: false,
 
             ignoreCustomDelays: false,
@@ -2226,7 +2226,7 @@ export class SuperType {
         this.state.currentColor = new String(this.header.textColor).toString();
         this.state.currentBg = new String(this.header.backgroundColor).toString();
 
-        this.state.scrollLocked = false;
+        this.state.scrollLocked = true;
         this.state.pauseLocked = false;
         this.state.separateElements = false;
 
@@ -2380,7 +2380,7 @@ export class SuperType {
 
         this._wheelHandler = (e) => {
             // allow the user to scroll
-            if(this.state.scrollLocked == true) return;
+            if (this.state.scrollLocked) { e.preventDefault(); return; }
 
             this.targetParent.scrollBy({
                 top: (e.shiftKey ? (13*4) : 13) * Math.sign(e.deltaY),
@@ -2388,7 +2388,7 @@ export class SuperType {
             });
         };
 
-        this.targetParent.addEventListener("wheel", this._wheelHandler);
+        this.targetParent.addEventListener("wheel", this._wheelHandler, {passive: true});
 
         if (depth !== 0) {
             throw new SuperTypeError("Invalid header");
@@ -2689,7 +2689,7 @@ export class SuperType {
                     this.state.scrollLocked = false;
                     this.state.pauseLocked = true;
                     this.pause();
-                    break;
+                    throw new SuperTypeError("Fuck")
                 }
 
                 this.process(token);
@@ -3221,7 +3221,7 @@ export class SuperType {
             `|`,
             `| File : ${this.fileName}.st`,
             `| Page : ${this.state.page}`,
-            `| Tag  : ${token.name ?? "unknown"}`
+            `| Tag  : ${token?.name ?? "unknown"}`
         ];
 
         if(pos){
