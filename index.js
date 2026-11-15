@@ -956,6 +956,7 @@ class NewlineTag extends Tag {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
         const mode = args[0];
 
+        // make sticky the default. rename old to "eagerly"
         if (mode !== undefined) mode.checkSpecific("instant", "sticky");
 
         if (mode === undefined || mode.equalsSpecific("instant")) return args;
