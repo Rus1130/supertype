@@ -270,6 +270,12 @@ export class Tag {
     static blockOpenArgsPattern = null;
 }
 
+class EndOfFileTag extends Tag {
+    static tagName = "!eof"
+
+    static onUse(engine, token) { }
+}
+
 class NoopTag extends Tag {
     static tagName = "@noop";
 
@@ -2689,7 +2695,6 @@ export class SuperType {
                     this.state.scrollLocked = false;
                     this.state.pauseLocked = true;
                     this.pause();
-                    throw new SuperTypeError("Fuck")
                 }
 
                 this.process(token);
@@ -3322,7 +3327,8 @@ for (const TagClass of [
     ForcePageTag,
     ForceScrollTag,
     NoopTag,
-    TextSizeTag
+    TextSizeTag,
+    EndOfFileTag
 ]) {
     SuperType.registerTag(TagClass);
 }
