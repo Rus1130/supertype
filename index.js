@@ -605,7 +605,7 @@ class RemoveLastTag extends Tag {
     static onUse(engine, token) {
         const [number, instant] = token.args;
 
-        engine.addRenderTime(engine.state.charDelay);
+        engine.addRenderTime(engine.currentCharDelay());
     }
 
     static onRender(engine, token) {
@@ -1077,7 +1077,7 @@ class GlitchTag extends Tag {
     }
 
     static onUse(engine, token) {
-        engine.addRenderTime(engine.state.charDelay);
+        engine.addRenderTime(engine.currentCharDelay());
     }
 
     static onRender(engine, token) {
@@ -2716,6 +2716,10 @@ export class SuperType {
         }
 
         this.state.nextTime += ms;
+    }
+
+    currentCharDelay() {
+        return this.header.charDelay;
     }
 
     createGlitch(style) {
