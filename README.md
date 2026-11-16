@@ -105,6 +105,7 @@ Displays text in various ways.
 | `[repeat count<Number> instant \]`           | Instantly repeats the content `count` times.                                                                     |
 | `[mixin name<String> \]`                     | Creates a mixin with the name `name`. See the Mixins section for more information.                               |
 | `[@use name<String> ...]`                    | Uses the mixin with the name `name`, and passes in the parameters. See the Mixins section for more information.  |
+| `[@use name<String> ... \]`                  | See the Mixins section for more information.                                                                     |
 
 ### Timing
 Modifies character timing.
@@ -192,24 +193,42 @@ hello!
 hello!
 ```
 
-#### Use a mixin with parameters
-Include `<String>`, `<Number>`, `<Boolean>`, or `<Color>` in the mix-in to use parameters. The order they appear in the mixin dictates the order they must be passed in when using the mixin.
+#### Mixin Placeholders
+Include `<String>`, `<Number>`, `<Boolean>`, or `<Color>` in the mix-in as placeholders. The order they appear in the mixin dictates the order they must be passed in when using the mixin.
 
 ```
+{{# definition #}}
 [mixin "name"]
     hello <String>![newline]
 [mixin end]
-```
 
-```
+{{# usage #}}
 [@use "name" "johny"]
 [@use "name" "clara"]
-```
 
-```
+{{# output #}}
 hello johny!
 hello clara!
 ```
+#### Mixin content
+You can use the special `<Content>` placeholder inside of a mixin to allow for the `@use` tag to be wrapped. This can be combined with regular mixin placeholders
+```
+{{# definition #}}
+[mixin "content mixin"]
+    *[color #ff0000]<Content>!* WOW![color reset][newline]
+    wow hi. <String>
+[mixin end]
+
+{{# usage #}}
+[@use "content mixin" "My name is bill"]
+    You can add /cool things/[newline]fun
+[@use end]
+
+{{# result #}}
+*[color #ff0000]You can add /cool things/[newline]fun!* WOW![color reset][newline]
+wow hi. My name is bill
+```
+
 Index specification: `<Number:1>`
 default values: `<String|"Hello!">`
 

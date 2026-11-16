@@ -96,6 +96,10 @@
         "mixinPlaceholder": {
             "patterns": [
                 {
+                    "match": "(?<!\\)<Content>",
+                    "name": "param.mixin.st"
+                },
+                {
                     "match": "(<)(String|Number|Color|Boolean)(:)([0-9]+)(\\s+\\|\\s+)([^>]+)(>)",
                     "captures": {
                         "1": {

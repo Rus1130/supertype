@@ -315,16 +315,75 @@ class ForceStartTag extends Tag {
 class UseTag extends Tag {
     static tagName = "@use";
 
+    static CONTENT_PLACEHOLDER = "<Content>";
+
+    static hasContent(mixinBody) {
+        return mixinBody.includes(UseTag.CONTENT_PLACEHOLDER);
+    }
+
+    /**
+     * Finds the matching `[@use end]` for the `[@use ...]` opening at
+     * openIndex. Only uses of mixins containing <Content> count as openers,
+     * so inline uses nested inside the content are ignored.
+     * @returns {{start: number, end: number} | null}
+     */
+    static findBlockEnd(engine, body, openIndex) {
+        const openEnd = engine.findTagEnd(body, openIndex);
+        if (openEnd === -1) return null;
+
+        let depth = 1;
+        let i = openEnd + 1;
+
+        while (i < body.length) {
+            if (body[i] === "\\") { i += 2; continue; }
+            if (body[i] !== "[") { i++; continue; }
+
+            const end = engine.findTagEnd(body, i);
+            if (end === -1) { i++; continue; }
+
+            const parts = body.slice(i + 1, end).trim().match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+
+            if (parts[0] === "@use") {
+                if (parts[1] === "end") {
+                    depth--;
+                    if (depth === 0) return { start: i, end };
+                } else {
+                    const mixin = engine.mixins[(parts[1] ?? "").replace(/^"|"$/g, "")];
+                    if (mixin !== undefined && UseTag.hasContent(mixin)) depth++;
+                }
+            }
+
+            i = end + 1;
+        }
+
+        return null;
+    }
+
     static onTokenization(rawArgs, ctx) {
         const args = rawArgs.map(arg => TagArgument.parse(arg));
 
         const nameArg = args[0];
         if (nameArg === undefined) throw new SuperTypeError("Missing mixin name");
+        if (nameArg.equalsSpecific("end")) throw new SuperTypeError("Unexpected [@use end] with no matching wrapped [@use]");
         nameArg.check("string");
 
         const mixinBody = ctx.engine.mixins[nameArg.value];
         if (mixinBody === undefined) {
             throw new SuperTypeError(`Mixin not found: ${nameArg.value}`);
+        }
+
+        // Wrapped form: grab everything up to the matching [@use end]
+        let content = null;
+
+        if (UseTag.hasContent(mixinBody)) {
+            const close = UseTag.findBlockEnd(ctx.engine, ctx.ody ?? ctx.body, ctx.index);
+            if (close === null) {
+                throw new SuperTypeError(`Mixin "${nameArg.value}" uses <Content> but has no matching [@use end]`);
+            }
+
+            const openEnd = ctx.engine.findTagEnd(ctx.body, ctx.index);
+            content = ctx.body.slice(openEnd + 1, close.start);
+            ctx.skipTo = close.end + 1;
         }
 
         const substitutions = args.slice(1);
@@ -373,6 +432,12 @@ class UseTag extends Tag {
             } else if (ch === "[") {
                 inTag = true;
                 expanded += ch;
+                continue;
+            }
+
+            if (!inTag && content !== null && mixinBody.startsWith(UseTag.CONTENT_PLACEHOLDER, i)) {
+                expanded += content;
+                i += UseTag.CONTENT_PLACEHOLDER.length - 1;
                 continue;
             }
 
@@ -3064,10 +3129,10 @@ export class SuperType {
                     if (this.state.rawMode !== true || isRawEnd) {
                         const TagClass = SuperType.tags.get(name) ?? Tag;
 
+                        const ctx = { engine: this, queue, body, index: i, skipTo: null };
+
                         try {
-                            const result = TagClass.onTokenization(parts, {
-                                engine: this, queue, body, index: i
-                            });
+                            const result = TagClass.onTokenization(parts, ctx);
 
                             if (result !== false) {
                                 push({ type: "tag", name, args: result });
@@ -3082,8 +3147,8 @@ export class SuperType {
                             );
                         }
 
-
-                        i = end + 1;
+                        // a tag may have consumed text beyond its own brackets (wrapped @use)
+                        i = Math.max(end + 1, ctx.skipTo ?? 0);
                         continue;
                     }
                 }
